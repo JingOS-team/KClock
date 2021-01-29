@@ -1,6 +1,7 @@
 /*
  * Copyright 2020 Han Young <hanyoung@protonmail.com>
  *           2020 Devin Lin <espidev@gmail.com>
+ *           2021 Wang Rui  <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -23,66 +24,63 @@ import QtQuick 2.12
 import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.2
 import org.kde.kirigami 2.12 as Kirigami
-import QtGraphicalEffects 1.12
 
 ToolBar {
     id: toolbarRoot
-    property double iconSize: Kirigami.Units.gridUnit * 1.5
-    property double shrinkIconSize: Kirigami.Units.gridUnit * 1.1
-    property double fontSize: Kirigami.Theme.defaultFont.pointSize * 0.8
-    property double shrinkFontSize: Kirigami.Theme.defaultFont.pointSize * 0.7
+
+    property double iconSize: 45 * appwindow.officalScale
+    property double shrinkIconSize: 48 * appwindow.officalScale
+    property double fontSize: Kirigami.Theme.defaultFont.pixelSize * 0.8
+    property double shrinkFontSize: Kirigami.Theme.defaultFont.pixelSize * 0.7
     
-    background: Rectangle {
-        Kirigami.Theme.colorSet: Kirigami.Theme.Header
-        color: Kirigami.Theme.backgroundColor
-        anchors.fill: parent
-        
-        layer.enabled: true
-        layer.effect: DropShadow {
-            color: Qt.rgba(0.0, 0.0, 0.0, 0.33)
-            radius: 6
-            samples: 8
+    width: 1920 * appwindow.officalScale
+    height: 105 * appwindow.officalScale
+    
+    function getPage(name) {
+        switch (name) {
+            case "Time": return timePage;
+            case "Timer": return timerListPage;
+            case "Stopwatch": return stopwatchPage;
+            case "Alarm": return alarmPage;
+            case "Settings": return settingsPage;
         }
+    }
+
+    background: Rectangle {
+        color: "#a6000000"
+        anchors.fill: parent
     }
     
     RowLayout {
         anchors.fill: parent
         spacing: 0
+
         Repeater {
             model: ListModel {
                 ListElement {
-                    name: "Time"
-                    icon: "clock"
-                }
-                ListElement {
-                    name: "Timer"
-                    icon: "player-time"
+                    name: "Alarm"
+                    icon_highlight: "qrc:/image/footer_alarm_w.png"
+                    icon: "qrc:/image/footer_alarm_grey.png"
                 }
                 ListElement {
                     name: "Stopwatch"
-                    icon: "chronometer"
+                    icon_highlight: "qrc:/image/footer_sw_w.png"
+                    icon: "qrc:/image/footer_sw_grey.png"
                 }
                 ListElement {
-                    name: "Alarm"
-                    icon: "notifications"
-                }
-                ListElement {
-                    name: "Settings"
-                    icon: "settings-configure"
+                    name: "Timer"
+                    icon_highlight: "qrc:/image/footer_timer_w.png"
+                    icon: "qrc:/image/footer_timer_grey.png"
                 }
             }
             
             Rectangle {
-                Layout.minimumWidth: parent.width / 5
-                Layout.maximumWidth: parent.width / 5
-                Layout.preferredHeight: Kirigami.Units.gridUnit * 3
+                Layout.minimumWidth: parent.width / 3
+                Layout.maximumWidth: parent.width / 3
+                Layout.preferredHeight: parent.height
                 Layout.alignment: Qt.AlignCenter
-                Kirigami.Theme.colorSet: Kirigami.Theme.Header
-                color: mouseArea.pressed ? Qt.darker(Kirigami.Theme.backgroundColor, 1.1) : 
-                       mouseArea.containsMouse ? Qt.darker(Kirigami.Theme.backgroundColor, 1.03) : Kirigami.Theme.backgroundColor
-                
-                property bool isCurrentPage: appwindow.getPage(model.name) === appwindow.pageStack.currentItem
-                
+                color: "transparent"
+
                 Behavior on color {
                     ColorAnimation { 
                         duration: 100 
@@ -92,12 +90,10 @@ ToolBar {
                 
                 MouseArea {
                     id: mouseArea
-                    hoverEnabled: true
                     anchors.fill: parent
+
                     onClicked: {
-                        if (!isCurrentPage) {
-                            appwindow.switchToPage(appwindow.getPage(model.name), 0);
-                        }
+                        appwindow.switchToPage(getPage(model.name), 0)
                     }
                     onPressed: {
                         widthAnim.to = toolbarRoot.shrinkIconSize;
@@ -123,18 +119,21 @@ ToolBar {
                     }
                 }
                 
-                ColumnLayout {
+                RowLayout {
                     id: itemColumn
-                    anchors.fill: parent
-                    spacing: Kirigami.Units.smallSpacing
-                    
+
+                    anchors.centerIn: parent
+                    spacing: 15 * appwindow.officalScale
+
                     Kirigami.Icon {
-                        color: isCurrentPage ? Kirigami.Theme.highlightColor : Kirigami.Theme.textColor
-                        source: model.icon
-                        Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+
+                        Layout.alignment: Qt.AlignCenter
                         Layout.preferredHeight: toolbarRoot.iconSize
                         Layout.preferredWidth: toolbarRoot.iconSize
-                        
+
+                        color: getPage(model.name).visible ? "#ffffff" : "#5e5e5e"
+                        source: getPage(model.name).visible ? model.icon_highlight:  model.icon
+                    
                         ColorAnimation on color {
                             easing.type: Easing.Linear
                         }
@@ -163,12 +162,13 @@ ToolBar {
                     }
                     
                     Label {
-                        color: isCurrentPage ? Kirigami.Theme.highlightColor : Kirigami.Theme.textColor
-                        text: i18n(model.name)
-                        Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
-                        horizontalAlignment: Text.AlignHCenter
-                        elide: Text.ElideMiddle
+                        color: getPage(model.name).visible ? "#ffffff" : "#5e5e5e"
+                        font.pixelSize: 30 * appwindow.officalScale
+                        Layout.alignment: Qt.AlignCenter
+                        horizontalAlignment: Text.AlignVCenter
+                        elide: Text.ElideLeft
                         font.pointSize: toolbarRoot.fontSize
+                        text: i18n(model.name)
                         
                         ColorAnimation on color {
                             easing.type: Easing.Linear

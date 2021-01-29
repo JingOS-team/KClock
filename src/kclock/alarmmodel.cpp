@@ -1,6 +1,7 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
+ *                Wang Rui <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -63,7 +64,7 @@ AlarmModel::AlarmModel(QObject *parent)
 
 QHash<int, QByteArray> AlarmModel::roleNames() const
 {
-    return {{HoursRole, "hours"}, {MinutesRole, "minutes"}, {NameRole, "name"}, {EnabledRole, "enabled"}, {DaysOfWeekRole, "daysOfWeek"}, {AlarmRole, "alarm"}};
+    return {{HoursRole, "hours"}, {SnoozeRole, "snooze"}, {MinutesRole, "minutes"}, {NameRole, "name"}, {EnabledRole, "enabled"}, {DaysOfWeekRole, "daysOfWeek"}, {AlarmRole, "alarm"}};
 }
 
 QVariant AlarmModel::data(const QModelIndex &index, int role) const
@@ -81,6 +82,8 @@ QVariant AlarmModel::data(const QModelIndex &index, int role) const
         return alarm->hours();
     else if (role == MinutesRole)
         return alarm->minutes();
+    else if (role == SnoozeRole)
+        return alarm->snoozeMinutes();
     else if (role == NameRole)
         return alarm->name();
     else if (role == DaysOfWeekRole)
@@ -105,6 +108,8 @@ bool AlarmModel::setData(const QModelIndex &index, const QVariant &value, int ro
         alarm->setHours(value.toInt());
     else if (role == MinutesRole)
         alarm->setMinutes(value.toInt());
+    else if (role == SnoozeRole)
+        alarm->setSnoozeMinutes(value.toInt());
     else if (role == NameRole)
         alarm->setName(value.toString());
     else if (role == DaysOfWeekRole)
@@ -150,9 +155,9 @@ void AlarmModel::updateUi()
     emit dataChanged(createIndex(0, 0), createIndex(alarmsList.count() - 1, 0));
 }
 
-void AlarmModel::addAlarm(int hours, int minutes, int daysOfWeek, QString name, QString ringtonePath)
+void AlarmModel::addAlarm(int hours, int minutes, int daysOfWeek, QString name, QString ringtonePath, int snoozeMinutes)
 {
-    m_interface->addAlarm(hours, minutes, daysOfWeek, name, ringtonePath);
+    m_interface->addAlarm(hours, minutes, daysOfWeek, name, ringtonePath, snoozeMinutes);
 }
 
 QString AlarmModel::timeToRingFormated(int hours, int minutes, int daysOfWeek)
@@ -173,6 +178,7 @@ void AlarmModel::addAlarm(QString uuid)
             return true;
         else
             return false;
+
     });
 
     Q_EMIT beginInsertRows(QModelIndex(), index, index);

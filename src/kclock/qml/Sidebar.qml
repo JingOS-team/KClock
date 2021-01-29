@@ -20,62 +20,40 @@
  */
 
 import org.kde.kirigami 2.11 as Kirigami
-import QtQuick.Layouts 1.3
-import QtQuick.Controls 2.1 as QQC2
 
 Kirigami.GlobalDrawer {
     id: drawer
-    title: i18n("Clock")
+    title: "Clock"
 
     modal: false
+    bannerVisible: true
     width: 200
-    bannerVisible: false
-
-    Kirigami.Theme.colorSet: Kirigami.Theme.Window
-
-    header: Kirigami.AbstractApplicationHeader {
-        topPadding: Kirigami.Units.smallSpacing
-        bottomPadding: Kirigami.Units.largeSpacing
-        leftPadding: Kirigami.Units.largeSpacing
-        rightPadding: Kirigami.Units.largeSpacing
-        implicitHeight: Kirigami.Units.gridUnit * 2
-        
-        Kirigami.Heading {
-            level: 1
-            text: i18n("Clock")
-            Layout.fillWidth: true
-            
-            // HACK: spacing with other header is misaligned, so align it manually
-            x: Kirigami.Units.largeSpacing
-            y: Kirigami.Units.gridUnit * 0.13
-        }
-    }
 
     actions: [
         Kirigami.Action {
             text: i18n("Time")
             iconName: "clock"
-            onTriggered: appwindow.switchToPage(appwindow.getPage("Time"), 0)
+            onTriggered: appwindow.switchToPage(timePage, 0)
         },
         Kirigami.Action {
             text: i18n("Timer")
             iconName: "player-time"
-            onTriggered: appwindow.switchToPage(appwindow.getPage("Timer"), 0)
+            onTriggered: appwindow.switchToPage(timerListPage, 0)
         },
         Kirigami.Action {
             text: i18n("Stopwatch")
             iconName: "chronometer"
-            onTriggered: appwindow.switchToPage(appwindow.getPage("Stopwatch"), 0)
+            onTriggered: appwindow.switchToPage(stopwatchPage, 0)
         },
         Kirigami.Action {
             text: i18n("Alarm")
             iconName: "notifications"
-            onTriggered: appwindow.switchToPage(appwindow.getPage("Alarm"), 0)
+            onTriggered: appwindow.switchToPage(alarmPage, 0)
         },
         Kirigami.Action {
             text: i18n("Settings")
-            icon.name: "settings-configure"
-            onTriggered: appwindow.switchToPage(appwindow.getPage("Settings"), 0)
+            iconName: "settings-configure"
+            onTriggered: appwindow.switchToPage(settingsPage, 0)
         }
     ]
 }

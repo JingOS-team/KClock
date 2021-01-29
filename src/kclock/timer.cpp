@@ -47,6 +47,11 @@ void Timer::toggleRunning()
     m_interface->toggleRunning();
 }
 
+//void Timer::updateTrigger()
+//{
+//    m_interface->elapsed();
+//}
+
 void Timer::reset()
 {
     m_interface->reset();

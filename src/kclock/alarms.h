@@ -39,6 +39,7 @@ class Alarm : public QObject
     Q_PROPERTY(int minutes READ minutes WRITE setMinutes NOTIFY propertyChanged)
     Q_PROPERTY(int daysOfWeek READ daysOfWeek WRITE setDaysOfWeek NOTIFY propertyChanged)
     Q_PROPERTY(int snoozedMinutes READ snoozedMinutes NOTIFY propertyChanged)
+    Q_PROPERTY(int snoozeMinutes READ snoozeMinutes WRITE setSnoozeMinutes)
     Q_PROPERTY(QString ringtonePath READ ringtonePath WRITE setRingtonePath NOTIFY propertyChanged)
 public:
     explicit Alarm();
@@ -95,6 +96,17 @@ public:
     {
         return m_snooze / 60;
     }
+
+    int snoozeMinutes() const 
+    {
+        return m_snoozeMinutes;
+    }
+    
+    void setSnoozeMinutes(int minutes) {
+        m_snoozeMinutes = minutes;
+        m_interface->setProperty("snoozeMinutes", m_snoozeMinutes);
+    }
+
     const QString &ringtonePath() const
     {
         return m_ringtonePath;
@@ -136,6 +148,7 @@ private:
     bool m_enabled;
     int m_hours, m_minutes, m_daysOfWeek;
     qint64 m_snooze;
+    int m_snoozeMinutes = 0;
     qint64 m_nextRingTime;
 
     bool m_isValid = true;

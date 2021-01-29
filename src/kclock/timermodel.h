@@ -48,12 +48,14 @@ public:
     Q_INVOKABLE void remove(int index);
     Q_INVOKABLE int count();
     Q_INVOKABLE Timer *get(int index);
+    Q_INVOKABLE bool hasTimer();
 
 private Q_SLOTS:
     void addTimer(QString uuid); // remote add, always justCreated
     void removeTimer(QString uuid);
 
 private:
+    const int TIMER_MAX = 1;
     void addTimer(int length = 300, QString label = i18n("New timer"), bool running = false);
     void addTimer(QString uuid, bool justCreated);
 

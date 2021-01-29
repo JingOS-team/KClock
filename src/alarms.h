@@ -1,6 +1,7 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
+ *                Wang Rui <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -46,6 +47,7 @@ class Alarm : public QObject
     Q_PROPERTY(int minutes READ minutes WRITE setMinutes NOTIFY minutesChanged)
     Q_PROPERTY(int daysOfWeek READ daysOfWeek WRITE setDaysOfWeek NOTIFY daysOfWeekChanged)
     Q_PROPERTY(int snoozedMinutes READ snoozedMinutes NOTIFY snoozedMinutesChanged)
+    Q_PROPERTY(int snoozeMinutes READ snoozeMinutes WRITE setSnoozeMinutes)
     Q_PROPERTY(QString ringtonePath READ ringtonePath WRITE setRingtonePath NOTIFY ringtonePathChanged)
 
 public Q_SLOTS:
@@ -53,7 +55,7 @@ public Q_SLOTS:
     void handleSnooze();
 
 public:
-    explicit Alarm(AlarmModel *parent = nullptr, QString name = "", int minutes = 0, int hours = 0, int daysOfWeek = 0);
+    explicit Alarm(AlarmModel *parent = nullptr, QString name = "", int minutes = 0, int hours = 0, int daysOfWeek = 0, int snoozeMinutes = 0);
     explicit Alarm(QString serialized, AlarmModel *parent = nullptr);
     QString name() const
     {
@@ -126,11 +128,20 @@ public:
             return 0;
         }
     }
-    int snooze() const
+    qint64 snooze() const
     {
         return m_snooze;
     }
-    void setSnooze(int snooze)
+
+    int snoozeMinutes() const 
+    {
+        return m_snoozeMinutes;
+    }
+    void setSnoozeMinutes(int snoozeMinutes) 
+    {
+        m_snoozeMinutes = snoozeMinutes;
+    }
+    void setSnooze(qint64 snooze)
     {
         this->m_snooze = snooze;
         Q_EMIT snoozedMinutesChanged();
@@ -148,8 +159,8 @@ public:
     }
     QString serialize();
 
-    Q_SCRIPTABLE quint64 nextRingTime(); // the next time this should ring, if this would never ring, return -1
-    void ring();                         // ring alarm
+    Q_SCRIPTABLE qint64 nextRingTime(); // the next time this should ring, if this would never ring, return -1
+    void ring();                        // ring alarm
     Q_SCRIPTABLE QString getUUID()
     {
         return m_uuid.toString();
@@ -177,8 +188,9 @@ private:
     QString m_name = "New Alarm";
     QUuid m_uuid;
     bool m_enabled = true;
+    int m_snoozeMinutes = 0;
     bool m_justSnoozed = false; // pressing snooze on the notification also triggers the dismiss event, so this is a helper for that
     int m_hours = 0, m_minutes = 0, m_daysOfWeek = 0;
-    int m_snooze = 0;           // current snooze length
-    quint64 m_nextRingTime = 0; // store calculated next ring time
+    qint64 m_snooze = 0;        // current snooze length
+    qint64 m_nextRingTime = -1; // store calculated next ring time
 };

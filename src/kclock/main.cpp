@@ -59,10 +59,17 @@ QCommandLineParser *createParser()
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+
+    /*
+    QSurfaceFormat format = QSurfaceFormat::defaultFormat();
+    format.setDepthBufferSize(0);
+    format.setStencilBufferSize(0);
+    QSurfaceFormat::setDefaultFormat(format);
+*/
     QQmlDebuggingEnabler enabler;
 
     KLocalizedString::setApplicationDomain("kclock");
-    KAboutData aboutData("kclock", "Clock", "0.3.0", "Simple clock made in Kirigami", KAboutLicense::GPL, i18n("© 2020 KDE Community"));
+    KAboutData aboutData("kclock", "Clock", "0.2", "Simple clock made in Kirigami", KAboutLicense::GPL, i18n("© 2020 KDE Community"));
     aboutData.addAuthor(i18n("Devin Lin"), QString(), QStringLiteral("espidev@gmail.com"));
     aboutData.addAuthor(i18n("Han Young"), QString(), QStringLiteral("hanyoung@protonmail.com"));
     KAboutData::setApplicationData(aboutData);
@@ -80,6 +87,7 @@ int main(int argc, char *argv[])
 
     auto *timeZoneFilterModel = new TimeZoneFilterModel(timeZoneModel);
     auto *stopwatchTimer = new StopwatchTimer();
+    auto *kclockFormat = new KclockFormat();
     auto *weekModel = new WeekModel();
 
     // register QML types
@@ -98,7 +106,6 @@ int main(int argc, char *argv[])
 
     engine->rootContext()->setContextObject(new KLocalizedContext(engine));
     // models
-    engine->rootContext()->setContextProperty("timeZoneSelectorModel", timeZoneModel);
     engine->rootContext()->setContextProperty("timeZoneShowModel", timeZoneViewModel);
     engine->rootContext()->setContextProperty("timeZoneFilterModel", timeZoneFilterModel);
     engine->rootContext()->setContextProperty("alarmModel", AlarmModel::instance());
@@ -106,7 +113,7 @@ int main(int argc, char *argv[])
     engine->rootContext()->setContextProperty("utilModel", UtilModel::instance());
     engine->rootContext()->setContextProperty("stopwatchTimer", stopwatchTimer);
     engine->rootContext()->setContextProperty("alarmPlayer", &AlarmPlayer::instance());
-    engine->rootContext()->setContextProperty("kclockFormat", KclockFormat::instance());
+    engine->rootContext()->setContextProperty("kclockFormat", kclockFormat);
     engine->rootContext()->setContextProperty("weekModel", weekModel);
     engine->rootContext()->setContextProperty("settingsModel", &KClockSettings::instance());
 
@@ -116,9 +123,7 @@ int main(int argc, char *argv[])
         QScopedPointer<QCommandLineParser> parser(createParser());
         parser->process(app);
         if (parser->isSet(QStringLiteral("page"))) {
-            QVariant page;
-            QMetaObject::invokeMethod(engine->rootObjects().first(), "getPage", Q_RETURN_ARG(QVariant, page), Q_ARG(QVariant, parser->value("page")));
-            QMetaObject::invokeMethod(engine->rootObjects().first(), "switchToPage", Q_ARG(QVariant, page), Q_ARG(QVariant, 0));
+            QMetaObject::invokeMethod(engine->rootObjects().first(), "switchToPage", Q_ARG(QVariant, parser->value("page")));
         }
     }
     return app.exec();

@@ -31,7 +31,7 @@ Kirigami.ScrollablePage {
     icon.name: "notifications"
     mainAction: Kirigami.Action {
         iconName: "list-add"
-        text: i18n("New Alarm")
+        text: "New Alarm"
         onTriggered: appwindow.pageStack.layers.push(Qt.resolvedUrl("NewAlarmPage.qml"))
     }
 
@@ -100,7 +100,7 @@ Kirigami.ScrollablePage {
                             visible: model.alarm.snoozedMinutes != 0
                             font.weight: Font.Bold
                             color: Kirigami.Theme.disabledTextColor
-                            text: i18n("Snoozed %1 minutes", model.alarm.snoozedMinutes)
+                            text: i18n("Snoozed ") + model.alarm.snoozedMinutes + i18n(" minutes")
                         }
                         Label {
                             id: alarmName

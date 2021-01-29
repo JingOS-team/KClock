@@ -42,10 +42,11 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
 public Q_SLOTS:
-    Q_INVOKABLE void update();
+    void update();
 
 private:
     QList<std::tuple<QTimeZone, bool>> m_list;
+    QTimer m_timer;
 };
 
 class TimeZoneFilterModel : public QSortFilterProxyModel

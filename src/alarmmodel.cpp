@@ -85,7 +85,7 @@ void AlarmModel::scheduleAlarm()
     alarmsToBeRung.clear();
 
     // get the next minimum time for a wakeup (next alarm ring), and add alarms that will needed to be woken up to the list
-    quint64 minTime = std::numeric_limits<quint64>::max();
+    qint64 minTime = std::numeric_limits<qint64>::max();
     for (auto *alarm : m_alarmsList) {
         if (alarm->nextRingTime() > 0) {
             if (alarm->nextRingTime() == minTime) {
@@ -99,7 +99,7 @@ void AlarmModel::scheduleAlarm()
     }
 
     // if there is an alarm that needs to rung
-    if (minTime != std::numeric_limits<quint64>::max()) {
+    if (minTime != std::numeric_limits<qint64>::max()) {
         qDebug() << "scheduled wakeup" << QDateTime::fromSecsSinceEpoch(minTime).toString();
         m_nextAlarmTime = minTime;
 
@@ -173,9 +173,9 @@ void AlarmModel::removeAlarm(int index)
     scheduleAlarm();
 }
 
-void AlarmModel::addAlarm(int hours, int minutes, int daysOfWeek, QString name, QString ringtonePath)
+void AlarmModel::addAlarm(int hours, int minutes, int daysOfWeek, QString name, QString ringtonePath, int snoozeMinutes)
 {
-    Alarm *alarm = new Alarm(this, name, minutes, hours, daysOfWeek);
+    Alarm *alarm = new Alarm(this, name, minutes, hours, daysOfWeek, snoozeMinutes);
 
     // insert new alarm in order by time of day
     int i = 0;
@@ -196,9 +196,9 @@ void AlarmModel::addAlarm(int hours, int minutes, int daysOfWeek, QString name, 
     }
 
     m_alarmsList.insert(i, alarm);
-
+    qDebug() << "schedule Alarm";
     scheduleAlarm();
-
+    qDebug() << "alarm added";
     Q_EMIT alarmAdded(alarm->uuid().toString());
 }
 
@@ -206,7 +206,7 @@ void AlarmModel::updateNotifierItem(quint64 time)
 {
     if (time == 0) {
         m_notifierItem->setStatus(KStatusNotifierItem::Passive);
-        m_notifierItem->setToolTip(QStringLiteral("clock"), QStringLiteral("KClock"), QStringLiteral());
+        m_notifierItem->setToolTip(QStringLiteral("clock"), QStringLiteral("Clock"), QStringLiteral());
     } else {
         auto dateTime = QDateTime::fromSecsSinceEpoch(time).toLocalTime();
         m_notifierItem->setStatus(KStatusNotifierItem::Active);

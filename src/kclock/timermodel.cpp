@@ -75,6 +75,10 @@ void TimerModel::addTimer(int length, QString label, bool running)
     m_interface->addTimer(length, label, running);
 }
 
+bool TimerModel::hasTimer() {
+    return !m_timersList.isEmpty();
+}
+
 void TimerModel::remove(int index)
 {
     if (index < 0 || index >= m_timersList.size())

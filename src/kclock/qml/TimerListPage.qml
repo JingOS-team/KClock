@@ -65,9 +65,8 @@ Kirigami.ScrollablePage {
             }
             
             Component.onCompleted: {
-                if (createdTimer) {
-                    switchToPage(timerPage, 1);
-                }
+                if (createdTimer)
+                    switchToPage(timerPage, 1)
             }
             
             showClickFeedback: true

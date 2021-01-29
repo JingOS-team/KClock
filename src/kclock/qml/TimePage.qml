@@ -26,62 +26,9 @@ import QtQuick.Shapes 1.12
 import org.kde.kirigami 2.12 as Kirigami
 
 Kirigami.ScrollablePage {
-    id: timePage
-
-    title: i18n("Time")
+    
+    title: "Time"
     icon.name: "clock"
-    
-    //globalToolBarStyle: Kirigami.ApplicationHeaderStyle.ToolBar
-    mainAction: Kirigami.Action {
-        iconName: "globe"
-        text: i18n("Edit")
-        onTriggered: {
-            timeZoneSelectorModel.update();
-            appwindow.pageStack.layers.push("qrc:/qml/TimeZoneSelectPage.qml");
-        }
-    }
-    
-    header: RowLayout {
-        id: bigTimeDisplay
-        height: clockItem.height + Kirigami.Units.gridUnit * 0.5
-        implicitHeight: height
-        anchors.left: parent.left
-        anchors.right: parent.right
-        
-        // left side - analog clock
-        Item {
-            id: clockItem
-            Layout.alignment: Qt.AlignHCenter
-            property int clockRadius: Kirigami.Units.gridUnit * 4
-            width: clockRadius * 2 + Kirigami.Units.gridUnit * 0.5
-            height: clockRadius * 2 + Kirigami.Units.gridUnit
-            AnalogClock {
-                id: analogClock
-                anchors.centerIn: parent
-                height: parent.clockRadius * 2 
-                width: parent.clockRadius * 2
-            }
-        }
-        
-        // right side - digital clock + location
-        ColumnLayout {
-            Layout.alignment: Qt.AlignHCenter
-            Label {
-                Layout.alignment: Qt.AlignRight
-                font.pointSize: Kirigami.Theme.defaultFont.pointSize * 3.0
-                font.family: clockFont.name
-                color: Kirigami.Theme.highlightColor
-                text: kclockFormat.currentTime
-            }
-            Label {
-                Layout.alignment: Qt.AlignRight
-                font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
-                text: utilModel.tzName
-                color: Kirigami.Theme.textColor
-            }
-        }
-    }
-    
     // time zones
     ListView {
         model: timeZoneShowModel
@@ -90,19 +37,73 @@ Kirigami.ScrollablePage {
         // no timezones placeholder
         Kirigami.PlaceholderMessage {
             anchors.centerIn: parent
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.margins: Kirigami.Units.largeSpacing
             visible: zoneList.count == 0
             text: i18n("Add timezone")
         }
         
         // analog clock header
-        //headerPositioning: ListView.InlineHeader
+        headerPositioning: ListView.InlineHeader
+        header: RowLayout {
+            id: bigTimeDisplay
+            height: clockItem.height + Kirigami.Units.gridUnit
+            anchors.left: parent.left
+            anchors.right: parent.right
+            
+            // left side - analog clock
+            Item {
+                id: clockItem
+                Layout.alignment: Qt.AlignHCenter
+                width: analogClock.clockRadius * 2 + Kirigami.Units.gridUnit * 0.5
+                height: analogClock.clockRadius * 2 + Kirigami.Units.gridUnit
+                AnalogClock {
+                    id: analogClock
+                    clockRadius: Kirigami.Units.gridUnit * 4
+                }
+            }
+            
+            // right side - digital clock + location
+            ColumnLayout {
+                Layout.alignment: Qt.AlignHCenter
+                Label {
+                    Layout.alignment: Qt.AlignRight
+                    font.pointSize: Kirigami.Theme.defaultFont.pointSize * 3.0
+                    font.family: clockFont.name
+                    color: Kirigami.Theme.highlightColor
+                    text: kclockFormat.currentTime
+                }
+                Label {
+                    Layout.alignment: Qt.AlignRight
+                    font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.2
+                    text: utilModel.tzName
+                    color: Kirigami.Theme.textColor
+                }
+            }
+        }
         
         ScrollBar.vertical: ScrollBar {}
         
-        delegate: TimeZoneEntry {
+        delegate: timeZoneDelegate
+    }
+    
+    // time zone entry
+    Component {
+        id: timeZoneDelegate
+        TimeZoneEntry {
             tzId: model.id
             tzRelative: model.relativeTime
             tzTime: model.timeString
+        }
+    }
+    
+    //globalToolBarStyle: Kirigami.ApplicationHeaderStyle.ToolBar
+    mainAction: Kirigami.Action {
+        iconName: "globe"
+        text: i18n("Edit")
+        onTriggered: {
+            pageStack.layers.push("qrc:/qml/TimeZoneSelectPage.qml")
         }
     }
 }

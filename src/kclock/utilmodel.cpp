@@ -22,7 +22,6 @@
 
 #include <QString>
 #include <QTimeZone>
-#include <QLocale>
 
 #include <KLocalizedString>
 
@@ -102,9 +101,4 @@ QString UtilModel::timeToRingFormatted(const long long &timestamp)
     } else {
         return i18n("Alarm will be rung after %1", arg);
     }
-}
-
-bool UtilModel::isLocale24HourTime()
-{
-    return QLocale::system().timeFormat(QLocale::ShortFormat).toLower().indexOf("ap") == -1;
 }

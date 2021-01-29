@@ -1,6 +1,7 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
+ *                Wang Rui <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -39,7 +40,7 @@
 #include "kclockdsettings.h"
 
 // alarm created from UI
-Alarm::Alarm(AlarmModel *parent, QString name, int minutes, int hours, int daysOfWeek)
+Alarm::Alarm(AlarmModel *parent, QString name, int minutes, int hours, int daysOfWeek, int snoozeMinutes)
     : QObject(parent)
     , m_uuid(QUuid::createUuid())
     , m_enabled(true)
@@ -47,6 +48,7 @@ Alarm::Alarm(AlarmModel *parent, QString name, int minutes, int hours, int daysO
     , m_minutes(minutes)
     , m_hours(hours)
     , m_daysOfWeek(daysOfWeek)
+    , m_snoozeMinutes(snoozeMinutes)
 {
     initialize(parent);
 }
@@ -68,6 +70,7 @@ Alarm::Alarm(QString serialized, AlarmModel *parent)
         m_daysOfWeek = obj[QStringLiteral("daysOfWeek")].toInt();
         m_enabled = obj[QStringLiteral("enabled")].toBool();
         m_snooze = obj[QStringLiteral("snooze")].toInt();
+        m_snoozeMinutes = obj[QStringLiteral("snoozeMinutes")].toInt();
         m_audioPath = QUrl::fromLocalFile(obj[QStringLiteral("audioPath")].toString());
     }
     initialize(parent);
@@ -102,6 +105,7 @@ QString Alarm::serialize()
     obj[QStringLiteral("daysOfWeek")] = daysOfWeek();
     obj[QStringLiteral("enabled")] = enabled();
     obj[QStringLiteral("snooze")] = snooze();
+    obj[QStringLiteral("snoozeMinutes")] = snoozeMinutes();
     obj[QStringLiteral("audioPath")] = m_audioPath.toLocalFile();
     return QString(QJsonDocument(obj).toJson(QJsonDocument::Compact));
 }
@@ -120,10 +124,13 @@ void Alarm::ring()
     if (!this->enabled())
         return;
 
-    qDebug() << "Ringing alarm" << m_name << "and sending notification...";
-
     KNotification *notif = new KNotification(QStringLiteral("alarm"));
-    notif->setActions(QStringList {i18n("Dismiss"), i18n("Snooze")});
+    if (m_snoozeMinutes > 0) {
+        notif->setActions(QStringList {i18n("Dismiss"), i18n("Snooze")});
+    } else {
+        notif->setActions(QStringList {i18n("Dismiss")});
+    }
+    
     notif->setIconName(QStringLiteral("kclock"));
     notif->setTitle(name());
     notif->setText(QLocale::system().toString(QTime::currentTime(), QLocale::ShortFormat)); // TODO
@@ -175,10 +182,8 @@ void Alarm::handleSnooze()
     m_justSnoozed = true;
 
     alarmNotifOpen = false;
-    qDebug() << "Alarm snoozed (" << KClockSettings::self()->alarmSnoozeLength() << ")";
     AlarmPlayer::instance().stop();
-
-    setSnooze(snooze() + 60 * KClockSettings::self()->alarmSnoozeLength()); // snooze 5 minutes
+    setSnooze(snooze() + 60 * m_snoozeMinutes); //add snooze time, 10 minutes
     m_enabled = true;                                                       // can't use setSnooze because it resets snooze time
     save();
     Q_EMIT alarmChanged();
@@ -187,7 +192,7 @@ void Alarm::handleSnooze()
 void Alarm::calculateNextRingTime()
 {
     if (!this->m_enabled) { // if not enabled, means this would never ring
-        m_nextRingTime = 0;
+        m_nextRingTime = -1;
         return;
     }
 
@@ -217,10 +222,10 @@ void Alarm::calculateNextRingTime()
     }
 }
 
-quint64 Alarm::nextRingTime()
+qint64 Alarm::nextRingTime()
 {
     // day changed, re-calculate
-    if (this->m_nextRingTime < static_cast<unsigned long long>(QDateTime::currentSecsSinceEpoch())) {
+    if (this->m_nextRingTime < QDateTime::currentSecsSinceEpoch()) {
         calculateNextRingTime();
     }
     return m_nextRingTime;

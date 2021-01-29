@@ -1,5 +1,6 @@
 /*
  *  SPDX-FileCopyrightText: 2020 Carson Black <uhhadd@gmail.com>
+ *                          2021 Wang Rui <wangrui@jingos.com>
  *
  *  SPDX-License-Identifier: LGPL-2.0-or-later
  */
@@ -132,7 +133,6 @@ Item {
         id: stackView
 
         anchors.fill: parent
-
         function clear() {
             //don't let it kill the main page row
             var d = stackView.depth;
@@ -154,6 +154,8 @@ Item {
                 position: Kirigami.Settings.isMobile ? ToolBar.Footer : ToolBar.Header
 
                 Layout.row: Kirigami.Settings.isMobile ? 1 : 0
+                Layout.fillWidth: true
+                Accessible.role: Accessible.PageTabList
 
                 GridLayout {
                     id: _grid
@@ -187,9 +189,7 @@ Item {
                     Loader { id: _footer; sourceComponent: swipeNavigatorRoot.footer; Layout.row: 1; Layout.column: 2 }
                 }
 
-                Layout.fillWidth: true
-
-                Accessible.role: Accessible.PageTabList
+                
             }
 
 

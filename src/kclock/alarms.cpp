@@ -1,6 +1,7 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
+ *                Wang Rui <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -43,6 +44,7 @@ Alarm::Alarm(QString uuid)
         m_minutes = m_interface->minutes();
         m_daysOfWeek = m_interface->daysOfWeek();
         m_snooze = m_interface->snoozedMinutes() * 60;
+        m_snoozeMinutes = m_interface->snoozeMinutes();
         m_ringtonePath = m_interface->ringtonePath();
         m_nextRingTime = m_interface->nextRingTime();
     } else {
@@ -82,6 +84,5 @@ void Alarm::calculateNextRingTime()
         m_nextRingTime = -1;
         return;
     }
-    
     m_nextRingTime = UtilModel::instance()->calculateNextRingTime(this->m_hours, this->m_minutes, this->m_daysOfWeek, this->m_snooze);
 }

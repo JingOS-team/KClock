@@ -24,6 +24,7 @@
 #include <QObject>
 #include <QString>
 
+class UtilModel;
 class UtilModel : public QObject
 {
     Q_OBJECT
@@ -43,8 +44,6 @@ public:
     
     long long calculateNextRingTime(int hours, int minutes, int daysOfWeek, int snooze = 0);
     QString timeToRingFormatted(const long long &timestamp);
-    
-    bool isLocale24HourTime();
     
 private:
     UtilModel(){}; // explicitly declare it private

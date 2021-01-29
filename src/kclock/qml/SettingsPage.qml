@@ -116,17 +116,12 @@ Kirigami.ScrollablePage {
 
         ItemDelegate {
             Layout.fillWidth: true
+            font.bold: true
+            text: i18n("About")
+            leftPadding: Kirigami.Units.gridUnit
+            rightPadding: Kirigami.Units.gridUnit
             implicitHeight: Kirigami.Units.gridUnit * 3
-            
-            onClicked: appwindow.switchToPage(appwindow.getPage("About"), 1)
-            
-            Label {
-                anchors.left: parent.left
-                anchors.leftMargin: Kirigami.Units.gridUnit
-                anchors.verticalCenter: parent.verticalCenter
-                font.weight: Font.Bold
-                text: i18n("About")
-            }
+            onClicked: appwindow.pageStack.layers.push(aboutPage)
         }
 
         Kirigami.Separator {
@@ -141,14 +136,14 @@ Kirigami.ScrollablePage {
         modal: true
         focus: true
         anchors.centerIn: Overlay.overlay
-        width: Math.min(appwindow.width - Kirigami.Units.gridUnit * 4, Kirigami.Units.gridUnit * 20)
+        width: Math.min(settingsPage.width - Kirigami.Units.gridUnit * 4, Kirigami.Units.gridUnit * 20)
         height: Kirigami.Units.gridUnit * 8
         standardButtons: Dialog.Close
         title: i18n("Change Alarm Volume")
         contentItem: RowLayout {
             anchors.horizontalCenter: parent.horizontalCenter
             width: parent.width
-            Label {
+            Text {
                 text: i18n("Volume: ")
             }
             Slider {
@@ -158,7 +153,7 @@ Kirigami.ScrollablePage {
                 to: 100
                 value: alarmPlayer.volume
                 onPressedChanged: {
-                    if (!pressed) {
+                    if(!pressed){
                         alarmPlayer.play();
                     }
                 }
@@ -175,7 +170,7 @@ Kirigami.ScrollablePage {
         modal: true
         focus: true
         anchors.centerIn: Overlay.overlay
-        width: Math.min(appwindow.width - Kirigami.Units.gridUnit * 4, Kirigami.Units.gridUnit * 20)
+        width: Math.min(settingsPage.width - Kirigami.Units.gridUnit * 4, Kirigami.Units.gridUnit * 20)
         height: Kirigami.Units.gridUnit * 20
         standardButtons: Dialog.Close
         title: i18n("Silence Alarm After")
@@ -211,7 +206,7 @@ Kirigami.ScrollablePage {
                 delegate: RadioDelegate {
                     width: parent.width
                     text: i18n(name)
-                    checked: settingsModel && settingsModel.alarmSilenceAfter == value
+                    checked: settingsModel.alarmSilenceAfter == value
                     onCheckedChanged: {
                         if (checked) {
                             settingsModel.alarmSilenceAfter = value;
@@ -230,7 +225,7 @@ Kirigami.ScrollablePage {
         modal: true
         focus: true
         anchors.centerIn: Overlay.overlay
-        width: Math.min(appwindow.width - Kirigami.Units.gridUnit * 4, Kirigami.Units.gridUnit * 20)
+        width: Math.min(settingsPage.width - Kirigami.Units.gridUnit * 4, Kirigami.Units.gridUnit * 20)
         height: Kirigami.Units.gridUnit * 20
         standardButtons: Dialog.Close
         title: i18n("Alarm Snooze Length")
@@ -274,7 +269,7 @@ Kirigami.ScrollablePage {
                 delegate: RadioDelegate {
                     width: parent.width
                     text: i18n(name)
-                    checked: settingsModel && settingsModel.alarmSnoozeLength == value
+                    checked: settingsModel.alarmSnoozeLength == value
                     onCheckedChanged: {
                         if (checked) {
                             settingsModel.alarmSnoozeLength = value;

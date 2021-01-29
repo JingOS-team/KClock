@@ -39,7 +39,7 @@ KclockFormat::KclockFormat(QObject *parent)
 void KclockFormat::updateTime()
 {
     if (m_minutesCounter == 60) {
-        m_currentTime = QLocale::system().toString(QTime::currentTime(), UtilModel::instance()->isLocale24HourTime() ? "hh:mm" : "h:mm ap");
+        m_currentTime = QLocale::system().toString(QTime::currentTime(), QLocale::ShortFormat);
         Q_EMIT timeChanged();
         m_minutesCounter = 0;
         m_hoursCounter++;
@@ -50,7 +50,8 @@ void KclockFormat::updateTime()
         Q_EMIT hourChanged();
     }
     m_minutesCounter++;
-    Q_EMIT secondChanged();
+//    Q_EMIT secondChanged();
+     Q_EMIT timeChanged();
 }
 
 QString KclockFormat::formatTimeString(int hours, int minutes)
@@ -72,8 +73,9 @@ bool KclockFormat::isChecked(int dayIndex, int daysOfWeek)
 
 void KclockFormat::startTimer()
 {
-    m_currentTime = QLocale::system().toString(QTime::currentTime(), UtilModel::instance()->isLocale24HourTime() ? "hh:mm" : "h:mm ap");
-    m_hours = QTime::currentTime().hour() >= 12 ? QTime::currentTime().hour() - 12 : QTime::currentTime().hour();
+    m_currentTime = QLocale::system().toString(QTime::currentTime(), QStringLiteral("hh:mm"));
+//    m_hours = QTime::currentTime().hour() >= 12 ? QTime::currentTime().hour() - 12 : QTime::currentTime().hour();
+    m_hours = QTime::currentTime().hour();
     m_minutesCounter = (QTime::currentTime().msecsSinceStartOfDay() / 1000) % 60; // seconds to next minute
     m_hoursCounter = QTime::currentTime().minute();
     m_timer->start(1000);
@@ -85,11 +87,11 @@ WeekModel::WeekModel(QObject *parent)
     // init week and flag value
     int dayFlag[] = {1, 2, 4, 8, 16, 32, 64}, i = 0;
     for (int j = QLocale::system().firstDayOfWeek(); j <= 7; j++) {
-        m_listItem[i++] = std::tuple<QString, int>(QLocale::system().dayName(j, QLocale::ShortFormat), dayFlag[j - 1]);
+        m_listItem[i++] = std::tuple<QString, int>(QLocale::system().dayName(j, QLocale::LongFormat), dayFlag[j - 1]);
     }
 
     for (int j = 1; j < QLocale::system().firstDayOfWeek(); j++) {
-        m_listItem[i++] = std::tuple<QString, int>(QLocale::system().dayName(j, QLocale::ShortFormat), dayFlag[j - 1]);
+        m_listItem[i++] = std::tuple<QString, int>(QLocale::system().dayName(j, QLocale::LongFormat), dayFlag[j - 1]);
     }
 }
 

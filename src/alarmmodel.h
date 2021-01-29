@@ -1,6 +1,7 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
+ *                Wang Rui <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -38,7 +39,7 @@ public:
     void configureWakeups(); // needs to be called to start worker thread, or configure powerdevil (called in main)
 
     Q_SCRIPTABLE void removeAlarm(QString uuid);
-    Q_SCRIPTABLE void addAlarm(int hours, int minutes, int daysOfWeek, QString name, QString ringtonePath); // in 24 hours units
+    Q_SCRIPTABLE void addAlarm(int hours, int minutes, int daysOfWeek, QString name, QString ringtonePath, int snoozeMinutes); // in 24 hours units
 
 Q_SIGNALS:
     Q_SCRIPTABLE void alarmAdded(QString uuid);

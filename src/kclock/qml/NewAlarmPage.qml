@@ -107,7 +107,7 @@ Kirigami.ScrollablePage {
                 model: weekModel
 
                 ToolButton {
-                    implicitWidth: Kirigami.Units.gridUnit * 2.8
+                    implicitWidth: 40
                     text: name
                     checkable: true
                     checked: kclockFormat.isChecked(index, alarmDaysOfWeek)
@@ -158,7 +158,7 @@ Kirigami.ScrollablePage {
 
         FileDialog {
             id: fileDialog
-            title: i18n("Choose an audio")
+            title: "Choose an audio"
             folder: shortcuts.music
             onAccepted: {
                 newAlarmPageRoot.ringtonePath = fileDialog.fileUrl;
@@ -176,7 +176,7 @@ Kirigami.ScrollablePage {
             onRejected: {
                 this.close();
             }
-            nameFilters: [ i18n("Audio files (*.wav *.mp3 *.ogg *.aac *.flac *.webm *.mka *.opus)"), i18n("All files (*)") ]
+            nameFilters: [ "Audio files (*.wav *.mp3 *.ogg *.aac *.flac *.webm *.mka *.opus)", "All files (*)" ]
         }
     }
     function hoursTo12(hours){ // auxiliary function to convert 24hours to 12
