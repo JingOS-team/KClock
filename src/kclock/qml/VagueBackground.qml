@@ -30,11 +30,11 @@ Item {
 
     ShaderEffectSource {
         id: eff
+        sourceItem: sourceView
         anchors.centerIn: fastBlur
         width: fastBlur.width
         visible: false
         height: fastBlur.height
-        sourceItem: sourceView
         sourceRect: Qt.rect(mouseX, mouseY, width, height)
 
         function getItemX(width, height) {

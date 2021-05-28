@@ -27,21 +27,23 @@ import org.kde.kirigami 2.15 as Kirigami
 Kirigami.ApplicationWindow {
     id: appwindow
 
-    property int officalWidth: 1920
-    property int officalHeight: 1200
-    property int deviceWidth: screen.width
-    property int deviceHeight: screen.height
-    property int fontSize: theme.defaultFont.pointSize
+    // property int officalWidth: 1920
+    // property int officalHeight: 1200
+    // property int deviceWidth: screen.width
+    // property int deviceHeight: screen.height
+    // property int fontSize: theme.defaultFont.pixelSize
+    // property real officalScale: deviceWidth / officalWidth
+
+    property int deviceWidth: 888
+    property int deviceHeight: 648
     property alias toolbarHeight: bottombar.height
-    property real officalScale: deviceWidth / officalWidth
-    property bool isWidescreen: appwindow.width >= appwindow.height
+    property bool isDarkTheme: false
 
     width: deviceWidth
     height: deviceHeight
 
-    fastBlurMode: true
-    fastBlurColor: "#B2000000"
-    onIsWidescreenChanged: changeNav(!isWidescreen)
+    // fastBlurMode: true
+    // fastBlurColor: "#B2000000"
 
     onVisibleChanged: {
         appwindow.globalToolBarStyle = ApplicationHeaderStyle.None
@@ -76,8 +78,10 @@ Kirigami.ApplicationWindow {
         }
     }
 
-    function changeNav(toNarrow) {
-        //  sidebarLoader.active = false;
+    property bool isWidescreen: appwindow.width >= appwindow.height
+    onIsWidescreenChanged: changeNav(!isWidescreen)
+
+    function changeNav(toNarrow) {//        sidebarLoader.active = false;
     }
 
     // clock fonts

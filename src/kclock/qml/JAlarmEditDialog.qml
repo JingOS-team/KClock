@@ -33,8 +33,8 @@ Popup {
     property var description: ""
     property int px: 0
     property int py: 0
-    property int parentWidth: 960 * appwindow.officalScale
-    property int parentHeight: 1200 * appwindow.officalScale
+    property int parentWidth: 444
+    property int parentHeight: 648
     property Alarm alarmObject
     property string popTitle: "popTitle"
     property string alarmName
@@ -48,9 +48,9 @@ Popup {
     property int snoozedTime: 10
     property int alarmDaysOfWeek: alarmObject ? alarmObject.daysOfWeek : 0
     property string ringtonePath: alarmObject ? alarmObject.ringtonePath : ""
-    property int titleFontSize: appwindow.fontSize + 11
-    property int itemFontSize: appwindow.fontSize + 2
-    property real myScale: appwindow.officalScale * 1.3
+    property int titleFontSize: 20
+    property int itemFontSize: 14
+    // property real myScale: appwindow.officalScale * 1.3
 
     property bool isChanged: false
 
@@ -64,11 +64,11 @@ Popup {
     topPadding: 0
     bottomPadding: 0
 
-    topMargin: 110
-    leftMargin: 40
+    topMargin: 23
+    leftMargin: 20
     modal: true
     focus: true
-    contentHeight: 624 * appwindow.officalScale
+    contentHeight: 300  
 
     onOpened: {
         if (alarmObject) {
@@ -80,6 +80,7 @@ Popup {
             alarmDaysOfWeek = alarmObject.daysOfWeek
         } else {
             status = "add"
+            snoozed = true 
         }
         isChanged = false
     }
@@ -110,22 +111,26 @@ Popup {
     background: Rectangle {
         id: background
         color: "#00000000"
+        radius:10 
     }
 
     contentItem: Rectangle {
         id: contentItem
         anchors.margins: 0
         implicitWidth: parent.width
-        radius: 40 * appwindow.officalScale
-        color: "#000000"
+        implicitHeight: 300
+        color: "#00000000"
+        radius: 10
 
-        VagueBackground {
-            anchors.fill: parent
-            sourceView: root
-            mouseX: blurX
-            mouseY: blurY
-            coverColor: "#cc000000"
-        }
+        // VagueBackground {
+        //     anchors.fill: parent
+        //     sourceView: root
+        //     mouseX: blurX
+        //     mouseY: blurY
+        //     coverColor: "#00000000"
+        //     // radius: 10 
+        //     // coverColor: appwindow.isDarkTheme ? "#cc000000" :"white"
+        // }
 
         layer.enabled: true
         layer.effect: DropShadow {
@@ -140,13 +145,19 @@ Popup {
         Rectangle {
             id: scroll
             width: parent.width
-            height: parent.height
+            height: 300
             anchors.bottom: parent.bottom
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
-            anchors.margins: 30 * myScale
-            color: "transparent"
+            // color: "transparent"
+            color:"white"
+            radius: 10
+            // color: "blue"
+
+            // MouseArea{
+            //     anchors.fill:parent 
+            // }
 
             ColumnLayout {
                 id: columnLayout
@@ -165,8 +176,8 @@ Popup {
 
                     Kirigami.Label {
                         text: popTitle
-                        color: "white"
-                        font.pointSize: titleFontSize
+                        color: appwindow.isDarkTheme ? "white":"black"
+                        font.pixelSize: titleFontSize
                     }
                     Kirigami.Separator {
                         color: "transparent"
@@ -175,11 +186,11 @@ Popup {
 
                     Kirigami.JIconButton {
                         id: eventCacel
-                        width: 54 * appwindow.officalScale
-                        height: 54 * appwindow.officalScale
+                        width: 22  
+                        height: 22  
                         anchors.right: eventConfirm.left
                         anchors.rightMargin: CS.popEventEditor.icon_margin
-                        source: "qrc:/image/dlg_close.png"
+                        source: appwindow.isDarkTheme ? "qrc:/image/dlg_close.png" : "qrc:/image/dlg_close_l.png"
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
@@ -191,12 +202,13 @@ Popup {
 
                     Kirigami.JIconButton {
                         id: eventConfirm
-                        width: 54 * appwindow.officalScale
-                        height: 54 * appwindow.officalScale
+                        width: 22  
+                        height: 22  
                         anchors.right: parent.right
                         opacity: isChanged ? 1 : 0.4
                         enabled: isChanged
-                        source: "qrc:/image/dlg_ok.png"
+                        // enabled: true
+                        source: appwindow.isDarkTheme ? "qrc:/image/dlg_ok.png":"qrc:/image/dlg_ok_l.png"
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
@@ -227,14 +239,13 @@ Popup {
 
                 Rectangle {
                     width: 10
-                    height: 20 * myScale
+                    height: 20  
                     color: "transparent"
                 }
                 // Time
                 RowLayout {
-                    height: 140 * appwindow.officalScale
+                    height: 60  
                     width: parent.width
-                    anchors.topMargin: 25 * myScale
 
                     Item {
                         width: parent.width
@@ -243,7 +254,7 @@ Popup {
 
                         Image {
                             id: timeIcon
-                            width: 25 * myScale
+                            width: 16  
                             height: width
                             anchors.verticalCenter: parent.verticalCenter
                             source: "qrc:/image/row_time.png"
@@ -252,17 +263,17 @@ Popup {
                         Text {
                             anchors {
                                 left: timeIcon.right
-                                leftMargin: 16 * myScale
+                                leftMargin: 11  
                                 verticalCenter: parent.verticalCenter
                             }
-                            font.pointSize: itemFontSize
-                            color: "white"
-                            text: "Time"
+                            font.pixelSize: itemFontSize
+                            color: appwindow.isDarkTheme ? "white":"black"
+                            text: i18n("Time")
                         }
 
                         TimeSelectWheelView {
                             id: timeSeletor
-                            widget_width: 225 * appwindow.officalScale
+                            widget_width: 120  
                             hourNumber: selectHour
                             minutesNumber: selectMin
                             height: parent.height
@@ -285,7 +296,7 @@ Popup {
                 }
                 // Repeat
                 RowLayout {
-                    height: parent.width / 7
+                    height: 45
                     width: parent.width
 
                     Item {
@@ -302,7 +313,7 @@ Popup {
 
                         Image {
                             id: alertIcon
-                            width: 25 * myScale
+                            width: 17  
                             height: width
                             anchors.verticalCenter: parent.verticalCenter
                             source: "qrc:/image/row_repeat.png"
@@ -310,24 +321,24 @@ Popup {
                         Kirigami.Label {
                             anchors {
                                 left: alertIcon.right
-                                leftMargin: CS.popEventEditor.icon_text_margin
+                                leftMargin: 11
                                 verticalCenter: parent.verticalCenter
                             }
-                            font.pointSize: itemFontSize
-                            text: "Repeat"
-                            color: "white"
+                            font.pixelSize: itemFontSize
+                            text: i18n("Repeat")
+                            color: appwindow.isDarkTheme ? "white":"black"
                         }
 
                         Kirigami.Label {
                             id: repeatContent
-                            width: 240 * appwindow.officalScale
+                            width: 120  
                             anchors {
                                 right: repeatRightIcon.left
-                                rightMargin: CS.popEventEditor.icon_text_margin
+                                rightMargin: 2
                                 verticalCenter: parent.verticalCenter
                             }
                             color: "#8e8e93"
-                            font.pointSize: itemFontSize
+                            font.pixelSize: itemFontSize
                             text: getRepeatFormat(alarmDaysOfWeek)
                             horizontalAlignment: Text.AlignRight
                             elide: Text.ElideRight
@@ -336,7 +347,7 @@ Popup {
 
                         Image {
                             id: repeatRightIcon
-                            width: 34 * appwindow.officalScale
+                            width: 22  
                             height: width
                             source: "qrc:/image/icon_right.png"
                             anchors {
@@ -356,7 +367,7 @@ Popup {
                             onClicked: {
                                 columnLayout.visible = false
                                 weekSelector.visible = true
-                                popup.height = 824 * appwindow.officalScale
+                                popup.height = 397
                                 isChanged = true
                             }
                             hoverEnabled: true
@@ -381,12 +392,14 @@ Popup {
 
                 // Lable
                 RowLayout {
-                    height: parent.width / 7
-                    width: 240 * appwindow.officalScale
+                    height: 45
+                    width: parent.width
+                     
                     Item {
                         width: parent.width
-                        Layout.fillWidth: true
                         height: parent.height
+                        Layout.fillWidth: true
+
                         Rectangle {
                             anchors.fill: parent
                             color: "transparent"
@@ -395,7 +408,7 @@ Popup {
 
                         Image {
                             id: labelIcon
-                            width: 25 * myScale
+                            width: 17  
                             height: width
                             anchors.verticalCenter: parent.verticalCenter
                             source: "qrc:/image/row_label.png"
@@ -405,21 +418,21 @@ Popup {
                             id: labelTitle
                             anchors {
                                 left: labelIcon.right
-                                leftMargin: CS.popEventEditor.icon_text_margin
+                                leftMargin: 11
                                 verticalCenter: parent.verticalCenter
                             }
-                            color: "white"
-                            font.pointSize: itemFontSize
-                            text: i18n("Lable")
+                            color: appwindow.isDarkTheme ? "white":"black"
+                            font.pixelSize: itemFontSize
+                            text: i18n("Label")
                         }
 
                         TextField {
                             id: labelTextField
                             anchors {
                                 left: labelTitle.right
-                                leftMargin: 90 * appwindow.officalScale
+                                leftMargin: 10
                                 right: parent.right
-                                rightMargin: CS.popEventEditor.icon_text_margin
+                                rightMargin: 2
                                 verticalCenter: parent.verticalCenter
                             }
 
@@ -431,7 +444,7 @@ Popup {
                             text: selectTitle
                             maximumLength: 100
                             color: "#8e8e93"
-                            font.pointSize: itemFontSize
+                            font.pixelSize: itemFontSize
                             placeholderText: "Alarm"
                             onTextChanged: {
                                 console.log("inputing.....", text)
@@ -450,12 +463,13 @@ Popup {
 
                 // Snooze
                 RowLayout {
-                    height: parent.width / 7
+                    height: 45
                     width: parent.width
+                    
                     Item {
                         width: parent.width
-                        Layout.fillWidth: true
                         height: parent.height
+                        Layout.fillWidth: true
                         Rectangle {
                             anchors.fill: parent
                             id: snooze_bg
@@ -466,27 +480,32 @@ Popup {
                             id: snoozeIcon
                             anchors.verticalCenter: parent.verticalCenter
                             source: "qrc:/image/row_snooze.png"
-                            width: 25 * myScale
+                            width: 17  
                             height: width
                         }
 
                         Kirigami.Label {
                             anchors {
                                 left: snoozeIcon.right
-                                leftMargin: CS.popEventEditor.icon_text_margin
+                                leftMargin: 11
                                 verticalCenter: parent.verticalCenter
                             }
-                            font.pointSize: itemFontSize
-                            color: "white"
-                            text: "Snooze"
+                            font.pixelSize: itemFontSize
+                            color: appwindow.isDarkTheme ? "white":"black"
+                            text: i18n("Snooze")
                         }
 
-                        Switch {
+                        Kirigami.JSwitch {
                             id: snooze_switch
                             checkable: true
                             checked: true
                             onClicked: {
                                 isChanged = true
+                                snoozed = checked
+                            }
+
+                            onCheckedChanged:{
+                                 isChanged = true
                                 snoozed = checked
                             }
 
@@ -517,6 +536,12 @@ Popup {
                         }
                     }
                 }
+
+                Rectangle {
+                    width: 10
+                    height: 20  
+                    color: "transparent"
+                }
             }
         }
 
@@ -534,58 +559,59 @@ Popup {
                 Rectangle {
                     id: alertTtile
                     width: parent.width
-                    height: 104 * appwindow.officalScale
+                    height: 22  
                     color: "transparent"
                     anchors {
                         top: parent.top
-                        topMargin: 30 * myScale
+                        topMargin: 20  
                     }
 
                     Image {
                         id: alertBack
-                        source: "qrc:/image/back.png"
-                        sourceSize.width: 34 * myScale
-                        sourceSize.height: 34 * myScale
+                        source: appwindow.isDarkTheme ? "qrc:/image/back.png" : "qrc:/image/back_l.png" 
+                        sourceSize.width: 22  
+                        sourceSize.height: 22  
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.left: parent.left
-                        anchors.leftMargin: 30 * myScale
+                        anchors.leftMargin: 17  
 
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
                                 columnLayout.visible = true
                                 weekSelector.visible = false
-                                popup.height = 624 * appwindow.officalScale
+                                popup.height = 300  
                             }
                         }
                     }
                     Kirigami.Label {
                         anchors.left: alertBack.right
-                        anchors.leftMargin: 13 * myScale
+                        anchors.leftMargin: 8 
                         anchors.verticalCenter: parent.verticalCenter
-                        font.pointSize: titleFontSize
-                        text: "Repeat"
-                        color: "white"
+                        font.pixelSize: titleFontSize
+                        text: i18n("Repeat")
+                        color: appwindow.isDarkTheme ? "white":"black"
                     }
                 }
 
                 ListView {
                     width: parent.width
-                    height: 650
+                    height: 45* 7
                     model: weekModel
                     clip: true
                     anchors {
                         top: alertTtile.bottom
                         left: parent.left
                         right: parent.right
-                        leftMargin: 40 * myScale
-                        rightMargin: 40 * myScale
+                        leftMargin: 20  
+                        rightMargin: 20 
+                        topMargin: 23 
                     }
 
                     delegate: ToolButton {
                         id: tb_root
                         width: parent.width
-                        height: 90 * appwindow.officalScale
+                        height: 45  
                         checkable: true
                         checked: kclockFormat.isChecked(index, alarmDaysOfWeek)
 
@@ -597,13 +623,13 @@ Popup {
                         Kirigami.Label {
                             anchors.verticalCenter: parent.verticalCenter
                             text: name
-                            color: "white"
-                            font.pointSize: itemFontSize
+                            color: appwindow.isDarkTheme ? "white":"black"
+                            font.pixelSize: itemFontSize
                         }
                         Kirigami.Separator {
                             anchors.bottom: parent.bottom
                             implicitWidth: parent.width
-                            implicitHeight: 1
+                            implicitHeight: 2
                             visible: index != 6
                             color: "#36ffffff"
                         }
@@ -613,8 +639,8 @@ Popup {
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
                             source: "qrc:/image/repeat_ok.png"
-                            sourceSize.width: 44
-                            sourceSize.height: 44
+                            sourceSize.width: 22
+                            sourceSize.height: 22
                         }
                         MouseArea {
                             anchors.fill: parent
@@ -652,7 +678,7 @@ Popup {
             id: lableArea
             visible: false
             width: parent.width
-            height: 624 * appwindow.officalScale
+            height: 315  
 
             ColumnLayout {
                 width: parent.width
@@ -660,23 +686,23 @@ Popup {
                 Item {
                     id: labelAreaTitle
                     width: parent.width
-                    height: 124 * appwindow.officalScale
+                    height: 62  
                     z: 1
                     anchors {
                         top: parent.top
-                        topMargin: 30 * myScale
+                        topMargin: 11  
                         left: parent.left
-                        leftMargin: 30 * myScale
+                        leftMargin: 11  
                     }
 
                     Image {
                         id: labelAreaBack
                         source: "qrc:/image/back.png"
                         anchors.verticalCenter: parent.verticalCenter
+                        sourceSize.width: 17  
+                        sourceSize.height: 17  
                         anchors.left: parent.left
-                        anchors.leftMargin: 20
-                        sourceSize.width: 34 * myScale
-                        sourceSize.height: 34 * myScale
+                        anchors.leftMargin: 11
 
                         MouseArea {
                             anchors.fill: parent
@@ -684,23 +710,23 @@ Popup {
                                 columnLayout.visible = true
                                 weekSelector.visible = false
                                 lableArea.visible = false
-                                popup.height = 624 * appwindow.officalScale
+                                popup.height = 312  
                             }
                         }
                     }
                     Kirigami.Label {
                         anchors.left: labelAreaBack.right
-                        anchors.leftMargin: 10
+                        anchors.leftMargin: 5
                         anchors.verticalCenter: parent.verticalCenter
-                        font.pointSize: titleFontSize
-                        text: "Lable"
-                        color: "white"
+                        font.pixelSize: titleFontSize
+                        text: i18n("Label")
+                        color: appwindow.isDarkTheme ? "white":"black"
                     }
                 }
 
                 Rectangle {
                     width: 10
-                    height: 30 * myScale
+                    height: 30  
                     color: "transparent"
                 }
 
@@ -708,47 +734,44 @@ Popup {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     width: parent.width
-                    height: 140 * appwindow.officalScale
-                    color: "transparent"
+                    height: 70  
 
                     anchors {
                         left: parent.left
-                        leftMargin: 40 * myScale
+                        leftMargin: 20  
                         right: parent.right
-                        rightMargin: 40 * myScale
+                        rightMargin: 20  
                     }
-                    
+                    color: "transparent"
+
                     Image {
+                        width: 17  
+                        height: width
                         id: lableAreaIcon
                         anchors.verticalCenter: parent.verticalCenter
-                        width: 25 * myScale
-                        height: width
                         source: "qrc:/image/row_label.png"
                     }
 
                     TextField {
                         id: eventSummary
-
                         anchors {
                             left: lableAreaIcon.right
-                            leftMargin: 16 * myScale
+                            leftMargin: 8  
                             right: parent.right
                             verticalCenter: parent.verticalCenter
                         }
-                        
-                        maximumLength: 100
-                        color: "white"
-                        font.pointSize: itemFontSize
-                        placeholderText: "Alarm"
-                        wrapMode: Text.WrapAnywhere
-                        text: selectTitle
 
                         background: Rectangle {
                             anchors.fill: parent
                             color: "transparent"
                         }
 
-                       
+                        text: selectTitle
+                        maximumLength: 100
+                        color: appwindow.isDarkTheme ? "white":"black"
+                        font.pixelSize: itemFontSize
+                        placeholderText: "Alarm"
+                        wrapMode: Text.WrapAnywhere
 
                         onTextChanged: {
                             selectTitle = text

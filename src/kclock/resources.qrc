@@ -21,7 +21,7 @@
         <file>qml/JStopwatchPage.qml</file>
         <file>qml/JButton.qml</file>
         <file>qml/JLogo.qml</file>
-        <file>image/background.jpg</file>
+        <file>image/background.png</file>
         <file>qml/JBackground.qml</file>
         <file>qml/JTimerPage.qml</file>
         <file>qml/JAlarmPage.qml</file>
@@ -42,26 +42,44 @@
         <file>qml/JTumbler.qml</file>
         <file>qml/StringUtils.js</file>
         <file>image/footer_alarm_grey.png</file>
+        <file>image/footer_alarm_grey.svg</file>
+        <file>image/footer_alarm_grey_l.png</file>
+        <file>image/footer_alarm_grey_l.svg</file>
         <file>image/footer_alarm_w.png</file>
         <file>image/footer_sw_grey.png</file>
+        <file>image/footer_sw_grey.svg</file>
+        <file>image/footer_sw_grey_l.png</file>
+        <file>image/footer_sw_grey_l.svg</file>
         <file>image/footer_sw_w.png</file>
         <file>image/footer_timer_grey.png</file>
+        <file>image/footer_timer_grey.svg</file>
+        <file>image/footer_timer_grey_l.png</file>
+        <file>image/footer_timer_grey_l.svg</file>
         <file>image/footer_timer_w.png</file>
         <file>image/sw_lap.png</file>
+        <file>image/sw_lap_l.png</file>
         <file>image/sw_pause.png</file>
         <file>image/sw_reset.png</file>
+        <file>image/sw_reset_l.png</file>
         <file>image/sw_start.png</file>
         <file>image/timer_done.png</file>
+        <file>image/timer_done_l.png</file>
         <file>image/timer_resume.png</file>
         <file>image/alarm_add.png</file>
+        <file>image/alarm_add_l.png</file>
         <file>image/back.png</file>
+        <file>image/back_l.png</file>
         <file>image/dlg_ok.png</file>
         <file>image/dlg_close.png</file>
+        <file>image/dlg_ok_l.png</file>
+        <file>image/dlg_close_l.png</file>
         <file>image/timer_new.png</file>
         <file>image/time_wheel_up.png</file>
         <file>image/time_wheel_down.png</file>
         <file>image/big_up.png</file>
+        <file>image/big_up_l.png</file>
         <file>image/big_dow.png</file>
+        <file>image/big_dow_l.png</file>
         <file>assets/Gilroy-Thin.otf</file>
         <file>assets/Gidole-Regular.woff2.ttf</file>
         <file>qml/VagueBackground.qml</file>

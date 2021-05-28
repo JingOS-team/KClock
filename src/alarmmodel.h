@@ -1,7 +1,6 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
- *                Wang Rui <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -52,6 +51,7 @@ public Q_SLOTS:
     void wakeupCallback(int cookie);
 private Q_SLOTS:
     void updateNotifierItem(quint64 time); // update notify icon in systemtray
+    void notifySystemUI(bool visible);
 
 private:
     void removeAlarm(int index);

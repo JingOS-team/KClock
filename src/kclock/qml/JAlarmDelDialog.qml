@@ -31,8 +31,8 @@ Popup {
     property var description: ""
     property int px: 0
     property int py: 0
-    property int popWidth: 400 * appwindow.officalScale
-    property int popHeight: 120 * appwindow.officalScale
+    property int popWidth: 200
+    property int popHeight: 45
     property int selectIndex
 
     x: px
@@ -52,7 +52,7 @@ Popup {
         id: contentItem
         width: parent.width
         height: parent.height
-        radius: 40 * appwindow.officalScale
+        radius: 10
         color: "#a2000000"
 
         anchors.left: parent.left
@@ -61,19 +61,19 @@ Popup {
         Label {
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: parent.left
-            anchors.leftMargin: 40 * appwindow.officalScale
+            anchors.leftMargin: 20
             text: i18n("Delete")
             color: "white"
-            font.pixelSize: 28 * appwindow.officalScale
+            font.pixelSize: 14
         }
 
         Image {
             anchors.verticalCenter: parent.verticalCenter
             anchors.right: parent.right
-             anchors.rightMargin: 40 * appwindow.officalScale
+            anchors.rightMargin: 20
 
-            width: 32 * appwindow.officalScale
-            height: 32 * appwindow.officalScale
+            width: 16
+            height: 16
             source: "qrc:/image/delete.png"
         }
 

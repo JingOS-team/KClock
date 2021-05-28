@@ -1,21 +1,24 @@
-# Jing-KClock <img src="logo.png" width="40"/>
-Jing-KClock is based on KClock [gitlab](https://invent.kde.org/plasma-mobile/kclock/) , a beautifully designed clock that conforms to the JingOS style and has a compatible `pad / desktop`  experience.
+
+# Clock <img src="logo.png" width="40"/>
+Clock is based on KClock [gitlab](https://invent.kde.org/plasma-mobile/kclock/) , a beautifully designed clock that conforms to the JingOS style and has a compatible `pad / desktop`  experience.
 
 KClock is a convergent clock application built with the [Kirigami framework](https://kde.org/products/kirigami/). Although it is mainly targeted for mobile platforms, it can also be used on the desktop.
 
 Originally starting as a fork of [kclock](https://invent.kde.org/plasma-mobile/kclock), KClock has gone through heavy development, and no longer shares the same codebase with  KClock.
 
+- White theme 
+- Bug fixed
 
 ## Features
 * Alarms
 * Stopwatch
+* World Clocks
 * Timers
 
 ## Links
-* Home: www.jingos.com
-* Project page: github.com/jingOS-team/jing-kclock
-* File issues: github.com/jingOS-team/jing-kclock/issues
-* Development channel:  www.jingos.com
+* Project page: https://invent.kde.org/plasma-mobile/kclock
+* File issues: https://invent.kde.org/plasma-mobile/kclock/-/issues
+* Development channel: https://matrix.to/#/#plasmamobile:matrix.org
 
 ## Installing
 This will compile and install kclock, kclockd, and the plasmoids onto the system. When running kclock, make sure that kclockd is running first (it is configured to autostart in sessions).
@@ -29,7 +32,7 @@ sudo make install
 ```
 
 # Components
-Jing-KClock is split into three components: **kclock** (front-end), **kclockd** (backend-daemon), and **plasmoids**.
+KClock is split into three components: **kclock** (front-end), **kclockd** (backend-daemon), and **plasmoids**.
 
 These are individual apps and each has its own binaries. However you don't need to compile them one by one.
 

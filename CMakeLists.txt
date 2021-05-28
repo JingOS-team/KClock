@@ -34,7 +34,7 @@ find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS
     I18n
     CoreAddons
     Plasma
-    Kirigami2
+#    Kirigami2
     Notifications
     DBusAddons
 )
@@ -42,6 +42,7 @@ find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS
 ecm_find_qmlmodule(org.kde.kirigamiaddons.dateandtime 0.1)
 
 add_subdirectory(src)
+ki18n_install(po)
 
 install(PROGRAMS org.kde.kclock.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 install(PROGRAMS org.kde.kclockd-autostart.desktop DESTINATION ${KDE_INSTALL_AUTOSTARTDIR})

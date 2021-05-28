@@ -26,6 +26,7 @@ PathView {
     property variant value
     property int displayFontSize: width/4
     property real displayStep: 0.6 // displayStep > 0
+    signal viewMove(var index)
 
     width: 100; height: 300
     clip: true
@@ -33,8 +34,6 @@ PathView {
     preferredHighlightBegin: 0.5
     preferredHighlightEnd: 0.5
     dragMargin: root.width/2
-    signal viewMove(var index)
-
     Component.onCompleted: findCurrentIndex()
 
     onMovementEnded: {
@@ -44,30 +43,31 @@ PathView {
         findCurrentIndex()
     }
 
-    Keys.onUpPressed: {
-        root.decrementCurrentIndex()
-        value = (model[currentIndex].value)
-    }
 
-    Keys.onDownPressed: {
+    Keys.onUpPressed: {
         root.incrementCurrentIndex()
         value = (model[currentIndex].value)
     }
 
+    Keys.onDownPressed: {
+        root.decrementCurrentIndex()
+        value = (model[currentIndex].value)
+    }
     Rectangle{
         id:backgroud
-        anchors.centerIn: parent
+        visible: bgShow
         width: parent.width
         height: 80
-        visible: bgShow
         color: "blue"
+        anchors.centerIn: parent
         radius: 14
 
         MouseArea {
             anchors.fill: parent
-            onClicked: {
+           onClicked: {
+               console.log("WheelvIEW .....ONCLICK")
                mouse.accepted = true
-            }
+           }
         }
     }
 
@@ -79,7 +79,7 @@ PathView {
             anchors.centerIn: parent
             font.pixelSize: displayFontSize*Number(delegate.PathView.textFontPercent);
             text: modelData.display
-            color: "white"
+            color: appwindow.isDarkTheme ? "white" :"black"
             opacity:  currentIndex == index ? 1 : 0.3
         }
     }
@@ -88,9 +88,13 @@ PathView {
         startX: root.width/2; startY: 0
 
         PathAttribute { name: "textFontPercent"; value: displayStep }
+
         PathLine { x: root.width/2; y: root.height/2 }
+
         PathAttribute { name: "textFontPercent"; value: 1}
+
         PathLine { x: root.width/2; y: root.height }
+
         PathAttribute { name: "textFontPercent"; value: displayStep }
     }
 

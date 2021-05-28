@@ -45,7 +45,8 @@ Kirigami.Page {
     bottomPadding: 0
     globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
 
-    background: Item {}
+    // background: Item {}
+    background:JBackground{}
 
     // topbar action
     Rectangle {
@@ -62,59 +63,60 @@ Kirigami.Page {
             Rectangle {
                 id: controlLayout
                 width: parent.width
-                height: 160 * appwindow.officalScale
+                height: 80  
                 anchors.verticalCenter: parent.verticalCenter
                 color: "transparent"
 
                 Rectangle {
                     id: stopwatchArea
                     width: parent.width / 3
-                    height: parent.height - 20 * appwindow.officalScale
+                    height: parent.height - 20  
                     anchors.centerIn: parent
                     visible: justCreated
                     color: "transparent"
+                    // color:"red"
 
                     Rectangle {
-                        color: "#9a000000"
-                        width: 160 * mScale
+                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
+                        width: 80  
                         height: width
                         anchors {
                             left: parent.left
                             verticalCenter: parent.verticalCenter
                         }
-                        radius: 40 * appwindow.officalScale
+                        radius:  10  
                     }
                     Rectangle {
-                        color: "#9a000000"
-                        width: 160 * mScale
+                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
+                        width: 80  
                         height: width
                         anchors {
                             centerIn: parent
                         }
-                        radius: 40 * appwindow.officalScale
+                        radius:  10  
                     }
                     Rectangle {
-                        color: "#9a000000"
-                        width: 160 * mScale
+                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
+                        width: 80  
                         height: width
                         anchors {
                             right: parent.right
                             verticalCenter: parent.verticalCenter
                         }
-                        radius: 40 * appwindow.officalScale
+                        radius:  10  
                     }
                 }
 
                 JButton {
                     visible: justCreated
-                    btn_width: 160 * appwindow.officalScale
+                    btn_width: 80  
                     btn_height: btn_width
-                    btn_icon: "qrc:/image/sw_reset.png"
+                    btn_icon: appwindow.isDarkTheme ? "qrc:/image/sw_reset.png" : "qrc:/image/sw_reset_l.png"
                     btn_content: "Reset"
                     anchors {
                         verticalCenter: parent.verticalCenter
                         right: stopwatchArea.left
-                        rightMargin: 100 * appwindow.officalScale
+                        rightMargin: 68  
                     }
 
                     onJbtnClick: {
@@ -126,14 +128,14 @@ Kirigami.Page {
 
                 JButton {
                     visible: !justCreated
-                    btn_width: 160 * appwindow.officalScale
+                    btn_width: 80  
                     btn_height: btn_width
-                    btn_icon: "qrc:/image/timer_done.png"
+                    btn_icon:  appwindow.isDarkTheme ? "qrc:/image/timer_done.png" :  "qrc:/image/timer_done_l.png"
                     btn_content: "Done"
                     anchors {
                         verticalCenter: parent.verticalCenter
                         right: stopwatchArea.left
-                        rightMargin: 100 * appwindow.officalScale
+                        rightMargin: 68  
                     }
 
                     onJbtnClick: {
@@ -145,7 +147,7 @@ Kirigami.Page {
 
                 JButton {
                     visible: justCreated
-                    btn_width: 160 * appwindow.officalScale
+                    btn_width: 80  
                     btn_height: btn_width
                     btn_icon: "qrc:/image/timer_new.png"
                     btn_content: "New"
@@ -153,7 +155,7 @@ Kirigami.Page {
                     anchors {
                         verticalCenter: parent.verticalCenter
                         left: stopwatchArea.right
-                        leftMargin: 100 * appwindow.officalScale
+                        leftMargin: 68  
                     }
 
                     onJbtnClick: {
@@ -163,7 +165,7 @@ Kirigami.Page {
                         var length = hoursTumber.currentIndex * 60 * 60
                                 + minutesTumber.currentIndex * 60 + secondsTumber.currentIndex
                         if (length <= 0) {
-                            showPassiveNotification("倒计时时长不合法")
+                            showPassiveNotification(i18n("倒计时时长不合法"))
                             return
                         }
                         timer.length = length
@@ -173,7 +175,7 @@ Kirigami.Page {
 
                 JButton {
                     visible: !justCreated
-                    btn_width: 160 * appwindow.officalScale
+                    btn_width: 80  
                     btn_height: btn_width
                     btn_icon: timer.running ? "qrc:/image/sw_pause.png" : "qrc:/image/sw_start.png"
                     btn_content: timer.running ? "Pause" : "Start"
@@ -181,7 +183,7 @@ Kirigami.Page {
                     anchors {
                         verticalCenter: parent.verticalCenter
                         left: stopwatchArea.right
-                        leftMargin: 100 * appwindow.officalScale
+                        leftMargin: 68  
                     }
 
                     onJbtnClick: {
@@ -193,9 +195,10 @@ Kirigami.Page {
             Rectangle {
                 id: timerLayoutHolder
                 width: parent.width / 3
-                height: parent.height - 20 * appwindow.officalScale
+                height: parent.height - 20  
                 anchors.centerIn: parent
                 color: "transparent"
+                // color: "yellow"
             }
 
             JTimerProgressComponent {
@@ -208,10 +211,11 @@ Kirigami.Page {
             Kirigami.FormLayout {
                 id: form
                 
-                property int fontSize: 50 * appwindow.officalScale
+                property int fontSize: 34  
                 anchors.centerIn: parent
-                implicitWidth: timerLayoutHolder.width - 60 * mScale
-                implicitHeight: (370 + 88 + 2 + 120) * mScale
+                implicitWidth: timerLayoutHolder.width + 2 
+                // implicitHeight: (370 + 88 + 2 + 120)  
+                implicitHeight: 300
                 visible: justCreated
 
                 Rectangle {
@@ -226,25 +230,25 @@ Kirigami.Page {
                         JTumbler {
                             id: hoursTumber
                             widget_h: parent.height
-                            widget_w: 101 * appwindow.officalScale
+                            widget_w: 80 
                             modelValue: 24
                             textSize: form.fontSize
-                            textColor: "white"
+                            textColor:  appwindow.isDarkTheme ? "white" :"black"
                             anchors.left: parent.left
                             visibleItemCountValue: 3
-                            btn_w: 88 * appwindow.officalScale
+                            btn_w: 50 
                             btn_h: btn_w
                         }
 
                         JTumbler {
                             id: minutesTumber
                             widget_h: parent.height
-                            widget_w: 101 * appwindow.officalScale
+                            widget_w: 80  
                             modelValue: 60
                             textSize: form.fontSize
-                            textColor: "white"
+                            textColor:  appwindow.isDarkTheme ? "white" :"black"
                             visibleItemCountValue: 3
-                            btn_w: 88 * appwindow.officalScale
+                            btn_w: 50  
                             btn_h: btn_w
                             anchors.horizontalCenter: parent.horizontalCenter
                             currentIndex: 5
@@ -253,13 +257,13 @@ Kirigami.Page {
                         JTumbler {
                             id: secondsTumber
                             widget_h: parent.height
-                            widget_w: 101 * appwindow.officalScale
+                            widget_w: 80
                             modelValue: 60
                             textSize: form.fontSize
-                            textColor: "white"
+                            textColor:  appwindow.isDarkTheme ? "white" :"black"
                             anchors.right: parent.right
                             visibleItemCountValue: 3
-                            btn_w: 88 * appwindow.officalScale
+                            btn_w: 50  
                             btn_h: btn_w
                         }
                     }
@@ -275,7 +279,7 @@ Kirigami.Page {
                 color: "transparent"
 
                 JDoubleGradientView {
-                    text: "Hours"
+                    text: i18n("Hours")
                     height: parent.height
                     width: height
                     anchors {
@@ -285,7 +289,7 @@ Kirigami.Page {
                 }
 
                 JDoubleGradientView {
-                    text: "Minutes"
+                    text: i18n("Minutes")
                     height: parent.height
                     width: height
                     anchors {
@@ -294,7 +298,7 @@ Kirigami.Page {
                 }
 
                 JDoubleGradientView {
-                    text: "Seconds"
+                    text: i18n("Seconds")
                     height: parent.height
                     width: height
 

@@ -22,6 +22,7 @@ Name[sk]=Hodiny
 Name[sl]=Clock
 Name[sv]=Klocka
 Name[uk]=Годинник
+Name[zh_CN]=时钟
 Name[x-test]=xxClockxx
 Comment=A simple clock application in Kirigami.
 Comment[ca]=Una aplicació senzilla de rellotge creada amb el Kirigami.

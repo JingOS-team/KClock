@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Wang Rui  <wangrui@jingos.com>
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -24,8 +24,8 @@ Menu {
     id: menu
 
     property real mScale: appwindow.officalScale * 1.3
-    property int mwidth: 308 * mScale
-    property int mheight: 69 * mScale
+    property int mwidth: 308 
+    property int mheight: 45 
     property var separatorColor: "#80FFFFFF"
     property int separatorWidth: mwidth * 9 / 10
     property int selectIndex
@@ -35,7 +35,7 @@ Menu {
     signal deleteClicked
 
     Action {
-        text: qsTr("Delete")
+        text: i18n("Delete")
         checkable: true
         checked: false
         onCheckedChanged: {
@@ -60,27 +60,26 @@ Menu {
             Text {
                 anchors {
                     left: parent.left
-                    verticalCenter: parent.verticalCenter
                 }
-                leftPadding: 31 * mScale
-                font.pointSize: 2 + theme.defaultFont.pointSize
+                leftPadding: 20
+                text: menuItem.text
+                font.pixelSize: 17
+                anchors.verticalCenter: parent.verticalCenter
                 color: menuItem.highlighted ? "#ffffff" : "#ffffff"
                 horizontalAlignment: Text.AlignLeft
                 verticalAlignment: Text.AlignVCenter
                 elide: Text.ElideRight
-                text: menuItem.text
             }
 
             Image {
                 id: rightImage
-
+                sourceSize.width: 16
+                sourceSize.height: 16
                 anchors {
                     right: parent.right
-                    rightMargin: 31 * mScale
-                    verticalCenter: parent.verticalCenter
+                    rightMargin: 20
                 }
-                sourceSize.width: 32
-                sourceSize.height: 32
+                anchors.verticalCenter: parent.verticalCenter
                 source: "qrc:/image/menu_delete.png"
             }
         }
@@ -96,13 +95,13 @@ Menu {
     background: Rectangle {
         width: mwidth
         color: "#80000000"
-        radius: 18 * mScale
+        radius: 10
         VagueBackground {
             anchors.fill: parent
             sourceView: root
             mouseX: blurX
             mouseY: blurY
-            coverRadius: 18 * mScale
+            coverRadius: 10
         }
     }
 }

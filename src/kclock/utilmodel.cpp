@@ -22,8 +22,13 @@
 
 #include <QString>
 #include <QTimeZone>
+#include <KSharedConfig>
+#include <KConfigGroup>
 
 #include <KLocalizedString>
+
+#define FORMAT24H "HH:mm:ss"
+#define FORMAT12H "h:mm:ss ap"
 
 QString UtilModel::getCurrentTimeZoneName()
 {
@@ -41,6 +46,15 @@ void UtilModel::setApplicationLoaded(bool applicationLoaded)
         m_applicationLoaded = applicationLoaded;
         Q_EMIT applicationLoadedChanged();
     }
+}
+
+bool UtilModel::is24HourFormat()
+{
+    KSharedConfig::Ptr  m_localeConfig = KSharedConfig::openConfig(QStringLiteral("kdeglobals"), KConfig::SimpleConfig);
+    KConfigGroup  m_localeSettings = KConfigGroup(m_localeConfig, "Locale");
+
+    QString timeFormat =  m_localeSettings.readEntry("TimeFormat", QStringLiteral(FORMAT24H));
+    return (timeFormat == FORMAT24H) ;
 }
 
 long long UtilModel::calculateNextRingTime(int hours, int minutes, int daysOfWeek, int snooze)

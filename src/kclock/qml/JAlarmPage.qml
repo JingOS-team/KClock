@@ -29,15 +29,23 @@ Kirigami.Page {
     id: root
     signal alarmCheckedChange(bool checked)
     property bool clockShow: false
-    property real myScale: appwindow.officalScale * 1.3
+    // property real myScale: appwindow.officalScale * 1.3
 
-    background: Item {}
+    // background: Item {}
+    background:JBackground{}
 
     leftPadding: 0
     rightPadding: 0
     topPadding: 0
     bottomPadding: 0
     globalToolBarStyle : Kirigami.ApplicationHeaderStyle.None
+
+    property int marginTitle2Top : 44 
+        property int marginItem2Title : 36
+        property int marginLeftAndRight : 20 
+        property int marginItem2Top : 24
+        property int radiusCommon: 10 
+        property int fontNormal: 14 
 
     Rectangle {
         id: alarm_layout
@@ -50,31 +58,31 @@ Kirigami.Page {
             height: root.height - toolbarHeight
             color: "transparent"
 
-            Rectangle {
-                anchors.fill: parent
-                visible: clockShow
-                color: "transparent"
-                Image {
-                    id: clockbg
-                    anchors.centerIn: parent
-                    source: "qrc:/image/watch_pad.png"
-                    width: 736 * appwindow.officalScale
-                    height: width
-                }
+            // Rectangle {
+            //     anchors.fill: parent
+            //     visible: clockShow
+            //     color: "transparent"
+            //     Image {
+            //         id: clockbg
+            //         anchors.centerIn: parent
+            //         source: "qrc:/image/watch_pad.png"
+            //         width: 736 * appwindow.officalScale
+            //         height: width
+            //     }
 
-                Item {
-                    id: clockItem
-                    anchors.centerIn: parent
-                    Layout.alignment: Qt.AlignCenter
-                    width: (736 - 80) * appwindow.officalScale
-                    height: width
-                    AnalogClock {
-                        id: analogClock
-                        clockRadius: clockItem.width / 2
-                    }
-                }
+            //     Item {
+            //         id: clockItem
+            //         anchors.centerIn: parent
+            //         Layout.alignment: Qt.AlignCenter
+            //         width: (736 - 80) * appwindow.officalScale
+            //         height: width
+            //         AnalogClock {
+            //             id: analogClock
+            //             clockRadius: clockItem.width / 2
+            //         }
+            //     }
 
-            }
+            // }
 
             Rectangle {
                 anchors.fill: parent
@@ -108,17 +116,17 @@ Kirigami.Page {
                 Rectangle {
                     id: btn_add
                     width: parent.width /3
-                    height: 48
+                    height: 22
                     anchors.left: parent.left
-                    anchors.leftMargin: 20 * appwindow.officalScale
+                    anchors.leftMargin: 10
                     anchors.bottom: parent.bottom
                     color: "transparent"
 
                     Image {
                         id: addIcon
-                        source: "qrc:/image/alarm_add.png"
-                        width: 44 * appwindow.officalScale
-                        height: 44 * appwindow.officalScale
+                        source: appwindow.isDarkTheme ? "qrc:/image/alarm_add.png" : "qrc:/image/alarm_add_l.png"
+                        width: 22
+                        height: 22
                         anchors.left: parent.left
                         anchors.verticalCenter: parent.verticalCenter
                     }
@@ -126,8 +134,8 @@ Kirigami.Page {
                     Label {
                         id: addText
                         text: i18n("Add Alarm")
-                        font.pixelSize: 28
-                        color: "white"
+                        font.pixelSize: 14
+                        color: appwindow.isDarkTheme ? "white":"black"
                         anchors.left: addIcon.right
                         anchors.leftMargin: 5
                         anchors.verticalCenter: parent.verticalCenter
@@ -141,11 +149,11 @@ Kirigami.Page {
                             console.log("py = " + btn_add.y)
 
                             popupEventEditor.px=btn_add.x
-                            popupEventEditor.py=btn_add.y + 60*myScale
+                            popupEventEditor.py=btn_add.y +  22+ 26
                             var kk = mapToItem(root , btn_add.x , btn_add.y)
                             popupEventEditor.blurX = kk.x
                             popupEventEditor.blurY = kk.y
-                            popupEventEditor.popTitle = "Add Alarm"
+                            popupEventEditor.popTitle = i18n("Add Alarm")
                             popupEventEditor.open()
                         }
                     }
@@ -165,7 +173,7 @@ Kirigami.Page {
                 anchors.left: parent.left
                 anchors.bottom: parent.bottom
                 width: parent.width
-                height: parent.height / 9
+                height: parent.height / 10
                 color: "transparent"
                 z: 20
             }
@@ -177,6 +185,7 @@ Kirigami.Page {
                 anchors.right: parent.right
                 anchors.bottom: bottomLayout.top
                 anchors.top: topLayout.bottom
+                anchors.topMargin: 26
                 Layout.fillHeight: true
                 color: "transparent"
                 clip: true
@@ -184,15 +193,15 @@ Kirigami.Page {
                 GridView {
                     id: alarmGridView
                     model: alarmModel
-                    cellWidth: parent.width / 2 - 40
-                    cellHeight:  alarmLayout.height / 9 * 7 / 3
+                    cellWidth: parent.width / 2 - 10
+                    cellHeight:  rightLayout.height / 3
                     clip: true
                     delegate: AlarmItemView {}
-                    height: 960 * appwindow.officalScale
-                    width: 920 * appwindow.officalScale
+                    height: rightLayout.height  
+                    width: rightLayout.width
                     Layout.fillHeight: true
                     anchors.left: parent.left
-                    anchors.leftMargin: 20 * appwindow.officalScale
+                    anchors.leftMargin: 20
                     anchors.top: parent.top
                     boundsBehavior: Flickable.StopAtBounds
                 }
