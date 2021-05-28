@@ -23,17 +23,18 @@ import QtGraphicalEffects 1.12
 
 Item {
 
-    property real mScale: appwindow.officalScale * 1.3
+    // property real mScale: appwindow.officalScale * 1.3
     property alias text: content_txt.text
 
-    width:  160 * mScale
+    width:  80
     height: width
 
     Rectangle {
+
         id:_rect
         anchors.fill: parent
         color: "transparent"
-        radius: 40 * appwindow.officalScale
+        radius: 10 
 
         layer.enabled: true
         layer.effect: OpacityMask {
@@ -46,7 +47,7 @@ Item {
 
         Rectangle {
             width: parent.width
-            height: 50 * appwindow.officalScale
+            height: 50  
             color: "transparent"
 
             anchors {
@@ -61,11 +62,11 @@ Item {
                 gradient: Gradient {
                     GradientStop {
                         position: 0.0
-                        color: "#ff000000"
+                        color: appwindow.isDarkTheme ? "#ff000000" :"#ffffffff"
                     }
                     GradientStop {
                         position: 0.3
-                        color: "#cf000000"
+                        color: appwindow.isDarkTheme ? "#cf000000" :"#cfffffff"
                     }
                     GradientStop {
                         position: 1.0
@@ -77,7 +78,7 @@ Item {
 
         Rectangle {
             width: parent.width
-            height: 50 * appwindow.officalScale
+            height: 50  
             color: "transparent"
             clip: true
 
@@ -97,11 +98,11 @@ Item {
                     }
                     GradientStop {
                         position: 0.7
-                        color: "#ff000000"
+                        color: appwindow.isDarkTheme ? "#ff000000" :"#ffffffff"
                     }
                     GradientStop {
                         position: 1.0
-                        color: "#ff000000"
+                        color: appwindow.isDarkTheme ? "#ff000000" :"#ffffffff"
                     }
                 }
             }
@@ -109,12 +110,12 @@ Item {
 
         Text {
             id:content_txt
-            text: "Hours"
-            color: "#6affffff"
-            font.pixelSize: 22 * appwindow.officalScale
+            text: i18n("Hours")
+            color: appwindow.isDarkTheme ? "#6affffff": "#ff000000"
+            font.pixelSize: 11  
             anchors {
                 bottom: parent.bottom
-                bottomMargin: 13 * appwindow.officalScale
+                bottomMargin: 7
                 horizontalCenter: parent.horizontalCenter
             }
         }

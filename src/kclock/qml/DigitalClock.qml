@@ -25,16 +25,28 @@ import "StringUtils.js" as StringUtils
 Item {
     id: root
 
-    property int digitalFontSize: appwindow.fontSize + 118
-    property int amFontSize: appwindow.fontSize + 6
+    // property int digitalFontSize: appwindow.fontSize + 118
+    // property int amFontSize: appwindow.fontSize + 6
+    property int digitalFontSize: 90
+    property int amFontSize: 22
     // 12 / 24
-    property bool is12HoursType: true
+    property bool is12HoursType: utilModel.is24HourFormat()
 
     implicitHeight: parent.height
     implicitWidth: parent.width
 
+    Component.onCompleted: {
+        console.log("111是不是24 小时....." , is12HoursType)
+        getAmPm()
+    }
+
+    onVisibleChanged: {
+        is12HoursType = utilModel.is24HourFormat()
+         console.log("222是不是24 小时....." , is12HoursType)
+    }
+
     function getHoursValue(hours) {
-        if (is12HoursType) {
+        if (!is12HoursType) {
             if (hours == 0) {
                 return 12
             } else if (hours <= 12 && hours > 0) {
@@ -47,60 +59,88 @@ Item {
         }
     }
 
+    function getAmPm(){
+        // Qt.formatDateTime(new Date(), "hh-mm-ss")
+        var dateValue = new Date() 
+        var hours = dateValue.getHours()
+        // var timeValue =  Qt.formatDateTime(new Date(), "hh:mm ddd")
+        console.log(" --- 当前的小时::: " , hours)
+        // console.log(" 当前的ooo::: " , timeValue)
+        if(hours > 12){
+            return true  
+        }else {
+            return false 
+        }
+    }
+
     Rectangle {
         width: parent.width
         height: parent.height
         color: "transparent"
-        RowLayout {
-            anchors.centerIn: parent
-            anchors.horizontalCenter: parent.horizontalCenter
-            Layout.alignment: Qt.AlignCenter
-            spacing: 0
+        Rectangle {
+            width: parent.width
+            height : digitalFontSize
+            color: "transparent"
+            anchors.verticalCenter : parent.verticalCenter
 
-            Text {
-                font.pointSize: digitalFontSize
-                font.family: "Gilroy Thin"
-                font.weight: Font.Light
-                text: getHoursValue(kclockFormat.hours)
-                color: "white"
+            RowLayout {
+                anchors.centerIn: parent
+                anchors.horizontalCenter: parent.horizontalCenter
                 Layout.alignment: Qt.AlignCenter
-            }
+                height:digitalFontSize
+                spacing: 0
 
-            Text {
-                font.pointSize: digitalFontSize
-                text: ":"
-                font.family: "Gilroy Thin"
-                color: "white"
-                font.weight: Font.Light
-                Layout.alignment: Qt.AlignCenter
-            }
+                Text {
+                    font.pixelSize: digitalFontSize
+                    font.family: "Gilroy Thin"
+                    font.weight: Font.Light
+                    text: getHoursValue(kclockFormat.hours)
+                    color: appwindow.isDarkTheme ? "white":"black"
+                    Layout.alignment: Qt.AlignCenter
+                    height:digitalFontSize
+                }
 
-            Text {
-                id: txt_minutes
-                font.weight: Font.Light
-                font.pointSize: digitalFontSize
-                font.family: "Gilroy Thin"
-                text: kclockFormat.minutes < 10 ? "0" + kclockFormat.minutes : kclockFormat.minutes
-                color: "white"
-                Layout.alignment: Qt.AlignCenter
-            }
+                Text {
+                    font.pixelSize: digitalFontSize
+                    text: ":"
+                    font.family: "Gilroy Thin"
+                    color: appwindow.isDarkTheme ? "white":"black"
+                    font.weight: Font.Light
+                    Layout.alignment: Qt.AlignCenter
+                    height:digitalFontSize
+                }
 
-            Text {
-                font.pointSize: amFontSize
-                text: kclockFormat.hours > 12 ? "PM" : "AM"
-                color: "white"
-                anchors.top: txt_minutes.top
-                anchors.topMargin: 34 * appwindow.officalScale
-                visible: is12HoursType
-            }
+                Text {
+                    id: txt_minutes
+                    font.weight: Font.Light
+                    font.pixelSize: digitalFontSize
+                    font.family: "Gilroy Thin"
+                    text: kclockFormat.minutes < 10 ? "0" + kclockFormat.minutes : kclockFormat.minutes
+                    color: appwindow.isDarkTheme ? "white":"black"
+                    Layout.alignment: Qt.AlignCenter
+                    height:digitalFontSize
+                }
 
-            MouseArea {
-                anchors.fill: parent
+                Text {
+                    id: am_txt
+                    font.pixelSize: amFontSize
+                    text: getAmPm() ?  i18n("PM") : i18n("AM")
+                    color: appwindow.isDarkTheme ? "white":"black"
+                    anchors.top: txt_minutes.top
+                    anchors.topMargin: am_txt.height /2 
+                    visible: !is12HoursType
+                    height:amFontSize
+                }
 
-                onClicked: {
-                    is12HoursType = !is12HoursType
+                MouseArea {
+                    anchors.fill: parent
+
+                    onClicked: {
+                        is12HoursType = !is12HoursType
+                    }
                 }
             }
         }
+        
     }
 }

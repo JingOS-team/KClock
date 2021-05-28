@@ -44,6 +44,7 @@ public:
     
     long long calculateNextRingTime(int hours, int minutes, int daysOfWeek, int snooze = 0);
     QString timeToRingFormatted(const long long &timestamp);
+    Q_INVOKABLE bool is24HourFormat();
     
 private:
     UtilModel(){}; // explicitly declare it private

@@ -1,6 +1,6 @@
 /*
  *   SPDX-FileCopyrightText: 2019 Dimitris Kardarakos <dimkard@posteo.net>
-*                            2021 Rui Wang <wangrui@jingos.com>
+ *
  *   SPDX-License-Identifier: LGPL-2.0-or-later
  */
 

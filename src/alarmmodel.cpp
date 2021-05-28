@@ -24,7 +24,10 @@
 #include <QDBusConnection>
 #include <QDBusReply>
 #include <QLocale>
+#include <QDebug>
 #include <klocalizedstring.h>
+
+#include <QDBusMessage>
 
 #include "alarmmodel.h"
 #include "alarmmodeladaptor.h"
@@ -123,6 +126,7 @@ void AlarmModel::scheduleAlarm()
 
 void AlarmModel::wakeupCallback(int cookie)
 {
+    qDebug() << "==========> wakeupCallback ";
     if (this->m_cookie == cookie) {
         for (auto alarm : this->alarmsToBeRung) {
             alarm->ring();
@@ -197,6 +201,7 @@ void AlarmModel::addAlarm(int hours, int minutes, int daysOfWeek, QString name, 
 
     m_alarmsList.insert(i, alarm);
     qDebug() << "schedule Alarm";
+    alarm->save();
     scheduleAlarm();
     qDebug() << "alarm added";
     Q_EMIT alarmAdded(alarm->uuid().toString());
@@ -205,13 +210,27 @@ void AlarmModel::addAlarm(int hours, int minutes, int daysOfWeek, QString name, 
 void AlarmModel::updateNotifierItem(quint64 time)
 {
     if (time == 0) {
+        qDebug()<< "没有闹铃了";
+        notifySystemUI(false);
         m_notifierItem->setStatus(KStatusNotifierItem::Passive);
         m_notifierItem->setToolTip(QStringLiteral("clock"), QStringLiteral("Clock"), QStringLiteral());
     } else {
+        qDebug()<< "现在有闹铃了";
+        notifySystemUI(true);
         auto dateTime = QDateTime::fromSecsSinceEpoch(time).toLocalTime();
         m_notifierItem->setStatus(KStatusNotifierItem::Active);
         m_notifierItem->setToolTip(QStringLiteral("clock"),
                                    QStringLiteral("KClock"),
                                    xi18nc("@info", "Alarm: <shortcut>%1</shortcut>", QLocale::system().standaloneDayName(dateTime.date().dayOfWeek()) + QLocale::system().toString(dateTime.time(), QLocale::ShortFormat)));
     }
+}
+
+void AlarmModel::notifySystemUI(bool visible) {
+    // Q_EMIT systemIconChanged(visible);
+    QDBusMessage msg = QDBusMessage::createSignal(
+        "/jingos/alarm/statusbaricon",  
+        "jingos.alarm.statusbaricon", 
+        "getVisible");
+    msg << visible;
+    QDBusConnection::sessionBus().send(msg);
 }

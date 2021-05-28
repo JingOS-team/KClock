@@ -27,29 +27,29 @@ Rectangle {
     id: root
 
     property bool status: true
-    property string statusPress: "#ffffff"
+    property string statusPress: appwindow.isDarkTheme ? "#ffffff" :"#000000"
     property string statusRelease: "#5e5e5e"
     property alias btn_content: btn_content_widget.text
     property alias btn_icon: btn_icon_widget.source
-    property int btn_width: 160 * appwindow.officalScale
-    property int btn_height: 160 * appwindow.officalScale
-    property double iconSize: 48 * appwindow.officalScale
-    property double shrinkIconSize: 40 * appwindow.officalScale
-    property double fontSize: appwindow.fontSize + 6
-    property double shrinkFontSize: Kirigami.Theme.defaultFont.pointSize * 0.7
+    property int btn_width: 160  
+    property int btn_height: 160  
+    property double iconSize: 22  
+    property double shrinkIconSize: 16 
+    property double fontSize: 17
+    property double shrinkFontSize: 12
 
     signal jbtnClick
     width: btn_width
     height: btn_height
 
-    color: "#5e000000"
-    radius: 40 * appwindow.officalScale
+    color: appwindow.isDarkTheme ? "#5e000000" : "white"
+    radius: 10
 
     Rectangle {
         id: cover_bg
         anchors.fill: parent
         color: "transparent"
-        radius: 40 * appwindow.officalScale
+        radius: 10
     }
 
     Behavior on color {
@@ -143,7 +143,7 @@ Rectangle {
 
         Rectangle {
             width: parent.width
-            height: 10 * appwindow.officalScale
+            height: 4  
             color: "transparent"
         }
 
@@ -151,16 +151,15 @@ Rectangle {
             id: btn_content_widget
             color: status ? statusPress : statusRelease
             text: ""
-            font.pixelSize: 30 * appwindow.officalScale
             Layout.alignment: Qt.AlignCenter
             horizontalAlignment: Text.AlignVCenter
             elide: Text.ElideLeft
-            font.pointSize: root.fontSize
+            font.pixelSize: root.fontSize
 
             ColorAnimation on color {
                 easing.type: Easing.Linear
             }
-            NumberAnimation on font.pointSize {
+            NumberAnimation on font.pixelSize {
                 id: fontAnim
                 easing.type: Easing.Linear
                 duration: 130

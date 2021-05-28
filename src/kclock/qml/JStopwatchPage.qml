@@ -33,24 +33,25 @@ Kirigami.Page {
 
     property bool running: false
     property int elapsedTime: stopwatchTimer.elapsedTime
-    property int stopwatchFontSize: appwindow.fontSize + 108
+    property int stopwatchFontSize: 90
     property alias sLeft: stopwatchArea.left
     property alias sRight: stopwatchArea.right
     property alias sTop: stopwatchArea.top
     property alias sBottom: stopwatchArea.bottom
-    property int lapTitleFontSize: appwindow.fontSize - 3
-    property int listitemFontSize: appwindow.fontSize + 6
-    property real myScale: appwindow.officalScale * 1.3
 
-    anchors.margins: 0
+    property int lapTitleFontSize: 11
+    property int listitemFontSize: 17
+
     Layout.fillWidth: true
     leftPadding: 0
     rightPadding: 0
     topPadding: 0
     bottomPadding: 0
     globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
-    
-    background: Item {}
+    anchors.margins: 0
+
+    // background: Item {}
+    background:JBackground{}
 
     function getStopwatchTime(result) {
 
@@ -75,12 +76,17 @@ Kirigami.Page {
 
     function number(data, val) {
         var numbers = ''
+        // 保留几位小数后面添加几个0
         for (var i = 0; i < val; i++) {
             numbers += '0'
         }
         var s = 1 + numbers
+        // 如果是整数需要添加后面的0
         var spot = "." + numbers
+        // Math.round四舍五入
+        //  parseFloat() 函数可解析一个字符串，并返回一个浮点数。
         var value = Math.round(parseFloat(data) * s) / s
+        // 从小数点后面进行分割
         var d = value.toString().split(".")
         if (d.length == 1) {
             value = value.toString() + spot
@@ -95,8 +101,8 @@ Kirigami.Page {
     }
 
     Rectangle {
-        id: contentLayout
         anchors.fill: parent
+        id: contentLayout
         color: "#00000000"
 
         JLogo {}
@@ -108,29 +114,29 @@ Kirigami.Page {
             Rectangle {
                 id: controlLayout
                 width: parent.width
-                height: 200 * appwindow.officalScale
+                height: 100  
                 anchors.verticalCenter: parent.verticalCenter
                 color: "transparent"
 
                 Rectangle {
                     id: stopwatchArea
                     width: parent.width / 8 * 3
-                    height: parent.height - 20 * appwindow.officalScale
+                    height: parent.height - 2 
                     anchors.centerIn: parent
                     color: "transparent"
                 }
 
                 JButton {
+                    btn_width: 80  
+                    btn_height: btn_width
+                    btn_icon: appwindow.isDarkTheme ? "qrc:/image/sw_lap.png" : "qrc:/image/sw_lap_l.png"
+                    btn_content: "Lap"
+                    visible: running
                     anchors {
                         verticalCenter: parent.verticalCenter
                         right: stopwatchArea.left
-                        rightMargin: 100 * appwindow.officalScale
+                        rightMargin: 62
                     }
-                    btn_width: 160 * appwindow.officalScale
-                    btn_height: btn_width
-                    btn_icon: "qrc:/image/sw_lap.png"
-                    btn_content: "Lap"
-                    visible: running
 
                     onJbtnClick: {
                         roundModel.insert(0, {
@@ -140,16 +146,16 @@ Kirigami.Page {
                 }
 
                 JButton {
+                    btn_width: 80  
+                    btn_height: btn_width
+                    btn_icon: appwindow.isDarkTheme ? "qrc:/image/sw_reset.png":"qrc:/image/sw_reset_l.png"
+                    btn_content: "Reset"
+                    visible: !running
                     anchors {
                         verticalCenter: parent.verticalCenter
                         right: stopwatchArea.left
-                        rightMargin: 100 * appwindow.officalScale
+                        rightMargin: 62 
                     }
-                    btn_width: 160 * appwindow.officalScale
-                    btn_height: btn_width
-                    btn_icon: "qrc:/image/sw_reset.png"
-                    btn_content: "Reset"
-                    visible: !running
 
                     onJbtnClick: {
                         console.log("Hello World222")
@@ -159,16 +165,24 @@ Kirigami.Page {
                 }
 
                 JButton {
+                    btn_width: 80  
+                    btn_height: btn_width
+                    btn_icon: running ? "qrc:/image/sw_pause.png" : "qrc:/image/sw_start.png"
+                    btn_content: running ? "Stop" : "Start"
+                    statusPress:
+                    {
+                        if(appwindow.isDarkTheme){
+                            running ? "#e95b4e" : "#39c17b"
+                        }else {
+                            running ? "#e95b4e" : "#39c17b"
+                        }
+                    }
+                         
                     anchors {
                         verticalCenter: parent.verticalCenter
                         left: stopwatchArea.right
-                        leftMargin: 100 * appwindow.officalScale
+                        leftMargin: 62  
                     }
-                    btn_width: 160 * appwindow.officalScale
-                    btn_height: btn_width
-                    btn_icon: running ? "qrc:/image/sw_pause.png" : "qrc:/image/sw_start.png"
-                    btn_content: running ? "Pause" : "Start"
-                    statusPress: running ? "#e95b4e" : "#39c17b"
 
                     onJbtnClick: {
                         //                    console.log("Hello World" , isStopRunning())
@@ -181,49 +195,51 @@ Kirigami.Page {
             Rectangle {
                 id: stopwatchAreaHold
                 width: parent.width / 8 * 3
-                height: 180 * appwindow.officalScale
+                height: 90  
                 anchors.centerIn: parent
                 color: "transparent"
             }
+
             Rectangle {
                 id: stopwatchAreaHoldNew
                 width: parent.width / 8 * 3
-                height: 180 * appwindow.officalScale
+                height: 90  
                 anchors.centerIn: parent
-                anchors.verticalCenterOffset: -200 * appwindow.officalScale
+                anchors.verticalCenterOffset: -100  
                 color: "transparent"
             }
 
             Rectangle {
                 id: lapTitleLayout
                 width: parent.width / 8 * 3
-                height: 60 * appwindow.officalScale
+                height: 14 
                 anchors.centerIn: parent
-                anchors.verticalCenterOffset: -40 * appwindow.officalScale
+                anchors.verticalCenterOffset: -10  
                 color: "transparent"
+                            //    color: "yellow"
                 z: 20
                 visible: running || roundModel.count > 0
 
                 Label {
                     text: i18n("LAP NO.")
-                    color: "#aaffffff"
-                    font.pointSize: lapTitleFontSize
+                    color: appwindow.isDarkTheme ? "#aaffffff":"#993C3F48"
+                    font.pixelSize: lapTitleFontSize
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 Label {
                     text: i18n("SPLIT")
-                    color: "#aaffffff"
-                    font.pointSize: lapTitleFontSize
+                    color: appwindow.isDarkTheme ? "#aaffffff":"#993C3F48"
+                    font.pixelSize: lapTitleFontSize
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 Label {
                     text: i18n("TOTAL")
-                    color: "#aaffffff"
-                    font.pointSize: lapTitleFontSize
+                    color: appwindow.isDarkTheme ? "#aaffffff":"#993C3F48"
+                    font.pixelSize: lapTitleFontSize
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -243,65 +259,66 @@ Kirigami.Page {
 
                 RowLayout {
                     id: timeLabels
+                    //                Layout.alignment: Qt.AlignVCenter
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.verticalCenterOffset: -10 * appwindow.officalScale
+                    anchors.verticalCenterOffset: -5
                     anchors.horizontalCenter: parent.horizontalCenter
 
                     Text {
                         id: minutesText
-                        width: 172 * myScale
+                        width: 172  
                         text: stopwatchTimer.minutes
-                        color: "white"
-                        font.pointSize: stopwatchFontSize
+                        color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                        font.pixelSize: stopwatchFontSize
                         font.family: clockFont.name
                         Layout.alignment: Qt.AlignVCenter
                         anchors {
                             right: left_tag.left
-                            rightMargin: 2 * myScale
+                            rightMargin: 2  
                         }
                     }
                     Text {
                         id: left_tag
                         text: ":"
-                        color: "white"
-                        font.pointSize: stopwatchFontSize
+                        color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                        font.pixelSize: stopwatchFontSize
                         font.family: clockFont.name
                         anchors {
                             right: sw_minutes.left
-                            rightMargin: 2 * myScale
+                            rightMargin: 2  
                         }
                     }
                     Text {
                         id: sw_minutes
-                        anchors.centerIn: parent
-                        width: 172 * myScale
-                        color: "white"
-                        font.pointSize: stopwatchFontSize
-                        font.family: clockFont.name
                         text: stopwatchTimer.seconds
+                        width: 172  
+                        color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                        font.pixelSize: stopwatchFontSize
+                        font.family: clockFont.name
+                        anchors.centerIn: parent
                     }
                     Text {
                         id: right_tag
+                        text: "."
+                        color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                        font.pixelSize: stopwatchFontSize
+                        font.family: clockFont.name
                         anchors {
                             left: sw_minutes.right
-                            leftMargin: 2 * myScale
+                            leftMargin: 2  
                         }
-                        text: "."
-                        color: "white"
-                        font.pointSize: stopwatchFontSize
-                        font.family: clockFont.name
                     }
                     Text {
+                        width: 172  
                         id: secondsText
+                        text: stopwatchTimer.small
+                        color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                        font.pixelSize: stopwatchFontSize
+                        font.family: clockFont.name
                         anchors {
                             left: right_tag.right
-                            leftMargin: 2 * myScale
+                            leftMargin: 2  
                         }
-                        width: 172 * myScale
-                        text: stopwatchTimer.small
-                        color: "white"
-                        font.pointSize: stopwatchFontSize
-                        font.family: clockFont.name
                     }
                 }
             }
@@ -309,20 +326,21 @@ Kirigami.Page {
             ListView {
                 id: modellist
                 model: roundModel
-                spacing: 31 * myScale
+                spacing: 20 
                 anchors.left: lapTitleLayout.left
                 anchors.right: lapTitleLayout.right
-                anchors.topMargin: 28 * myScale
+                anchors.topMargin: 20
                 anchors.top: lapTitleLayout.bottom
                 anchors.bottom: contentLayout.bottom
-                anchors.bottomMargin: 137 * appwindow.officalScale
-                height: 282 * myScale
+                anchors.bottomMargin: 85
+                height: 164  
                 Layout.fillHeight: true
 
+                //            ScrollBar.vertical: ScrollBar {}
                 delegate: Item {
 
                     width: parent.width
-                    height: 42
+                    height: 21
 
                     RowLayout {
                         width: modellist.width
@@ -334,25 +352,27 @@ Kirigami.Page {
                             implicitWidth: 210
                             implicitHeight: 33
                             color: "transparent"
+                            // color:"red"
                             Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                             Label {
                                 anchors.verticalCenter: parent.verticalCenter
                                 anchors.left: parent.left
-                                color: "white"
-                                font.pointSize: listitemFontSize
-                                text: i18n("LAP") + (roundModel.count - model.index)
+                                color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                                font.pixelSize: listitemFontSize
+                                text: i18n("LAP %1" ,  (roundModel.count - model.index))
                             }
                         }
 
                         Rectangle {
-                            implicitWidth: 210 * appwindow.officalScale
+                            implicitWidth: 210  
                             implicitHeight: 28
                             color: "transparent"
+                            // color:"green"
                             anchors.centerIn: parent
                             Label {
                                 anchors.centerIn: parent
-                                color: "white"
-                                font.pointSize: listitemFontSize
+                                color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                                font.pixelSize: listitemFontSize
                                 text: index == roundModel.count - 1 ? getStopwatchTime(
                                                                           parseFloat(model.time / 1000).toFixed(2)) : getStopwatchTime(parseFloat((model.time - roundModel.get(index + 1).time) / 1000).toFixed(2))
                             }
@@ -362,12 +382,13 @@ Kirigami.Page {
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
                             color: "transparent"
+                            // color: "blue"
                             Layout.fillHeight: true
                             Label {
                                 anchors.right: parent.right
                                 anchors.verticalCenter: parent.verticalCenter
-                                color: "white"
-                                font.pointSize: listitemFontSize
+                                color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                                font.pixelSize: listitemFontSize
                                 text: getStopwatchTime(
                                           parseFloat(
                                               model.time / 1000).toFixed(2))

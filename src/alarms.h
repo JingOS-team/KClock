@@ -1,7 +1,6 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
- *                Wang Rui <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -167,6 +166,7 @@ public:
     }
 Q_SIGNALS:
     void nameChanged();
+    Q_SCRIPTABLE void systemIconChanged(bool visible);
     void enabledChanged();
     void hoursChanged();
     void minutesChanged();
@@ -175,7 +175,7 @@ Q_SIGNALS:
     void ringtonePathChanged();
     Q_SCRIPTABLE void propertyChanged(QString property);
     Q_SCRIPTABLE void alarmChanged();
-private Q_SLOTS:
+public Q_SLOTS:
     void save(); // serialize and save to config
 private:
     void initialize(AlarmModel *parent); // called after object construction

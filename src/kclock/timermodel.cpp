@@ -72,6 +72,12 @@ QVariant TimerModel::data(const QModelIndex &index, int role) const
 
 void TimerModel::addTimer(int length, QString label, bool running)
 {
+    // modified by steven
+//    if (m_timersList.size() >= TIMER_MAX) {
+//        //EXIST,  REMOVE FIRST
+//        remove(0);
+//    }
+    
     m_interface->addTimer(length, label, running);
 }
 

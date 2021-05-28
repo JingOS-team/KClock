@@ -85,7 +85,7 @@ Item {
                 text: ((root.hours < 10) ? "0" : "") + root.hours + ":"
                       + ((root.minutes < 10) ? "0" : "") + root.minutes
                 color: "white"
-                font.pointSize: 24
+                font.pixelSize: 24
             }
 
             Rectangle {

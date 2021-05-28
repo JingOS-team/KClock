@@ -31,10 +31,10 @@ Rectangle {
     property int timerDuration
     property int timerElapsed
     property bool timerRunning
-    property int fontSize: 80
+    property int fontSize: 34
 
-    width: 640 * appwindow.officalScale
-    height: 80 * 2 * appwindow.officalScale
+    width: 320  
+    height: 80   
     color: "transparent"
     anchors.centerIn: parent
 
@@ -58,8 +58,10 @@ Rectangle {
         height: parent.height
         leftPadding: 0
         rightPadding: 0
+
         from: timerDuration
         to: 0
+
         handle: Item {
             visible: true
             width: 1
@@ -78,8 +80,8 @@ Rectangle {
         //    #ff43BDF4
         background: Rectangle {
             id: progressBarBackground
-            color: "#d8000000"
-            radius: 40 * appwindow.officalScale
+            color: appwindow.isDarkTheme ? "#d8000000" : "white"
+            radius: 10  
 
             layer.enabled: true
             layer.effect: OpacityMask {
@@ -93,14 +95,21 @@ Rectangle {
             Rectangle {
                 width: (1 - timerElapsed / timerDuration) * parent.width
                 height: parent.height
-                color: timerRunning ? "#39c17b" : "#555555"
+                color: {
+                    if(appwindow.isDarkTheme){
+                        timerRunning ? "#39c17b" : "#555555"
+                    }else {
+                        timerRunning ? "#39c17b" : "#333C3F48"
+                    }
+
+                }
             }
         }
     }
 
     Rectangle {
-        width: 480 * appwindow.officalScale
-        height: 84 * appwindow.officalScale
+        width: 240  
+        height: 42  
         anchors.centerIn: parent
         color: "transparent"
 
@@ -109,28 +118,33 @@ Rectangle {
 
             Label {
                 text: getHours()
-                font.pixelSize: 68 * appwindow.officalScale
-                color: "white"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
             }
             Label {
                 text: ":"
-                font.pixelSize: 68 * appwindow.officalScale
-                color: "white"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
             }
             Label {
                 text: getMinutes()
-                font.pixelSize: 68 * appwindow.officalScale
-                color: "white"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
             }
             Label {
                 text: ":"
-                font.pixelSize: 68 * appwindow.officalScale
-                color: "white"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
             }
             Label {
                 text: getSeconds()
-                font.pixelSize: 68 * appwindow.officalScale
-                color: "white"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
             }
         }
     }

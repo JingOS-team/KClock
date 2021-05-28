@@ -23,7 +23,7 @@ Item {
             spacing: 0
             PlasmaComponents.Label {
                 text: plasmoid.nativeInterface.time
-                font.pointSize: fontSize
+                font.pixelSize: fontSize
                 color: "white"
                 font.bold: true
                 Layout.alignment: Qt.AlignHCenter
@@ -33,7 +33,7 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 PlasmaComponents.Label {
                     text: plasmoid.nativeInterface.date
-                    font.pointSize: fontSize / 3
+                    font.pixelSize: fontSize / 3
                     color: "white"
                     Layout.rightMargin: Kirigami.Units.gridUnit
                 }
@@ -51,7 +51,7 @@ Item {
                         Layout.alignment: Qt.AlignCenter
                         text: plasmoid.nativeInterface.alarmTime
                         color: "white"
-                        font.pointSize: fontSize / 3
+                        font.pixelSize: fontSize / 3
                     }
                 }
                 MouseArea {
@@ -68,13 +68,13 @@ Item {
                     PlasmaComponents.Label {
                         id: cityName
                         text: plasmoid.nativeInterface.cityName
-                        font.pointSize: fontSize / 2
+                        font.pixelSize: fontSize / 2
                         font.bold: true
                         color: "white"
                     }
                     PlasmaComponents.Label {
                         text: plasmoid.nativeInterface.description
-                        font.pointSize: fontSize / 3
+                        font.pixelSize: fontSize / 3
                         color: "white"
                     }
                 }
@@ -90,21 +90,21 @@ Item {
                     PlasmaComponents.Label {
                         id: tempNow
                         text: plasmoid.nativeInterface.tempNow
-                        font.pointSize: fontSize / 2
+                        font.pixelSize: fontSize / 2
                         font.bold: true
                         color: "white"
                     }
                     RowLayout {
                         PlasmaComponents.Label {
                             text: plasmoid.nativeInterface.maxTemp
-                            font.pointSize: fontSize / 3
+                            font.pixelSize: fontSize / 3
                             font.bold: true
                             color: "white"
                         }
                         PlasmaComponents.Label {
                             Layout.alignment: Qt.AlignBottom
                             text: plasmoid.nativeInterface.minTemp
-                            font.pointSize: fontSize / 4
+                            font.pixelSize: fontSize / 4
                             font.bold: true
                             color: "white"
                         }

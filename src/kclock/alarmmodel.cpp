@@ -1,7 +1,6 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
- *                Wang Rui <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -157,6 +156,7 @@ void AlarmModel::updateUi()
 
 void AlarmModel::addAlarm(int hours, int minutes, int daysOfWeek, QString name, QString ringtonePath, int snoozeMinutes)
 {
+    qDebug()<< "Alarm Model :"<< "addAlarm" << "snoozeMinutes:" << snoozeMinutes;
     m_interface->addAlarm(hours, minutes, daysOfWeek, name, ringtonePath, snoozeMinutes);
 }
 
