@@ -1,5 +1,10 @@
-# KClock <img src="logo.png" width="40"/> 
+# Clock <img src="logo.png" width="40"/> 
 A convergent clock application for Plasma.
+
+## v0.9 clock
+
+- White theme 
+- Bug fixed
 
 ## Features
 * Alarms
