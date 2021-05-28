@@ -13,11 +13,10 @@ import org.kde.kirigami 2.11 as Kirigami
 Item {
     Plasmoid.backgroundHints: "ShadowBackground";
     Plasmoid.fullRepresentation: Item {
-        property int fontSize: mainItem.width / 4
-        
+        property int fontSize: mainItem.height / 4
         id: mainItem
-        Layout.preferredHeight: plasmoid.nativeInterface.hasAlarm ? Kirigami.Theme.defaultFont.pointSize * 8 : Kirigami.Theme.defaultFont.pointSize * 16
-        Layout.preferredWidth: Kirigami.Settings.isMobile ? plasmoid.screenGeometry.width : Kirigami.Units.gridUnit * 20
+        Layout.preferredHeight: plasmoid.nativeInterface.hasAlarm ? Kirigami.Theme.defaultFont.pixelSize * 8 : Kirigami.Theme.defaultFont.pixelSize * 16
+        Layout.preferredWidth: Kirigami.Units.gridUnit * 20
         Layout.alignment: Qt.AlignHCenter
         MouseArea {
             anchors.fill: parent
@@ -25,11 +24,10 @@ Item {
         }
         ColumnLayout {
             id: mainDisplay
-            anchors.horizontalCenter: parent.horizontalCenter
             spacing:0
             PlasmaComponents.Label {
                 text: plasmoid.nativeInterface.time
-                font.pointSize: fontSize
+                font.pixelSize: fontSize
                 color: "white"
                 Layout.alignment: Qt.AlignHCenter
             }
@@ -46,7 +44,7 @@ Item {
                     Layout.alignment: Qt.AlignCenter
                     text: plasmoid.nativeInterface.alarmTime
                     color: "white"
-                    font.pointSize: fontSize / 2
+                    font.pixelSize: fontSize / 2
                 }
             }
         }

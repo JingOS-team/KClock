@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Wang Rui <wangrui@jingos.com>
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,20 +22,22 @@ import QtQuick.Controls 2.12
 import QtQuick.Window 2.12
 import QtQuick.Layouts 1.12
 import QtGraphicalEffects 1.12
+
 import org.kde.kirigami 2.15 as Kirigami
 
 Component {
     id: alarmDelegate
 
+    
     Rectangle {
         id: root
         width: alarmGridView.cellWidth
         height: alarmGridView.cellHeight
         color: "transparent"
 
-        property int topSize: appwindow.fontSize + 26
-        property int otherSize: appwindow.fontSize - 3
-        property real myScale: 1.3 * appwindow.officalScale
+        property int topSize: 30
+        property int otherSize: 11
+        // property real myScale: 1.3 * appwindow.officalScale
 
         GridView.onRemove: SequentialAnimation {
             PropertyAction {
@@ -63,73 +65,92 @@ Component {
             anchors {
                 fill: parent
                 leftMargin: 0
-                rightMargin: 30 * myScale
-                topMargin: 30 * myScale
-                bottomMargin: 2 * myScale
+                rightMargin: 20
+                topMargin: 20
+                bottomMargin: 0  
             }
 
-            color: "#3f000000"
-            radius: 40 * appwindow.officalScale
+            // color: "#3f000000"
+            color: appwindow.isDarkTheme ? "#3f000000":"white"
+            radius: 10
 
             MouseArea {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
 
                 onClicked: {
+
+                    console.log("----------------1111-----------------");
+
                     if (mouse.button == Qt.LeftButton) {
                         popupEventEditor.px = (rightLayout.width - popupEventEditor.width) / 2
-                        popupEventEditor.py = (rightLayout.height - 624
-                                               * appwindow.officalScale) / 2 + 160
+                        popupEventEditor.py = (rightLayout.height - 277) / 2 + 22+ 26
                         popupEventEditor.popTitle = "Edit Alarm"
 
                         var kk = rightLayout.mapToItem(
                                     rightLayout,
                                     popupEventEditor.px + alarmLayout.width,
                                     popupEventEditor.py)
+
                         popupEventEditor.blurX = kk.x
                         popupEventEditor.blurY = kk.y
+
                         popupEventEditor.alarmObject = model.alarm
                         popupEventEditor.open()
+
                     } else if (mouse.button == Qt.RightButton) {
-                        delMenu.selectIndex = index
+                        // delMenu.selectIndex = index
+                        // var xy = mapToItem(root, mouseX, mouseY)
+                        // delMenu.blurX = xy.x
+                        // delMenu.blurY = xy.y
+                        // delMenu.popup(root, xy.x, xy.y)
+                        console.log("=====RightButton=====")
                         var xy = mapToItem(root, mouseX, mouseY)
-                        delMenu.blurX = xy.x
-                        delMenu.blurY = xy.y
+                        // delMenu.blurX = xy.x
+                        // delMenu.blurY = xy.y
+                        // delMenu.popup(root, xy.x, xy.y)
                         delMenu.popup(root, xy.x, xy.y)
                     }
                 }
 
                 onPressAndHold: {
-                    delMenu.selectIndex = index
+                    // delMenu.selectIndex = index
+                    console.log("=====onPressAndHold=====")
                     var xy = mapToItem(root, mouseX, mouseY)
-                    delMenu.blurX = xy.x
-                    delMenu.blurY = xy.y
+                    // delMenu.blurX = xy.x
+                    // delMenu.blurY = xy.y
+                    // delMenu.popup(root, xy.x, xy.y)
                     delMenu.popup(root, xy.x, xy.y)
                 }
             }
 
-            DeleteMenu {
+            Kirigami.JPopupMenu {
                 id: delMenu
-                onDeleteClicked: {
-                    var x = (officalWidth - delDialog.width) / 2
-                    var y = (officalHeight - delDialog.height) / 2
-                    console.log("x : " + x + "&&&   y:" + y)
-                    delDialog.parent = alarm_layout
-                    delDialog.startX = x
-                    delDialog.startY = y
-                    delDialog.x = x
-                    delDialog.y = y
-                    delDialog.visible = true
-                    delDialog.open()
-                }
+
+                Action { 
+                    text: "Delete"
+                    icon.source:  "qrc:/image/menu_delete.png"
+                    onTriggered: {
+                        // var x = (888 - delDialog.width) / 2
+                        // var y = (648 - delDialog.height) / 2
+                        // console.log("x : " + x + "&&&   y:" + y)
+                        // delDialog.parent = alarm_layout
+                        // delDialog.startX = x
+                        // delDialog.startY = y
+                        // delDialog.x = x
+                        // delDialog.y = y
+                        // delDialog.visible = true
+                        delDialog.open()
+                    }
+                }
             }
 
             Kirigami.JDialog {
                 id: delDialog
-                title: "Delete"
-                text: "Are you sure you want to delete this alarm?"
-                leftButtonText: "Close"
-                rightButtonText: "Delete"
+                title: i18n("Delete")
+                text: i18n("Are you sure you want to delete this alarm?")
+                leftButtonText: i18n("Close")
+                rightButtonText: i18n("Delete")
                 parent: Overlay.overlay
                 dim: false
                 focus: true
@@ -154,21 +175,29 @@ Component {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.leftMargin: 31 * myScale
-                anchors.rightMargin: 31 * myScale
-                anchors.topMargin: 31 * myScale
+                anchors.leftMargin: marginLeftAndRight
+                anchors.rightMargin: marginLeftAndRight
+                anchors.topMargin: marginLeftAndRight
 
-                Label {
+                Text {
                     id: alarmTime
                     Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                     font.weight: Font.Light
-                    font.pointSize: topSize
-                    color: model.enabled ? "white" : "#919191"
+                    font.pixelSize: topSize
+                    color: {
+
+                        if(appwindow.isDarkTheme){
+                            model.enabled ? "white" : "#919191"
+                        } else {
+                            model.enabled ? "#E63C3F48" : "#663C3F48"
+                        }
+                        
+                    }
                     text: kclockFormat.formatTimeString(model.hours,
                                                         model.minutes)
                 }
 
-                Switch {
+                Kirigami.JSwitch {
                     anchors.right: parent.right
                     Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                     Layout.columnSpan: 1
@@ -176,46 +205,55 @@ Component {
                     checkable: true
                     onCheckedChanged: {
                         alarmCheckedChange(checked)
-                        alarmTime.color = checked ? "white" : "#919191"
-                        dayOfWeek.color = checked ? "white" : "#919191"
+                         model.enabled = checked
+                        if(appwindow.isDarkTheme){
+                            alarmTime.color = checked ? "white" : "#919191"
+                            dayOfWeek.color = checked ? "white" : "#919191"
+                        }else {
+                            dayOfWeek.color = checked ? "#E63C3F48" : "#663C3F48"
+                            alarmTime.color = checked ? "#E63C3F48" : "#663C3F48"
+                        }
                     }
                 }
             }
 
-            Label {
-                id: dayOfWeek
-
+            Text {
                 anchors.top: topRow.bottom
-                anchors.left: parent.left
-                anchors.leftMargin: 31 * myScale
-                anchors.rightMargin: 31 * myScale
-                anchors.topMargin: 8 * myScale
                 font.weight: Font.Normal
-                font.pointSize: otherSize
-                color: model.enabled ? "white" : "#919191"
+                font.pixelSize: otherSize
+                color: {
+                    if(appwindow.isDarkTheme){
+                        model.enabled ? "white" : "#919191"
+                    } else {
+                        model.enabled ? "#E63C3F48" : "#663C3F48"
+                    }
+                }
                 text: getRepeatFormat(
                           model.daysOfWeek) // related to UI improvements, leave it for now
+                anchors.left: parent.left
+                id: dayOfWeek
+                anchors.leftMargin: marginLeftAndRight
+                anchors.rightMargin: marginLeftAndRight
+                anchors.topMargin: 8  
             }
 
             Text {
-                id: alarmName
-
                 anchors.top: dayOfWeek.bottom
+                id: alarmName
+                color: "#919191"
+                font.pixelSize: otherSize
+                text: model.name
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                anchors.leftMargin: 31 * myScale
-                anchors.rightMargin: 31 * myScale
-                anchors.topMargin: 10 * myScale
-                anchors.bottomMargin: 30 * myScale
-                
-                color: "#919191"
-                font.pointSize: otherSize
+                anchors.leftMargin: marginLeftAndRight
+                anchors.rightMargin: marginLeftAndRight
+                anchors.topMargin: 10  
+                anchors.bottomMargin: 30  
                 lineHeight: 1
                 wrapMode: Text.WrapAnywhere
                 maximumLineCount: 2
                 elide: Text.ElideRight
-                text: model.name
             }
         }
     }

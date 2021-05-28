@@ -115,7 +115,7 @@ Kirigami.Page {
                                      / (Tumbler.tumbler.visibleItemCount / 2)
                             text: modelData < 10 ? "0" + modelData : modelData
                             color: "white"
-                            font.pointSize: form.fontSize
+                            font.pixelSize: form.fontSize
 
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -133,7 +133,7 @@ Kirigami.Page {
                         Layout.alignment: Qt.AlignVCenter
                         color: "white"
                         text: ":"
-                        font.pointSize: form.fontSize
+                        font.pixelSize: form.fontSize
                     }
 
                     Tumbler {
@@ -148,7 +148,7 @@ Kirigami.Page {
                                      / (Tumbler.tumbler.visibleItemCount / 2)
                             color: "white"
                             text: modelData < 10 ? "0" + modelData : modelData
-                            font.pointSize: form.fontSize
+                            font.pixelSize: form.fontSize
 
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -166,7 +166,7 @@ Kirigami.Page {
                         Layout.alignment: Qt.AlignVCenter
                         color: "white"
                         text: ":"
-                        font.pointSize: form.fontSize
+                        font.pixelSize: form.fontSize
                     }
                     Tumbler {
                         id: secondsTumber
@@ -180,7 +180,7 @@ Kirigami.Page {
                                      / (Tumbler.tumbler.visibleItemCount / 2)
                             color: "white"
                             text: modelData < 10 ? "0" + modelData : modelData
-                            font.pointSize: form.fontSize
+                            font.pixelSize: form.fontSize
 
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter

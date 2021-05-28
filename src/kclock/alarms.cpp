@@ -1,7 +1,6 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
- *                Wang Rui <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -84,5 +83,6 @@ void Alarm::calculateNextRingTime()
         m_nextRingTime = -1;
         return;
     }
+    
     m_nextRingTime = UtilModel::instance()->calculateNextRingTime(this->m_hours, this->m_minutes, this->m_daysOfWeek, this->m_snooze);
 }

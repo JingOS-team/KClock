@@ -1,7 +1,6 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
- *                Wang Rui <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,6 +21,7 @@
 
 #include <QDBusConnection>
 #include <QDateTime>
+#include <QDBusMessage>
 #include <QDebug>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -50,6 +50,9 @@ Alarm::Alarm(AlarmModel *parent, QString name, int minutes, int hours, int daysO
     , m_daysOfWeek(daysOfWeek)
     , m_snoozeMinutes(snoozeMinutes)
 {
+    qDebug() << "new alarm, snoozeMinutes:" << snoozeMinutes;
+
+
     initialize(parent);
 }
 
@@ -112,17 +115,24 @@ QString Alarm::serialize()
 
 void Alarm::save()
 {
+    qDebug() << "-----> save" ;
     auto config = KSharedConfig::openConfig();
     KConfigGroup group = config->group(ALARM_CFG_GROUP);
+    qDebug() << "src/alarm :::: save +>" << this->alarmNotifOpenTime <<"  --  "<< this->enabled();
     group.writeEntry(uuid().toString(), this->serialize());
     group.sync();
 }
 
 void Alarm::ring()
 {
+    qDebug() << "-----> ring" ;
     // if not enabled, don't ring
     if (!this->enabled())
         return;
+
+    // notifySystemUI(true);
+
+    qDebug() << "Ringing alarm" << m_name << "and sending notification...";
 
     KNotification *notif = new KNotification(QStringLiteral("alarm"));
     if (m_snoozeMinutes > 0) {
@@ -131,7 +141,8 @@ void Alarm::ring()
         notif->setActions(QStringList {i18n("Dismiss")});
     }
     
-    notif->setIconName(QStringLiteral("kclock"));
+    notif->setIconName(QStringLiteral("jingclock"));
+    // notif->setSource(QStringLiteral("jingclock"));
     notif->setTitle(name());
     notif->setText(QLocale::system().toString(QTime::currentTime(), QLocale::ShortFormat)); // TODO
     notif->setDefaultAction(i18n("View"));
@@ -174,6 +185,8 @@ void Alarm::handleDismiss()
     m_justSnoozed = false;
 
     save();
+    // 发送一个Dbus 给系统
+    // notifySystemUI(false);
     Q_EMIT alarmChanged();
 }
 
@@ -182,12 +195,28 @@ void Alarm::handleSnooze()
     m_justSnoozed = true;
 
     alarmNotifOpen = false;
+    // qDebug() << "Alarm snoozed (" << KClockSettings::self()->alarmSnoozeLength() << ")";
+     qDebug() << "Alarm snoozed (" << m_snoozeMinutes << ")";
     AlarmPlayer::instance().stop();
+
+    // setSnooze(snooze() + 60 * KClockSettings::self()->alarmSnoozeLength()); // snooze 5 minutes
     setSnooze(snooze() + 60 * m_snoozeMinutes); //add snooze time, 10 minutes
     m_enabled = true;                                                       // can't use setSnooze because it resets snooze time
     save();
+    // 发送一个Dbus 给系统
+    // notifySystemUI(false);
     Q_EMIT alarmChanged();
 }
+
+// void Alarm::notifySystemUI(bool visible) {
+//     // Q_EMIT systemIconChanged(visible);
+//     QDBusMessage msg = QDBusMessage::createSignal(
+//         "/jingos/alarm/statusbaricon",  
+//         "jingos.alarm.statusbaricon", 
+//         "getVisible");
+//     msg << visible;
+//     QDBusConnection::sessionBus().send(msg);
+// }
 
 void Alarm::calculateNextRingTime()
 {

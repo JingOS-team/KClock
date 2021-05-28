@@ -26,13 +26,13 @@ import org.kde.kirigami 2.11 as Kirigami
 Rectangle {
 
     id: root
+    anchors.centerIn: parent
 
     property int timerDuration
     property int timerElapsed
     property bool timerRunning
     property int fontSize: 80
 
-    anchors.centerIn: parent
     color: "transparent"
 
     function getTimeLeft() {
@@ -57,14 +57,14 @@ Rectangle {
             id: hoursText
             text: getHours()
             color: "white"
-            font.pointSize: root.fontSize
+            font.pixelSize: root.fontSize
             font.family: clockFont.name
             visible: true
         }
         Label {
             text: ":"
             color: "white"
-            font.pointSize: root.fontSize
+            font.pixelSize: root.fontSize
             font.family: clockFont.name
             visible: true
         }
@@ -72,41 +72,41 @@ Rectangle {
             id: minutesText
             text: getMinutes()
             color: "white"
-            font.pointSize: root.fontSize
+            font.pixelSize: root.fontSize
             font.family: clockFont.name
         }
         Label {
             text: ":"
             color: "white"
-            font.pointSize: root.fontSize
+            font.pixelSize: root.fontSize
             font.family: clockFont.name
         }
         Label {
             text: getSeconds()
             color: "white"
-            font.pointSize: root.fontSize
+            font.pixelSize: root.fontSize
             font.family: clockFont.name
         }
     }
 
     Rectangle {
+        width: timeLabels.width
+        height: 2
+        color: "#aaffffff"
         anchors.left: timeLabels.left
         anchors.right: timeLabels.right
         anchors.verticalCenter: parent.verticalCenter
         anchors.verticalCenterOffset: -60
-        width: timeLabels.width
-        height: 2
-        color: "#aaffffff"
     }
 
     Rectangle {
+        width: timeLabels.width
+        height: 2
+        color: "#aaffffff"
         anchors.left: timeLabels.left
         anchors.right: timeLabels.right
         anchors.verticalCenter: parent.verticalCenter
         anchors.verticalCenterOffset: 60
-        width: timeLabels.width
-        height: 2
-        color: "#aaffffff"
     }
 
     Rectangle {
@@ -120,11 +120,12 @@ Rectangle {
 
         RowLayout {
             anchors.fill: parent
+
             Image {
                 id: reset
+                source: "qrc:/image/reset.png"
                 width: 28
                 height: 28
-                source: "qrc:/image/reset.png"
                 Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
 
                 MouseArea {
