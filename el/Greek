@@ -1,5 +1,6 @@
 /*
- * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ * Copyright 2020 Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,156 +18,52 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.12
-import QtQuick.Controls 2.4
-import QtQuick.Layouts 1.2
-import QtQuick.Shapes 1.12
-import org.kde.kirigami 2.11 as Kirigami
 
-Rectangle {
+#ifndef STOPWATCHTIMER_H
+#define STOPWATCHTIMER_H
 
-    id: root
-    anchors.centerIn: parent
+#include <QDateTime>
+#include <QObject>
 
-    property int timerDuration
-    property int timerElapsed
-    property bool timerRunning
-    property int fontSize: 80
+class QTimer;
+class StopwatchTimer : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(int elapsedTime READ elapsedTime NOTIFY timeChanged)
+    Q_PROPERTY(QString minutes READ minutesDisplay NOTIFY timeChanged)
+    Q_PROPERTY(QString seconds READ secondsDisplay NOTIFY timeChanged)
+    Q_PROPERTY(QString small READ smallDisplay NOTIFY timeChanged)
 
-    color: "transparent"
+public:
+    explicit StopwatchTimer(QObject *parent = nullptr);
 
-    function getTimeLeft() {
-        return timerDuration - timerElapsed
-    }
-    function getHours() {
-        return ("0" + parseInt(getTimeLeft() / 60 / 60).toFixed(0)).slice(-2)
-    }
-    function getMinutes() {
-        return ("0" + parseInt(getTimeLeft() / 60 - 60 * getHours())).slice(-2)
-    }
-    function getSeconds() {
-        return ("0" + parseInt(getTimeLeft() - 60 * getMinutes())).slice(-2)
-    }
+    long long minutes();
+    long long seconds();
+    long long small();
+    QString minutesDisplay();
+    QString secondsDisplay();
+    QString smallDisplay();
 
-    // clock display
-    RowLayout {
-        id: timeLabels
-        anchors.centerIn: parent
+    long long elapsedTime();
 
-        Label {
-            id: hoursText
-            text: getHours()
-            color: "white"
-            font.pixelSize: root.fontSize
-            font.family: clockFont.name
-            visible: true
-        }
-        Label {
-            text: ":"
-            color: "white"
-            font.pixelSize: root.fontSize
-            font.family: clockFont.name
-            visible: true
-        }
-        Label {
-            id: minutesText
-            text: getMinutes()
-            color: "white"
-            font.pixelSize: root.fontSize
-            font.family: clockFont.name
-        }
-        Label {
-            text: ":"
-            color: "white"
-            font.pixelSize: root.fontSize
-            font.family: clockFont.name
-        }
-        Label {
-            text: getSeconds()
-            color: "white"
-            font.pixelSize: root.fontSize
-            font.family: clockFont.name
-        }
-    }
+    Q_INVOKABLE void reset();
+    Q_INVOKABLE void toggle();
 
-    Rectangle {
-        width: timeLabels.width
-        height: 2
-        color: "#aaffffff"
-        anchors.left: timeLabels.left
-        anchors.right: timeLabels.right
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.verticalCenterOffset: -60
-    }
+signals:
+    void timeChanged();
 
-    Rectangle {
-        width: timeLabels.width
-        height: 2
-        color: "#aaffffff"
-        anchors.left: timeLabels.left
-        anchors.right: timeLabels.right
-        anchors.verticalCenter: parent.verticalCenter
-        anchors.verticalCenterOffset: 60
-    }
+private slots:
+    void updateTime();
 
-    Rectangle {
-        width: 500
-        height: 94
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: timeLabels.bottom
-        anchors.topMargin: 33
-        visible: false
-        color: "black"
+private:
+    const int m_interval = 41; // 24fps
 
-        RowLayout {
-            anchors.fill: parent
+    long long timerStartStamp = QDateTime::currentMSecsSinceEpoch();
+    long long pausedStamp = QDateTime::currentMSecsSinceEpoch();
+    long long pausedElapsed = 0;
 
-            Image {
-                id: reset
-                source: "qrc:/image/reset.png"
-                width: 28
-                height: 28
-                Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+    bool stopped = true, paused = false;
+    QTimer *m_timer;
+};
 
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
-                        timerPage.timer.reset()
-                    }
-                }
-            }
-
-            Image {
-                id: ppBtn
-                source: timerPage.timer.running ? "qrc:/image/pause.png" : "qrc:/image/play.png"
-                anchors.centerIn: parent
-                Layout.alignment: Qt.AlignCenter
-                width: 94
-                height: 94
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
-                        timerPage.timer.toggleRunning()
-                    }
-                }
-            }
-
-            Image {
-                id: delBtn
-                source: "qrc:/image/delete.png"
-                width: 28
-                height: 28
-                Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
-                        timerPage.timer.reset()
-                        timerModel.remove(0)
-                        timerPage.justCreated = true
-                    }
-                }
-            }
-        }
-    }
-}
+#endif // STOPWATCHTIMER_H
