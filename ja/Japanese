@@ -1,6 +1,5 @@
 /*
- * Copyright 2020 Han Young <hanyoung@protonmail.com>
- * Copyright 2020 Devin Lin <espidev@gmail.com>
+ * Copyright 2020   Han Young <hanyoung@protonmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,52 +17,84 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#include <QTimer>
 
-#ifndef STOPWATCHTIMER_H
-#define STOPWATCHTIMER_H
-
-#include <QDateTime>
-#include <QObject>
-
-class QTimer;
-class StopwatchTimer : public QObject
+#include "timer.h"
+/* ~ Timer ~ */
+Timer::Timer()
 {
-    Q_OBJECT
-    Q_PROPERTY(int elapsedTime READ elapsedTime NOTIFY timeChanged)
-    Q_PROPERTY(QString minutes READ minutesDisplay NOTIFY timeChanged)
-    Q_PROPERTY(QString seconds READ secondsDisplay NOTIFY timeChanged)
-    Q_PROPERTY(QString small READ smallDisplay NOTIFY timeChanged)
+}
+Timer::Timer(QString uuid, bool justCreated)
+    : m_interface(new OrgKdeKclockTimerInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers/") + uuid, QDBusConnection::sessionBus(), this))
+    , m_justCreated(justCreated)
+{
+    if (m_interface->isValid()) {
+        m_uuid = QUuid(m_interface->getUUID());
+        m_label = m_interface->label();
+        m_length = m_interface->length();
+        m_running = m_interface->running();
+        m_elapsed = m_interface->elapsed();
+        connect(m_interface, &OrgKdeKclockTimerInterface::lengthChanged, this, &Timer::updateLength);
+        connect(m_interface, &OrgKdeKclockTimerInterface::labelChanged, this, &Timer::updateLabel);
+        connect(m_interface, &OrgKdeKclockTimerInterface::runningChanged, this, &Timer::updateRunning);
 
-public:
-    explicit StopwatchTimer(QObject *parent = nullptr);
+        updateRunning(); // start animation
+    }
+}
 
-    long long minutes();
-    long long seconds();
-    long long small();
-    QString minutesDisplay();
-    QString secondsDisplay();
-    QString smallDisplay();
+void Timer::toggleRunning()
+{
+    m_interface->toggleRunning();
+}
 
-    long long elapsedTime();
+//void Timer::updateTrigger()
+//{
+//    m_interface->elapsed();
+//}
 
-    Q_INVOKABLE void reset();
-    Q_INVOKABLE void toggle();
+void Timer::reset()
+{
+    m_interface->reset();
 
-signals:
-    void timeChanged();
-
-private slots:
-    void updateTime();
-
-private:
-    const int m_interval = 41; // 24fps
-
-    long long timerStartStamp = QDateTime::currentMSecsSinceEpoch();
-    long long pausedStamp = QDateTime::currentMSecsSinceEpoch();
-    long long pausedElapsed = 0;
-
-    bool stopped = true, paused = false;
-    QTimer *m_timer;
+    m_elapsed = m_interface->elapsed();
+    Q_EMIT elapsedChanged();
 };
 
-#endif // STOPWATCHTIMER_H
+void Timer::updateLength()
+{
+    m_length = m_interface->length();
+    Q_EMIT propertyChanged();
+}
+
+void Timer::updateLabel()
+{
+    m_label = m_interface->label();
+    Q_EMIT propertyChanged();
+}
+void Timer::updateRunning()
+{
+    m_running = m_interface->running();
+    Q_EMIT propertyChanged();
+
+    this->animation(m_running);
+
+    m_elapsed = m_interface->elapsed();
+    Q_EMIT elapsedChanged();
+}
+
+void Timer::animation(bool start)
+{
+    if (!m_timer) {
+        m_timer = new QTimer(this);
+        connect(m_timer, &QTimer::timeout, [this] {
+            m_elapsed = m_interface->elapsed();
+            Q_EMIT this->elapsedChanged();
+        });
+    }
+
+    if (start) {
+        m_timer->start(250);
+    } else {
+        m_timer->stop();
+    }
+}
