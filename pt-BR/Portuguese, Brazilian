@@ -1,6 +1,5 @@
 /*
- * Copyright 2020 Han Young <hanyoung@protonmail.com>
- *           2020 Devin Lin <espidev@gmail.com>
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,190 +17,260 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-import QtQuick 2.12
+import QtQuick 2.11
 import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.2
 import org.kde.kirigami 2.12 as Kirigami
+import kclock 1.0
 
-ToolBar {
-    id: toolbarRoot
+Kirigami.Page {
+    id: root
 
-    width: 888
-    height: 55  
-    property double iconSize: 22  
-    property double shrinkIconSize: 20  
-    property double fontSize: 14
-    property double shrinkFontSize:  12
+    property bool createdTimer: false
+    // timer state :
+    // 0 reset ;
+    // 1.running;
+    property int timerState: 0
+    property Timer timer: timer
+    property bool justCreated: timer == null ? false : timer.justCreated
+    property bool showFullscreen: false
+    property int elapsed: timer == null ? 0 : timer.elapsed
+    property int duration: timer == null ? 0 : timer.length
+    property bool running: timer == null ? 0 : timer.running
+    property Timer timerDelegate: timerModel.get(0)
 
-    // propert string alarmIcon : /* appwindow.isDarkTheme ? "qrc:/image/footer_alarm_w.png" : */ "qrc:/image/footer_alarm_grey_l.png"
-    // propert string swIcon: /* appwindow.isDarkTheme ? "qrc:/image/footer_sw_w.png": */ "qrc:/image/footer_sw_grey_l.png"
-    // propert string timerIcon: /* appwindow.isDarkTheme ? "qrc:/image/footer_timer_w.png" : */ "qrc:/image/footer_timer_grey_l.png"
+    globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
+    Layout.fillWidth: true
+    spacing: 0
+    padding:0
 
-    
-    function getPage(name) {
-        switch (name) {
-            case "Time": return timePage;
-            case "Timer": return timerListPage;
-            case "Stopwatch": return stopwatchPage;
-            case "Alarm": return alarmPage;
-            case "Settings": return settingsPage;
+    mainAction: Kirigami.Action {
+        iconName: "list-add"
+        text: i18n("New Timer")
+        onTriggered: {
+            createdTimer = true
+            timerModel.addNew()
         }
     }
+
 
     background: Rectangle {
-        color: appwindow.isDarkTheme ? "#a6000000": "#ffffffff"
         anchors.fill: parent
-
+        color: "black"
     }
-    
-    RowLayout {
-        anchors.fill: parent
-        spacing: 0
 
-        Repeater {
-            model: ListModel {
+    Rectangle {
+        anchors.left: root.left
+        anchors.top: parent.top
+        anchors.margins: 0
+        width: root.width / 2 - 18
+        height: root.height
+        color: "red"
+        id: digitalContentLayout
 
-                ListElement {
-                    name: "Alarm"
-                    icon_highlight:"qrc:/image/footer_alarm_grey_l.svg"
-                    icon: "qrc:/image/footer_alarm_grey.svg"
+        TimerComponent {
+            visible: !justCreated
+            timerDuration: duration
+            timerElapsed: elapsed
+            timerRunning: running
+        }
+    }
+
+    Rectangle {
+        anchors.left: digitalContentLayout.right
+        anchors.top: parent.top
+        width: root.width / 2 - 18
+        height: root.height
+        color: "green"
+        id: timerContentLayout
+
+        Kirigami.FormLayout {
+            id: form
+            anchors.centerIn: parent
+            implicitWidth: row.width
+            implicitHeight: row.height
+            property int fontSize: 60
+            visible: true
+
+            Rectangle {
+                anchors.fill: parent
+                color: "orange"
+
+                Row {
+                    id: row
+                    width: 595
+                    height: 380
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 67
+
+                    Tumbler {
+                        id: hoursTumber
+                        width: 101
+                        height: parent.height
+                        model: 100
+                        visibleItemCount: 3
+
+                        delegate: Label {
+                            opacity: 1.0 - Math.abs(Tumbler.displacement)
+                                     / (Tumbler.tumbler.visibleItemCount / 2)
+                            text: modelData < 10 ? "0" + modelData : modelData
+                            color: "white"
+                            font.pixelSize: form.fontSize
+
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+
+                            function displacementItemOpacity(displacement, visibleItemCount) {
+                                return 1.0 - Math.abs(
+                                            displacement) / (visibleItemCount / 2)
+                            }
+                        }
+                    }
+                    Label {
+                        width: 15
+                        height: 90
+                        anchors.verticalCenter: row.verticalCenter
+                        Layout.alignment: Qt.AlignVCenter
+                        color: "white"
+                        text: ":"
+                        font.pixelSize: form.fontSize
+                    }
+
+                    Tumbler {
+                        id: minutesTumber
+                        width: 101
+                        height: parent.height
+                        model: 60
+                        visibleItemCount: 3
+
+                        delegate: Label {
+                            opacity: 1.0 - Math.abs(Tumbler.displacement)
+                                     / (Tumbler.tumbler.visibleItemCount / 2)
+                            color: "white"
+                            text: modelData < 10 ? "0" + modelData : modelData
+                            font.pixelSize: form.fontSize
+
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+
+                            function displacementItemOpacity(displacement, visibleItemCount) {
+                                return 1.0 - Math.abs(
+                                            displacement) / (visibleItemCount / 2)
+                            }
+                        }
+                    }
+                    Label {
+                        width: 15
+                        height: 90
+                        anchors.verticalCenter: parent.verticalCenter
+                        Layout.alignment: Qt.AlignVCenter
+                        color: "white"
+                        text: ":"
+                        font.pixelSize: form.fontSize
+                    }
+                    Tumbler {
+                        id: secondsTumber
+                        width: 101
+                        height: parent.height
+                        model: 60
+                        visibleItemCount: 3
+
+                        delegate: Label {
+                            opacity: 1.0 - Math.abs(Tumbler.displacement)
+                                     / (Tumbler.tumbler.visibleItemCount / 2)
+                            color: "white"
+                            text: modelData < 10 ? "0" + modelData : modelData
+                            font.pixelSize: form.fontSize
+
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+
+                            function displacementItemOpacity(displacement, visibleItemCount) {
+                                return 1.0 - Math.abs(
+                                            displacement) / (visibleItemCount / 2)
+                            }
+                        }
+                    }
                 }
-                ListElement {
-                    name: "Stopwatch"
-                    icon_highlight: "qrc:/image/footer_sw_grey_l.svg"
-                    icon: "qrc:/image/footer_sw_grey.svg"
+
+                Rectangle {
+                    width: row.width
+                    height: 2
+                    color: "#aaffffff"
+                    anchors.left: row.left
+                    anchors.right: row.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.verticalCenterOffset: -60
                 }
-                ListElement {
-                    name: "Timer"
-                    icon_highlight: "qrc:/image/footer_timer_grey_l.svg"
-                    icon: "qrc:/image/footer_timer_grey.svg"
+
+                Rectangle {
+                    width: row.width
+                    height: 2
+                    color: "#aaffffff"
+                    anchors.left: row.left
+                    anchors.right: row.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.verticalCenterOffset: 60
                 }
             }
-            
-            Rectangle {
-                Layout.minimumWidth: parent.width / 3
-                Layout.maximumWidth: parent.width / 3
-                Layout.preferredHeight: parent.height
-                Layout.alignment: Qt.AlignCenter
-                color: "transparent"
 
-                Behavior on color {
-                    ColorAnimation { 
-                        duration: 100 
-                        easing.type: Easing.InOutQuad
-                    }
-                }
-                
-                MouseArea {
-                    id: mouseArea
-                    anchors.fill: parent
+            function setDuration() {
+                timer.length = spinBoxHours.value * 60 * 60
+                        + spinBoxMinutes.value * 60 + spinBoxSeconds.value
+            }
+
+            Item {
+                Kirigami.FormData.isSection: true
+                Kirigami.FormData.label: "Label (optional)"
+            }
+
+
+        }
+
+
+        RowLayout {
+            anchors.left: form.left
+            anchors.right: form.right
+            anchors.top: form.bottom
+            height: 94
+            width: form.width
+
+            Kirigami.Heading {
+                level: 4
+                Layout.alignment: Qt.AlignLeft
+                text: timerDelegate.label
+            }
+
+            Row {
+                anchors.fill: parent
+
+                ToolButton {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    icon.name: "chronometer-reset"
                     onClicked: {
-                        appwindow.switchToPage(getPage(model.name), 0)
+                        hoursTumber.currentIndex = 0
+                        minutesTumber.currentIndex = 0
+                        secondsTumber.currentIndex = 0
                     }
-                    // onPressed: {
-                    //     widthAnim.to = toolbarRoot.shrinkIconSize;
-                    //     heightAnim.to = toolbarRoot.shrinkIconSize;
-                    //     fontAnim.to = toolbarRoot.shrinkFontSize;
-                    //     widthAnim.restart();
-                    //     heightAnim.restart();
-                    //     fontAnim.restart();
-                    // }
-                    // onReleased: {
-                    //     if (!widthAnim.running) {
-                    //         widthAnim.to = toolbarRoot.iconSize;
-                    //         widthAnim.restart();
-                    //     }
-                    //     if (!heightAnim.running) {
-                    //         heightAnim.to = toolbarRoot.iconSize;
-                    //         heightAnim.restart();
-                    //     }
-                    //     if (!fontAnim.running) {
-                    //         fontAnim.to = toolbarRoot.fontSize;
-                    //         fontAnim.restart();
-                    //     }
-                    // }
                 }
-                
-                RowLayout {
-                    id: itemColumn
-                    anchors.centerIn: parent
-                    spacing: 5  
+                ToolButton {
+                    anchors.horizontalCenter : parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    icon.name: timerDelegate.running ? "chronometer-pause" : "chronometer-start"
+                    onClicked: {
+                        console.log(hoursTumber.currentIndex)
+                        timerModel.addNew()
+                    }
+                }
 
-                    
-                    Kirigami.Icon {
-                        color: {
-                            if(appwindow.isDarkTheme){
-                                getPage(model.name).visible ? "#ffffff" : "#5e5e5e"
-                            } else {
-                                getPage(model.name).visible ? "#3C4BE8" : "#3C3F48"
-                            }
-                        } 
-                        
-                        source: getPage(model.name).visible ? model.icon_highlight:  model.icon
-                        Layout.alignment: Qt.AlignCenter
-                        Layout.preferredHeight: toolbarRoot.iconSize
-                        Layout.preferredWidth: toolbarRoot.iconSize
-                        
-                        ColorAnimation on color {
-                            easing.type: Easing.Linear
-                        }
-                        NumberAnimation on Layout.preferredWidth {
-                            id: widthAnim
-                            easing.type: Easing.Linear
-                            duration: 130
-                            onFinished: {
-                                if (widthAnim.to !== toolbarRoot.iconSize && !mouseArea.pressed) {
-                                    widthAnim.to = toolbarRoot.iconSize;
-                                    widthAnim.start();
-                                }
-                            }
-                        }
-                        NumberAnimation on Layout.preferredHeight {
-                            id: heightAnim
-                            easing.type: Easing.Linear
-                            duration: 130
-                            onFinished: {
-                                if (heightAnim.to !== toolbarRoot.iconSize && !mouseArea.pressed) {
-                                    heightAnim.to = toolbarRoot.iconSize;
-                                    heightAnim.start();
-                                }
-                            }
-                        }
-                    }
-                    
-                    Label {
-                        // color: getPage(model.name).visible ? "#ffffff" : "#5e5e5e"
-                        color: {
-                            if(appwindow.isDarkTheme){
-                                getPage(model.name).visible ? "#ffffff" : "#5e5e5e"
-                            } else {
-                                getPage(model.name).visible ? "#FF39C17B" : "#3C3F48"
-                            }
-                        } 
-                        text: i18n(model.name)
-                        Layout.alignment: Qt.AlignCenter
-                        horizontalAlignment: Text.AlignVCenter
-                        elide: Text.ElideLeft
-                        font.pixelSize: toolbarRoot.fontSize
-                        
-                        ColorAnimation on color {
-                            easing.type: Easing.Linear
-                        }
-                        NumberAnimation on font.pixelSize {
-                            id: fontAnim
-                            easing.type: Easing.Linear
-                            duration: 130
-                            onFinished: {
-                                if (fontAnim.to !== toolbarRoot.fontSize && !mouseArea.pressed) {
-                                    fontAnim.to = toolbarRoot.fontSize;
-                                    fontAnim.start();
-                                }
-                            }
-                        }
-                    }
+                ToolButton {
+                    anchors.left: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    icon.name: "delete"
+                    onClicked: timerModel.remove(index)
                 }
             }
         }
     }
-} 
+}
