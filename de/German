@@ -19,51 +19,95 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef STOPWATCHTIMER_H
-#define STOPWATCHTIMER_H
+#include "stopwatchtimer.h"
+#include <QDebug>
+#include <QTimer>
 
-#include <QDateTime>
-#include <QObject>
-
-class QTimer;
-class StopwatchTimer : public QObject
+StopwatchTimer::StopwatchTimer(QObject *parent)
+    : QObject(parent)
 {
-    Q_OBJECT
-    Q_PROPERTY(int elapsedTime READ elapsedTime NOTIFY timeChanged)
-    Q_PROPERTY(QString minutes READ minutesDisplay NOTIFY timeChanged)
-    Q_PROPERTY(QString seconds READ secondsDisplay NOTIFY timeChanged)
-    Q_PROPERTY(QString small READ smallDisplay NOTIFY timeChanged)
+    m_timer = new QTimer(this);
+    connect(m_timer, &QTimer::timeout, this, &StopwatchTimer::updateTime);
+}
 
-public:
-    explicit StopwatchTimer(QObject *parent = nullptr);
+void StopwatchTimer::updateTime()
+{
+    emit timeChanged();
+}
 
-    long long minutes();
-    long long seconds();
-    long long small();
-    QString minutesDisplay();
-    QString secondsDisplay();
-    QString smallDisplay();
+void StopwatchTimer::toggle()
+{
+    if (stopped) { // start (from zero)
+        stopped = false;
+        paused = false;
 
-    long long elapsedTime();
+        timerStartStamp = QDateTime::currentMSecsSinceEpoch();
+        pausedElapsed = 0;
 
-    Q_INVOKABLE void reset();
-    Q_INVOKABLE void toggle();
+        m_timer->start(m_interval);
+    } else if (paused) { // unpause
+        paused = false;
 
-signals:
-    void timeChanged();
+        pausedElapsed += QDateTime::currentMSecsSinceEpoch() - pausedStamp;
 
-private slots:
-    void updateTime();
+        m_timer->start(m_interval);
+    } else { // pause
+        paused = true;
+        pausedStamp = QDateTime::currentMSecsSinceEpoch();
+        m_timer->stop();
+    }
+}
 
-private:
-    const int m_interval = 41; // 24fps
+void StopwatchTimer::reset()
+{
+    m_timer->stop();
+    pausedElapsed = 0;
+    stopped = true;
+    paused = false;
+    emit timeChanged();
+}
 
-    long long timerStartStamp = QDateTime::currentMSecsSinceEpoch();
-    long long pausedStamp = QDateTime::currentMSecsSinceEpoch();
-    long long pausedElapsed = 0;
+long long StopwatchTimer::elapsedTime()
+{
+    long long cur = QDateTime::currentMSecsSinceEpoch();
+    if (stopped) {
+        return 0;
+    } else if (paused) {
+        return cur - timerStartStamp - pausedElapsed - (cur - pausedStamp);
+    } else {
+        return cur - timerStartStamp - pausedElapsed;
+    }
+}
 
-    bool stopped = true, paused = false;
-    QTimer *m_timer;
-};
+long long StopwatchTimer::minutes()
+{
+    return elapsedTime() / 1000 / 60;
+}
 
-#endif // STOPWATCHTIMER_H
+long long StopwatchTimer::seconds()
+{
+    return elapsedTime() / 1000 - 60 * minutes();
+}
+
+long long StopwatchTimer::small()
+{
+    return elapsedTime() / 10 - 100 * seconds() - 100 * 60 * minutes();
+}
+
+QString StopwatchTimer::minutesDisplay()
+{
+    long long amount = minutes();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
+
+QString StopwatchTimer::secondsDisplay()
+{
+    long long amount = seconds();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
+
+QString StopwatchTimer::smallDisplay()
+{
+    long long amount = small();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
