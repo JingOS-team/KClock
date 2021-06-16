@@ -18,101 +18,41 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "utilmodel.h"
+#ifndef KIRIGAMICLOCK_UTILMODEL_H
+#define KIRIGAMICLOCK_UTILMODEL_H
 
+#include <QObject>
 #include <QString>
-#include <QTimeZone>
-#include <KSharedConfig>
-#include <KConfigGroup>
 
-#include <KLocalizedString>
-
-#define FORMAT24H "HH:mm:ss"
-#define FORMAT12H "h:mm:ss ap"
-
-QString UtilModel::getCurrentTimeZoneName()
+class UtilModel;
+class UtilModel : public QObject
 {
-    return QTimeZone::systemTimeZoneId();
-}
+    Q_OBJECT
 
-bool UtilModel::applicationLoaded()
-{
-    return m_applicationLoaded;
-}
+    Q_PROPERTY(QString tzName READ getCurrentTimeZoneName NOTIFY propertyChanged)
 
-void UtilModel::setApplicationLoaded(bool applicationLoaded)
-{
-    if (applicationLoaded != m_applicationLoaded) {
-        m_applicationLoaded = applicationLoaded;
-        Q_EMIT applicationLoadedChanged();
-    }
-}
-
-bool UtilModel::is24HourFormat()
-{
-    KSharedConfig::Ptr  m_localeConfig = KSharedConfig::openConfig(QStringLiteral("kdeglobals"), KConfig::SimpleConfig);
-    KConfigGroup  m_localeSettings = KConfigGroup(m_localeConfig, "Locale");
-
-    QString timeFormat =  m_localeSettings.readEntry("TimeFormat", QStringLiteral(FORMAT24H));
-    return (timeFormat == FORMAT24H) ;
-}
-
-long long UtilModel::calculateNextRingTime(int hours, int minutes, int daysOfWeek, int snooze)
-{
-    // get the time that the alarm will ring on the day
-    QTime alarmTime = QTime(hours, minutes, 0).addSecs(snooze);
-
-    QDateTime date = QDateTime::currentDateTime();
-
-    if (daysOfWeek == 0) {              // alarm does not repeat (no days of the week are specified)
-        if (alarmTime >= date.time()) { // alarm occurs later today
-            return QDateTime(date.date(), alarmTime).toSecsSinceEpoch();
-        } else { // alarm occurs on the next day
-            return QDateTime(date.date().addDays(1), alarmTime).toSecsSinceEpoch();
-        }
-    } else { // repeat alarm
-        bool first = true;
-
-        // keeping looping forward a single day until the day of week is accepted
-        while (((daysOfWeek & (1 << (date.date().dayOfWeek() - 1))) == 0) // check day
-               || (first && (alarmTime < date.time())))                   // check time if the current day is accepted (keep looping forward if alarmTime has passed)
-        {
-            date = date.addDays(1); // go forward a day
-            first = false;
-        }
-
-        return QDateTime(date.date(), alarmTime).toSecsSinceEpoch();
-    }
-};
-
-QString UtilModel::timeToRingFormatted(const long long &timestamp)
-{
-    auto remaining = timestamp - QDateTime::currentSecsSinceEpoch();
-    int day = remaining / (24 * 3600);
-    int hour = remaining / 3600 - day * 24;
-    int minute = remaining / 60 - day * 24 * 60 - hour * 60;
-    QString arg;
-    if (day > 0) {
-        arg += i18np("%1 day", "%1 days", day);
-    }
-    if (hour > 0) {
-        if (day > 0 && minute > 0) {
-            arg += i18n(", ");
-        } else if (day > 0) {
-            arg += i18n(" and ");
-        }
-        arg += i18np("%1 hour", "%1 hours", hour);
-    }
-    if (minute > 0) {
-        if (day > 0 || hour > 0) {
-            arg += i18n(" and ");
-        }
-        arg += i18np("%1 minute", "%1 minutes", minute);
+public:
+    static UtilModel *instance()
+    {
+        static UtilModel * singleton = new UtilModel;
+        return singleton;
     }
     
-    if (day <= 0 && hour <= 0 && minute <= 0) {
-        return i18n("Alarm will be rung within a minute");
-    } else {
-        return i18n("Alarm will be rung after %1", arg);
-    }
-}
+    QString getCurrentTimeZoneName();
+    bool applicationLoaded();
+    void setApplicationLoaded(bool applicationLoaded);
+    
+    long long calculateNextRingTime(int hours, int minutes, int daysOfWeek, int snooze = 0);
+    QString timeToRingFormatted(const long long &timestamp);
+    Q_INVOKABLE bool is24HourFormat();
+    
+private:
+    UtilModel(){}; // explicitly declare it private
+    bool m_applicationLoaded = false;
+    
+Q_SIGNALS:
+    void propertyChanged();
+    void applicationLoadedChanged();
+};
+
+#endif // KIRIGAMICLOCK_UTILMODEL_H
