@@ -1,5 +1,5 @@
 /*
- * Copyright 2019  Nick Reitemeyer <nick.reitemeyer@web.de>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,51 +18,101 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef TIMEZONESELECTORMODEL_H
-#define TIMEZONESELECTORMODEL_H
+#include "utilmodel.h"
 
-#include <QAbstractListModel>
-#include <QSortFilterProxyModel>
+#include <QString>
 #include <QTimeZone>
-#include <QTimer>
+#include <KSharedConfig>
+#include <KConfigGroup>
 
-class TimeZoneSelectorModel : public QAbstractListModel
+#include <KLocalizedString>
+
+#define FORMAT24H "HH:mm:ss"
+#define FORMAT12H "h:mm:ss ap"
+
+QString UtilModel::getCurrentTimeZoneName()
 {
-    Q_OBJECT
+    return QTimeZone::systemTimeZoneId();
+}
 
-public:
-    explicit TimeZoneSelectorModel(QObject *parent = nullptr);
+bool UtilModel::applicationLoaded()
+{
+    return m_applicationLoaded;
+}
 
-    enum Roles { NameRole = Qt::DisplayRole, ShownRole = Qt::UserRole + 0, OffsetRole = Qt::UserRole + 1, ShortNameRole = Qt::UserRole + 2, TimeStringRole, RelativeTimeRole, IDRole };
+void UtilModel::setApplicationLoaded(bool applicationLoaded)
+{
+    if (applicationLoaded != m_applicationLoaded) {
+        m_applicationLoaded = applicationLoaded;
+        Q_EMIT applicationLoadedChanged();
+    }
+}
 
-    int rowCount(const QModelIndex &parent) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
-    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
-    Qt::ItemFlags flags(const QModelIndex &index) const override;
-    QHash<int, QByteArray> roleNames() const override;
+bool UtilModel::is24HourFormat()
+{
+    KSharedConfig::Ptr  m_localeConfig = KSharedConfig::openConfig(QStringLiteral("kdeglobals"), KConfig::SimpleConfig);
+    KConfigGroup  m_localeSettings = KConfigGroup(m_localeConfig, "Locale");
 
-public Q_SLOTS:
-    void update();
+    QString timeFormat =  m_localeSettings.readEntry("TimeFormat", QStringLiteral(FORMAT24H));
+    return (timeFormat == FORMAT24H) ;
+}
 
-private:
-    QList<std::tuple<QTimeZone, bool>> m_list;
-    QTimer m_timer;
+long long UtilModel::calculateNextRingTime(int hours, int minutes, int daysOfWeek, int snooze)
+{
+    // get the time that the alarm will ring on the day
+    QTime alarmTime = QTime(hours, minutes, 0).addSecs(snooze);
+
+    QDateTime date = QDateTime::currentDateTime();
+
+    if (daysOfWeek == 0) {              // alarm does not repeat (no days of the week are specified)
+        if (alarmTime >= date.time()) { // alarm occurs later today
+            return QDateTime(date.date(), alarmTime).toSecsSinceEpoch();
+        } else { // alarm occurs on the next day
+            return QDateTime(date.date().addDays(1), alarmTime).toSecsSinceEpoch();
+        }
+    } else { // repeat alarm
+        bool first = true;
+
+        // keeping looping forward a single day until the day of week is accepted
+        while (((daysOfWeek & (1 << (date.date().dayOfWeek() - 1))) == 0) // check day
+               || (first && (alarmTime < date.time())))                   // check time if the current day is accepted (keep looping forward if alarmTime has passed)
+        {
+            date = date.addDays(1); // go forward a day
+            first = false;
+        }
+
+        return QDateTime(date.date(), alarmTime).toSecsSinceEpoch();
+    }
 };
 
-class TimeZoneFilterModel : public QSortFilterProxyModel
+QString UtilModel::timeToRingFormatted(const long long &timestamp)
 {
-    Q_OBJECT
-
-public:
-    explicit TimeZoneFilterModel(TimeZoneSelectorModel *model, QObject *parent = nullptr);
-};
-
-class TimeZoneViewModel : public QSortFilterProxyModel
-{
-    Q_OBJECT
-
-public:
-    explicit TimeZoneViewModel(TimeZoneSelectorModel *model, QObject *parent = nullptr);
-};
-
-#endif
+    auto remaining = timestamp - QDateTime::currentSecsSinceEpoch();
+    int day = remaining / (24 * 3600);
+    int hour = remaining / 3600 - day * 24;
+    int minute = remaining / 60 - day * 24 * 60 - hour * 60;
+    QString arg;
+    if (day > 0) {
+        arg += i18np("%1 day", "%1 days", day);
+    }
+    if (hour > 0) {
+        if (day > 0 && minute > 0) {
+            arg += i18n(", ");
+        } else if (day > 0) {
+            arg += i18n(" and ");
+        }
+        arg += i18np("%1 hour", "%1 hours", hour);
+    }
+    if (minute > 0) {
+        if (day > 0 || hour > 0) {
+            arg += i18n(" and ");
+        }
+        arg += i18np("%1 minute", "%1 minutes", minute);
+    }
+    
+    if (day <= 0 && hour <= 0 && minute <= 0) {
+        return i18n("Alarm will be rung within a minute");
+    } else {
+        return i18n("Alarm will be rung after %1", arg);
+    }
+}
