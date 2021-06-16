@@ -1,6 +1,5 @@
 /*
- * Copyright 2020 Devin Lin <espidev@gmail.com>
- *                Han Young <hanyoung@protonmail.com>
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,140 +17,91 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+import QtQuick 2.0
+import "../CommonSize.js" as CS
+PathView {
+    id: root
 
-#ifndef KIRIGAMICLOCK_ALARMS_H
-#define KIRIGAMICLOCK_ALARMS_H
+    property bool bgShow
+    property variant value
+    property int displayFontSize: width/4
+    property real displayStep: 0.6 // displayStep > 0
+    signal viewMove(var index)
 
-#include <QFileDialog>
-#include <QObject>
-#include <QStandardPaths>
-#include <QString>
-#include <QUrl>
-#include <QUuid>
+    width: 100; height: 300
+    clip: true
+    pathItemCount: 7
+    preferredHighlightBegin: 0.5
+    preferredHighlightEnd: 0.5
+    dragMargin: root.width/2
+    Component.onCompleted: findCurrentIndex()
 
-#include "alarminterface.h"
-class Alarm : public QObject
-{
-    Q_OBJECT
-    Q_PROPERTY(QString name READ name WRITE setName NOTIFY propertyChanged)
-    Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY propertyChanged)
-    Q_PROPERTY(int hours READ hours WRITE setHours NOTIFY propertyChanged)
-    Q_PROPERTY(int minutes READ minutes WRITE setMinutes NOTIFY propertyChanged)
-    Q_PROPERTY(int daysOfWeek READ daysOfWeek WRITE setDaysOfWeek NOTIFY propertyChanged)
-    Q_PROPERTY(int snoozedMinutes READ snoozedMinutes NOTIFY propertyChanged)
-    Q_PROPERTY(int snoozeMinutes READ snoozeMinutes WRITE setSnoozeMinutes)
-    Q_PROPERTY(QString ringtonePath READ ringtonePath WRITE setRingtonePath NOTIFY propertyChanged)
-public:
-    explicit Alarm();
-    explicit Alarm(QString uuid);
-    const QString &name() const
-    {
-        return m_name;
+    onMovementEnded: {
+        viewMove(model[currentIndex].value)
     }
-    void setName(QString name)
-    {
-        m_interface->setProperty("name", name);
-    }
-    const QUuid &uuid() const
-    {
-        return m_uuid;
-    }
-    const bool &enabled() const
-    {
-        return m_enabled;
-    }
-    void setEnabled(bool enabled)
-    {
-        m_interface->setProperty("enabled", enabled);
-        m_enabled = enabled;
-    }
-    const int &hours() const
-    {
-        return m_hours;
-    }
-    void setHours(int hours)
-    {
-        m_hours = hours;
-        m_interface->setProperty("hours", hours);
-    }
-    const int &minutes() const
-    {
-        return m_minutes;
-    }
-    void setMinutes(int minutes)
-    {
-        m_minutes = minutes;
-        m_interface->setProperty("minutes", minutes);
-    }
-    const int &daysOfWeek() const
-    {
-        return m_daysOfWeek;
-    }
-    void setDaysOfWeek(int daysOfWeek)
-    {
-        m_daysOfWeek = daysOfWeek;
-        m_interface->setProperty("daysOfWeek", daysOfWeek);
-    }
-    int snoozedMinutes() const
-    {
-        return m_snooze / 60;
+    onValueChanged: {
+        findCurrentIndex()
     }
 
-    int snoozeMinutes() const 
-    {
-        return m_snoozeMinutes;
-    }
-    
-    void setSnoozeMinutes(int minutes) {
-        m_snoozeMinutes = minutes;
-        m_interface->setProperty("snoozeMinutes", m_snoozeMinutes);
+
+    Keys.onUpPressed: {
+        root.incrementCurrentIndex()
+        value = (model[currentIndex].value)
     }
 
-    const QString &ringtonePath() const
-    {
-        return m_ringtonePath;
-    };
-    void setRingtonePath(QString path)
-    {
-        m_interface->setProperty("ringtonePath", path);
+    Keys.onDownPressed: {
+        root.decrementCurrentIndex()
+        value = (model[currentIndex].value)
+    }
+    Rectangle{
+        id:backgroud
+        visible: bgShow
+        width: parent.width
+        height: 80
+        color: "blue"
+        anchors.centerIn: parent
+        radius: 14
+
+        MouseArea {
+            anchors.fill: parent
+           onClicked: {
+               console.log("WheelvIEW .....ONCLICK")
+               mouse.accepted = true
+           }
+        }
     }
 
-    bool isValid()
-    {
-        return m_isValid;
-    };
+    delegate: Item {
+        id:delegate
+        width: root.width
+        height: root.height/pathItemCount
+        Text {
+            anchors.centerIn: parent
+            font.pixelSize: displayFontSize*Number(delegate.PathView.textFontPercent);
+            text: modelData.display
+            color: appwindow.isDarkTheme ? "white" :"black"
+            opacity:  currentIndex == index ? 1 : 0.3
+        }
+    }
 
-    Q_INVOKABLE QString timeToRingFormated();
+    path: Path {
+        startX: root.width/2; startY: 0
 
-    Q_INVOKABLE void save()
-    {
-        m_interface->alarmChanged();
-    };
-Q_SIGNALS:
-    void propertyChanged();
-private Q_SLOTS:
-    void updateProperty(QString property);
+        PathAttribute { name: "textFontPercent"; value: displayStep }
 
-private:
-    const qint64 &nextRingTime() const
-    {
-        return m_nextRingTime;
-    };
+        PathLine { x: root.width/2; y: root.height/2 }
 
-    void calculateNextRingTime();
+        PathAttribute { name: "textFontPercent"; value: 1}
 
-    org::kde::kclock::Alarm *m_interface;
+        PathLine { x: root.width/2; y: root.height }
 
-    QString m_ringtonePath;
-    QString m_name;
-    QUuid m_uuid;
-    bool m_enabled;
-    int m_hours, m_minutes, m_daysOfWeek;
-    qint64 m_snooze;
-    int m_snoozeMinutes = 0;
-    qint64 m_nextRingTime;
+        PathAttribute { name: "textFontPercent"; value: displayStep }
+    }
 
-    bool m_isValid = true;
-};
+    function findCurrentIndex() {
+        for (var i = 0; i < count; i++)
+            if (model[i].value === value)
+                currentIndex = i;
+    }
+}
 
-#endif // KIRIGAMICLOCK_ALARMS_H
