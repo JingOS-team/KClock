@@ -1,119 +1,170 @@
 /*
- *   SPDX-FileCopyrightText: 2019 Dimitris Kardarakos <dimkard@posteo.net>
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
  *
- *   SPDX-License-Identifier: LGPL-2.0-or-later
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License or (at your option) version 3 or any later version
+ * accepted by the membership of KDE e.V. (or its successor approved
+ * by the membership of KDE e.V.), which shall act as a proxy
+ * defined in Section 14 of version 3 of the license.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 import QtQuick 2.12
-import QtQuick.Controls 2.5 as Controls2
-import org.kde.kirigami 2.0 as Kirigami
-import QtQuick.Layouts 1.11
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.2
+import QtQuick.Shapes 1.12
+import org.kde.kirigami 2.11 as Kirigami
 
-Item {
+Rectangle {
+
     id: root
+    anchors.centerIn: parent
 
-    property int hours
-    property int minutes
-    property bool pm
+    property int timerDuration
+    property int timerElapsed
+    property bool timerRunning
+    property int fontSize: 80
 
-    ColumnLayout {
-        anchors.fill: parent
-        Item {
-            id: clock
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+    color: "transparent"
 
-            //Hours clock
-            PathView {
-                id: hoursClock
+    function getTimeLeft() {
+        return timerDuration - timerElapsed
+    }
+    function getHours() {
+        return ("0" + parseInt(getTimeLeft() / 60 / 60).toFixed(0)).slice(-2)
+    }
+    function getMinutes() {
+        return ("0" + parseInt(getTimeLeft() / 60 - 60 * getHours())).slice(-2)
+    }
+    function getSeconds() {
+        return ("0" + parseInt(getTimeLeft() - 60 * getMinutes())).slice(-2)
+    }
 
-                anchors.fill: parent
-                interactive: false
-                model: 12
-                delegate: JClockElement {
-                    type: "hours"
-                    selectedValue: root.hours
-                    onClicked: root.hours = index
-                }
-                
-                path: Path {
-                    PathAngleArc {
-                        centerX: clock.width / 2
-                        centerY: clock.height / 2
-                        radiusX: (Math.min(
-                                      clock.width,
-                                      clock.height) - Kirigami.Units.gridUnit) / 4
-                        radiusY: radiusX
-                        startAngle: -90
-                        sweepAngle: 360
-                    }
-                }
-            }
+    // clock display
+    RowLayout {
+        id: timeLabels
+        anchors.centerIn: parent
 
-            //Minutes clock
-            PathView {
-                id: minutesClock
-
-                anchors.fill: parent
-                interactive: false
-                model: 60
-
-                delegate: JClockElement {
-                    type: "minutes"
-                    selectedValue: root.minutes
-                    onClicked: root.minutes = index
-                }
-
-                path: Path {
-                    PathAngleArc {
-                        centerX: clock.width / 2
-                        centerY: clock.height / 2
-                        radiusX: (Math.min(
-                                      clock.width,
-                                      clock.height) - Kirigami.Units.gridUnit) / 2
-                        radiusY: radiusX
-                        startAngle: -90
-                        sweepAngle: 360
-                    }
-                }
-            }
+        Label {
+            id: hoursText
+            text: getHours()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+            visible: true
         }
+        Label {
+            text: ":"
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+            visible: true
+        }
+        Label {
+            id: minutesText
+            text: getMinutes()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+        Label {
+            text: ":"
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+        Label {
+            text: getSeconds()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+    }
+
+    Rectangle {
+        width: timeLabels.width
+        height: 2
+        color: "#aaffffff"
+        anchors.left: timeLabels.left
+        anchors.right: timeLabels.right
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: -60
+    }
+
+    Rectangle {
+        width: timeLabels.width
+        height: 2
+        color: "#aaffffff"
+        anchors.left: timeLabels.left
+        anchors.right: timeLabels.right
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: 60
+    }
+
+    Rectangle {
+        width: 500
+        height: 94
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: timeLabels.bottom
+        anchors.topMargin: 33
+        visible: false
+        color: "black"
 
         RowLayout {
-            Layout.alignment: Qt.AlignHCenter
+            anchors.fill: parent
 
-            Controls2.Label {
-                text: ((root.hours < 10) ? "0" : "") + root.hours + ":"
-                      + ((root.minutes < 10) ? "0" : "") + root.minutes
-                color: "white"
-                font.pixelSize: 24
-            }
+            Image {
+                id: reset
+                source: "qrc:/image/reset.png"
+                width: 28
+                height: 28
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
 
-            Rectangle {
-                width: 60
-                height: parent.height
-            }
-
-            Controls2.ToolButton {
-                id: pm
-
-                checked: root.pm
-                checkable: true
-                implicitWidth: 100
-                implicitHeight: 42
-
-                contentItem: Controls2.Label {
-                    text: parent.checked ? "PM" : "AM"
-                    font.pixelSize: 24
-                    color: "white"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.reset()
+                    }
                 }
+            }
 
-                onClicked: root.pm = checked
-                background: Rectangle {
-                    border.width: 2
-                    border.color: "black"
-                    color: "#4a4a4a"
+            Image {
+                id: ppBtn
+                source: timerPage.timer.running ? "qrc:/image/pause.png" : "qrc:/image/play.png"
+                anchors.centerIn: parent
+                Layout.alignment: Qt.AlignCenter
+                width: 94
+                height: 94
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.toggleRunning()
+                    }
+                }
+            }
+
+            Image {
+                id: delBtn
+                source: "qrc:/image/delete.png"
+                width: 28
+                height: 28
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.reset()
+                        timerModel.remove(0)
+                        timerPage.justCreated = true
+                    }
                 }
             }
         }
