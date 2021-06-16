@@ -1,4 +1,4 @@
 files:
   - source: /
     translation: '%language%'
-    scheme: uk
+    scheme: 'identifier,source_phrase,context,uk,ru,fr'
