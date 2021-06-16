@@ -18,41 +18,50 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef KIRIGAMICLOCK_UTILMODEL_H
-#define KIRIGAMICLOCK_UTILMODEL_H
+#ifndef KIRIGAMICLOCK_TIMERMODEL_H
+#define KIRIGAMICLOCK_TIMERMODEL_H
 
+#include <KLocalizedString>
+#include <QAbstractListModel>
 #include <QObject>
-#include <QString>
 
-class UtilModel;
-class UtilModel : public QObject
+#include "timermodelinterface.h"
+class Timer;
+class TimerModel : public QAbstractListModel
 {
     Q_OBJECT
 
-    Q_PROPERTY(QString tzName READ getCurrentTimeZoneName NOTIFY propertyChanged)
-
 public:
-    static UtilModel *instance()
+    int rowCount(const QModelIndex &parent) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
+
+    static TimerModel *instance()
     {
-        static UtilModel * singleton = new UtilModel;
+        static TimerModel *singleton = new TimerModel();
         return singleton;
     }
-    
-    QString getCurrentTimeZoneName();
-    bool applicationLoaded();
-    void setApplicationLoaded(bool applicationLoaded);
-    
-    long long calculateNextRingTime(int hours, int minutes, int daysOfWeek, int snooze = 0);
-    QString timeToRingFormatted(const long long &timestamp);
-    Q_INVOKABLE bool is24HourFormat();
-    
+
+    Q_INVOKABLE void addNew()
+    {
+        this->addTimer();
+    };
+    Q_INVOKABLE void remove(int index);
+    Q_INVOKABLE int count();
+    Q_INVOKABLE Timer *get(int index);
+    Q_INVOKABLE bool hasTimer();
+
+private Q_SLOTS:
+    void addTimer(QString uuid); // remote add, always justCreated
+    void removeTimer(QString uuid);
+
 private:
-    UtilModel(){}; // explicitly declare it private
-    bool m_applicationLoaded = false;
-    
-Q_SIGNALS:
-    void propertyChanged();
-    void applicationLoadedChanged();
+    const int TIMER_MAX = 1;
+    void addTimer(int length = 300, QString label = i18n("New timer"), bool running = false);
+    void addTimer(QString uuid, bool justCreated);
+
+    explicit TimerModel(QObject *parent = nullptr);
+    QList<Timer *> m_timersList;
+    OrgKdeKclockTimerModelInterface *m_interface;
 };
 
-#endif // KIRIGAMICLOCK_UTILMODEL_H
+#endif // KIRIGAMICLOCK_TIMERMODEL_H
