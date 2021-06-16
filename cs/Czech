@@ -17,84 +17,89 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include <QTimer>
+#ifndef TIMER_H
+#define TIMER_H
 
-#include "timer.h"
-/* ~ Timer ~ */
-Timer::Timer()
-{
-}
-Timer::Timer(QString uuid, bool justCreated)
-    : m_interface(new OrgKdeKclockTimerInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers/") + uuid, QDBusConnection::sessionBus(), this))
-    , m_justCreated(justCreated)
-{
-    if (m_interface->isValid()) {
-        m_uuid = QUuid(m_interface->getUUID());
-        m_label = m_interface->label();
-        m_length = m_interface->length();
-        m_running = m_interface->running();
-        m_elapsed = m_interface->elapsed();
-        connect(m_interface, &OrgKdeKclockTimerInterface::lengthChanged, this, &Timer::updateLength);
-        connect(m_interface, &OrgKdeKclockTimerInterface::labelChanged, this, &Timer::updateLabel);
-        connect(m_interface, &OrgKdeKclockTimerInterface::runningChanged, this, &Timer::updateRunning);
+#include <QObject>
+#include <QUuid>
 
-        updateRunning(); // start animation
+#include "timerinterface.h"
+class QTimer;
+class Timer : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(int length READ length WRITE setLength NOTIFY propertyChanged)
+    Q_PROPERTY(int elapsed READ elapsed NOTIFY elapsedChanged)
+    Q_PROPERTY(QString lengthPretty READ lengthPretty NOTIFY propertyChanged)
+    Q_PROPERTY(QString elapsedPretty READ elapsedPretty NOTIFY elapsedChanged)
+    Q_PROPERTY(QString label READ label WRITE setLabel NOTIFY propertyChanged)
+    Q_PROPERTY(bool running READ running NOTIFY propertyChanged)
+    Q_PROPERTY(bool justCreated MEMBER m_justCreated NOTIFY propertyChanged)
+
+public:
+    Timer();
+    explicit Timer(QString uuid, bool justCreated = true);
+    const QUuid &uuid()
+    {
+        return m_uuid;
+    };
+    Q_INVOKABLE void toggleRunning();
+    Q_INVOKABLE void reset();
+
+    QString lengthPretty() const
+    {
+        qint64 len = m_length, hours = len / 60 / 60, minutes = len / 60 - hours * 60, seconds = len - hours * 60 * 60 - minutes * 60;
+        return QString::number(hours) + ":" + QString::number(minutes).rightJustified(2, '0') + ":" + QString::number(seconds).rightJustified(2, '0');
     }
-}
+    QString elapsedPretty() const
+    {
+        qint64 len = m_elapsed, hours = len / 60 / 60, minutes = len / 60 - hours * 60, seconds = len - hours * 60 * 60 - minutes * 60;
+        return QString::number(hours) + ":" + QString::number(minutes).rightJustified(2, '0') + ":" + QString::number(seconds).rightJustified(2, '0');
+    }
+    int length() const
+    {
+        return m_length;
+    }
+    void setLength(int length)
+    {
+        m_interface->setLength(length);
+    }
+    const int &elapsed() const
+    {
+        return m_elapsed;
+    }
+    const QString &label() const
+    {
+        return m_label;
+    }
+    void setLabel(QString label)
+    {
+        m_interface->setLabel(label);
+    }
+    const bool &running() const
+    {
+        return m_running;
+    }
 
-void Timer::toggleRunning()
-{
-    m_interface->toggleRunning();
-}
+signals:
+    void propertyChanged();
+    void elapsedChanged();
+private slots:
+    void updateLength();
+    void updateLabel();
+    void updateRunning();
 
-//void Timer::updateTrigger()
-//{
-//    m_interface->elapsed();
-//}
+private:
+    void animation(bool start);
 
-void Timer::reset()
-{
-    m_interface->reset();
+    int m_length, m_elapsed; // seconds
+    QString m_label;
+    bool m_running;
+    bool m_justCreated;
 
-    m_elapsed = m_interface->elapsed();
-    Q_EMIT elapsedChanged();
+    QUuid m_uuid;
+    org::kde::kclock::Timer *m_interface;
+    QTimer *m_timer = nullptr;
 };
 
-void Timer::updateLength()
-{
-    m_length = m_interface->length();
-    Q_EMIT propertyChanged();
-}
-
-void Timer::updateLabel()
-{
-    m_label = m_interface->label();
-    Q_EMIT propertyChanged();
-}
-void Timer::updateRunning()
-{
-    m_running = m_interface->running();
-    Q_EMIT propertyChanged();
-
-    this->animation(m_running);
-
-    m_elapsed = m_interface->elapsed();
-    Q_EMIT elapsedChanged();
-}
-
-void Timer::animation(bool start)
-{
-    if (!m_timer) {
-        m_timer = new QTimer(this);
-        connect(m_timer, &QTimer::timeout, [this] {
-            m_elapsed = m_interface->elapsed();
-            Q_EMIT this->elapsedChanged();
-        });
-    }
-
-    if (start) {
-        m_timer->start(250);
-    } else {
-        m_timer->stop();
-    }
-}
+#endif // TIMER_H
