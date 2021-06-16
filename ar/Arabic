@@ -17,226 +17,260 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
 import QtQuick 2.11
-import QtQuick.Layouts 1.2
-import org.kde.kirigami 2.15 as Kirigami
 import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.2
+import org.kde.kirigami 2.12 as Kirigami
 import kclock 1.0
 
 Kirigami.Page {
-
     id: root
-    signal alarmCheckedChange(bool checked)
-    property bool clockShow: false
-    // property real myScale: appwindow.officalScale * 1.3
 
-    // background: Item {}
-    background:JBackground{}
+    property bool createdTimer: false
+    // timer state :
+    // 0 reset ;
+    // 1.running;
+    property int timerState: 0
+    property Timer timer: timer
+    property bool justCreated: timer == null ? false : timer.justCreated
+    property bool showFullscreen: false
+    property int elapsed: timer == null ? 0 : timer.elapsed
+    property int duration: timer == null ? 0 : timer.length
+    property bool running: timer == null ? 0 : timer.running
+    property Timer timerDelegate: timerModel.get(0)
 
-    leftPadding: 0
-    rightPadding: 0
-    topPadding: 0
-    bottomPadding: 0
-    globalToolBarStyle : Kirigami.ApplicationHeaderStyle.None
+    globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
+    Layout.fillWidth: true
+    spacing: 0
+    padding:0
 
-    property int marginTitle2Top : 44 
-        property int marginItem2Title : 36
-        property int marginLeftAndRight : 20 
-        property int marginItem2Top : 24
-        property int radiusCommon: 10 
-        property int fontNormal: 14 
-
-    Rectangle {
-        id: alarm_layout
-        anchors.fill: parent
-        color: "#00000000"
-
-        Rectangle {
-            id: watchLayout
-            width: root.width / 2 - 18
-            height: root.height - toolbarHeight
-            color: "transparent"
-
-            // Rectangle {
-            //     anchors.fill: parent
-            //     visible: clockShow
-            //     color: "transparent"
-            //     Image {
-            //         id: clockbg
-            //         anchors.centerIn: parent
-            //         source: "qrc:/image/watch_pad.png"
-            //         width: 736 * appwindow.officalScale
-            //         height: width
-            //     }
-
-            //     Item {
-            //         id: clockItem
-            //         anchors.centerIn: parent
-            //         Layout.alignment: Qt.AlignCenter
-            //         width: (736 - 80) * appwindow.officalScale
-            //         height: width
-            //         AnalogClock {
-            //             id: analogClock
-            //             clockRadius: clockItem.width / 2
-            //         }
-            //     }
-
-            // }
-
-            Rectangle {
-                anchors.fill: parent
-                visible: !clockShow
-                color: "transparent"
-
-                DigitalClock {
-                    anchors.fill: parent
-                }
-            }
-
-            JLogo{}
-        }
-
-        Rectangle {
-            id: alarmLayout
-            anchors.left: watchLayout.right
-            color: "transparent"
-            width: root.width / 2
-            height: root.height - toolbarHeight
-
-            Rectangle {
-                id: topLayout
-                anchors.left: parent.left
-                anchors.right: parent.right
-                width: parent.width
-                height: parent.height / 9
-                color: "transparent"
-                z: 20
-
-                Rectangle {
-                    id: btn_add
-                    width: parent.width /3
-                    height: 22
-                    anchors.left: parent.left
-                    anchors.leftMargin: 10
-                    anchors.bottom: parent.bottom
-                    color: "transparent"
-
-                    Image {
-                        id: addIcon
-                        source: appwindow.isDarkTheme ? "qrc:/image/alarm_add.png" : "qrc:/image/alarm_add_l.png"
-                        width: 22
-                        height: 22
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Label {
-                        id: addText
-                        text: i18n("Add Alarm")
-                        font.pixelSize: 14
-                        color: appwindow.isDarkTheme ? "white":"black"
-                        anchors.left: addIcon.right
-                        anchors.leftMargin: 5
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-
-                            console.log("px = " + btn_add.x)
-                            console.log("py = " + btn_add.y)
-
-                            popupEventEditor.px=btn_add.x
-                            popupEventEditor.py=btn_add.y +  22+ 26
-                            var kk = mapToItem(root , btn_add.x , btn_add.y)
-                            popupEventEditor.blurX = kk.x
-                            popupEventEditor.blurY = kk.y
-                            popupEventEditor.popTitle = i18n("Add Alarm")
-                            popupEventEditor.open()
-                        }
-                    }
-                }
-            }
-
-            JAlarmEditDialog {
-                  id: popupEventEditor
-
-            }
-            JAlarmDelDialog {
-                   id: alarmDel
-            }
-
-            Rectangle {
-                id: bottomLayout
-                anchors.left: parent.left
-                anchors.bottom: parent.bottom
-                width: parent.width
-                height: parent.height / 10
-                color: "transparent"
-                z: 20
-            }
-
-            Rectangle {
-
-                id: rightLayout
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: bottomLayout.top
-                anchors.top: topLayout.bottom
-                anchors.topMargin: 26
-                Layout.fillHeight: true
-                color: "transparent"
-                clip: true
-
-                GridView {
-                    id: alarmGridView
-                    model: alarmModel
-                    cellWidth: parent.width / 2 - 10
-                    cellHeight:  rightLayout.height / 3
-                    clip: true
-                    delegate: AlarmItemView {}
-                    height: rightLayout.height  
-                    width: rightLayout.width
-                    Layout.fillHeight: true
-                    anchors.left: parent.left
-                    anchors.leftMargin: 20
-                    anchors.top: parent.top
-                    boundsBehavior: Flickable.StopAtBounds
-                }
-            }
+    mainAction: Kirigami.Action {
+        iconName: "list-add"
+        text: i18n("New Timer")
+        onTriggered: {
+            createdTimer = true
+            timerModel.addNew()
         }
     }
 
 
-    function getRepeatFormat(dayOfWeek) {
-        if (dayOfWeek == 0) {
-            return i18n("No Repeat")
+    background: Rectangle {
+        anchors.fill: parent
+        color: "black"
+    }
+
+    Rectangle {
+        anchors.left: root.left
+        anchors.top: parent.top
+        anchors.margins: 0
+        width: root.width / 2 - 18
+        height: root.height
+        color: "red"
+        id: digitalContentLayout
+
+        TimerComponent {
+            visible: !justCreated
+            timerDuration: duration
+            timerElapsed: elapsed
+            timerRunning: running
         }
-        let monday = 1 << 0, tuesday = 1 << 1, wednesday = 1 << 2, thursday = 1 << 3, friday = 1 << 4, saturday = 1 << 5, sunday = 1 << 6
+    }
 
-        if (dayOfWeek == monday + tuesday + wednesday + thursday + friday + saturday + sunday)
-            return i18n("Everyday")
+    Rectangle {
+        anchors.left: digitalContentLayout.right
+        anchors.top: parent.top
+        width: root.width / 2 - 18
+        height: root.height
+        color: "green"
+        id: timerContentLayout
 
-        if (dayOfWeek == monday + tuesday + wednesday + thursday + friday)
-            return i18n("Weekdays")
+        Kirigami.FormLayout {
+            id: form
+            anchors.centerIn: parent
+            implicitWidth: row.width
+            implicitHeight: row.height
+            property int fontSize: 60
+            visible: true
 
-        let str = ""
-        if (dayOfWeek & monday)
-            str += "Mon., "
-        if (dayOfWeek & tuesday)
-            str += "Tue., "
-        if (dayOfWeek & wednesday)
-            str += "Wed., "
-        if (dayOfWeek & thursday)
-            str += "Thu., "
-        if (dayOfWeek & friday)
-            str += "Fri., "
-        if (dayOfWeek & saturday)
-            str += "Sat., "
-        if (dayOfWeek & sunday)
-            str += "Sun., "
-        return str.substring(0, str.length - 2)
+            Rectangle {
+                anchors.fill: parent
+                color: "orange"
+
+                Row {
+                    id: row
+                    width: 595
+                    height: 380
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 67
+
+                    Tumbler {
+                        id: hoursTumber
+                        width: 101
+                        height: parent.height
+                        model: 100
+                        visibleItemCount: 3
+
+                        delegate: Label {
+                            opacity: 1.0 - Math.abs(Tumbler.displacement)
+                                     / (Tumbler.tumbler.visibleItemCount / 2)
+                            text: modelData < 10 ? "0" + modelData : modelData
+                            color: "white"
+                            font.pixelSize: form.fontSize
+
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+
+                            function displacementItemOpacity(displacement, visibleItemCount) {
+                                return 1.0 - Math.abs(
+                                            displacement) / (visibleItemCount / 2)
+                            }
+                        }
+                    }
+                    Label {
+                        width: 15
+                        height: 90
+                        anchors.verticalCenter: row.verticalCenter
+                        Layout.alignment: Qt.AlignVCenter
+                        color: "white"
+                        text: ":"
+                        font.pixelSize: form.fontSize
+                    }
+
+                    Tumbler {
+                        id: minutesTumber
+                        width: 101
+                        height: parent.height
+                        model: 60
+                        visibleItemCount: 3
+
+                        delegate: Label {
+                            opacity: 1.0 - Math.abs(Tumbler.displacement)
+                                     / (Tumbler.tumbler.visibleItemCount / 2)
+                            color: "white"
+                            text: modelData < 10 ? "0" + modelData : modelData
+                            font.pixelSize: form.fontSize
+
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+
+                            function displacementItemOpacity(displacement, visibleItemCount) {
+                                return 1.0 - Math.abs(
+                                            displacement) / (visibleItemCount / 2)
+                            }
+                        }
+                    }
+                    Label {
+                        width: 15
+                        height: 90
+                        anchors.verticalCenter: parent.verticalCenter
+                        Layout.alignment: Qt.AlignVCenter
+                        color: "white"
+                        text: ":"
+                        font.pixelSize: form.fontSize
+                    }
+                    Tumbler {
+                        id: secondsTumber
+                        width: 101
+                        height: parent.height
+                        model: 60
+                        visibleItemCount: 3
+
+                        delegate: Label {
+                            opacity: 1.0 - Math.abs(Tumbler.displacement)
+                                     / (Tumbler.tumbler.visibleItemCount / 2)
+                            color: "white"
+                            text: modelData < 10 ? "0" + modelData : modelData
+                            font.pixelSize: form.fontSize
+
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+
+                            function displacementItemOpacity(displacement, visibleItemCount) {
+                                return 1.0 - Math.abs(
+                                            displacement) / (visibleItemCount / 2)
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: row.width
+                    height: 2
+                    color: "#aaffffff"
+                    anchors.left: row.left
+                    anchors.right: row.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.verticalCenterOffset: -60
+                }
+
+                Rectangle {
+                    width: row.width
+                    height: 2
+                    color: "#aaffffff"
+                    anchors.left: row.left
+                    anchors.right: row.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.verticalCenterOffset: 60
+                }
+            }
+
+            function setDuration() {
+                timer.length = spinBoxHours.value * 60 * 60
+                        + spinBoxMinutes.value * 60 + spinBoxSeconds.value
+            }
+
+            Item {
+                Kirigami.FormData.isSection: true
+                Kirigami.FormData.label: "Label (optional)"
+            }
+
+
+        }
+
+
+        RowLayout {
+            anchors.left: form.left
+            anchors.right: form.right
+            anchors.top: form.bottom
+            height: 94
+            width: form.width
+
+            Kirigami.Heading {
+                level: 4
+                Layout.alignment: Qt.AlignLeft
+                text: timerDelegate.label
+            }
+
+            Row {
+                anchors.fill: parent
+
+                ToolButton {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    icon.name: "chronometer-reset"
+                    onClicked: {
+                        hoursTumber.currentIndex = 0
+                        minutesTumber.currentIndex = 0
+                        secondsTumber.currentIndex = 0
+                    }
+                }
+                ToolButton {
+                    anchors.horizontalCenter : parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    icon.name: timerDelegate.running ? "chronometer-pause" : "chronometer-start"
+                    onClicked: {
+                        console.log(hoursTumber.currentIndex)
+                        timerModel.addNew()
+                    }
+                }
+
+                ToolButton {
+                    anchors.left: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    icon.name: "delete"
+                    onClicked: timerModel.remove(index)
+                }
+            }
+        }
     }
 }
