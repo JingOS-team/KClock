@@ -1,150 +1,120 @@
 /*
- * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ *   SPDX-FileCopyrightText: 2019 Dimitris Kardarakos <dimkard@posteo.net>
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *   SPDX-License-Identifier: LGPL-2.0-or-later
  */
-
 import QtQuick 2.12
-import QtQuick.Controls 2.4
-import QtQuick.Layouts 1.2
-import QtQuick.Shapes 1.12
-import org.kde.kirigami 2.11 as Kirigami
-import QtGraphicalEffects 1.0
+import QtQuick.Controls 2.5 as Controls2
+import org.kde.kirigami 2.0 as Kirigami
+import QtQuick.Layouts 1.11
 
-Rectangle {
+Item {
     id: root
 
-    property int timerDuration
-    property int timerElapsed
-    property bool timerRunning
-    property int fontSize: 34
+    property int hours
+    property int minutes
+    property bool pm
 
-    width: 320  
-    height: 80   
-    color: "transparent"
-    anchors.centerIn: parent
+    ColumnLayout {
+        anchors.fill: parent
+        Item {
+            id: clock
+            Layout.fillWidth: true
+            Layout.fillHeight: true
 
-    function getTimeLeft() {
-        return timerDuration - timerElapsed
-    }
-    function getHours() {
-        return ("0" + parseInt(getTimeLeft() / 60 / 60).toFixed(0)).slice(-2)
-    }
-    function getMinutes() {
-        return ("0" + parseInt(getTimeLeft() / 60 - 60 * getHours())).slice(-2)
-    }
-    function getSeconds() {
-        return ("0" + parseInt(getTimeLeft() - 60 * getMinutes())).slice(-2)
-    }
+            //Hours clock
+            PathView {
+                id: hoursClock
 
-    Slider {
-        id: sliderArea
-
-        width: parent.width
-        height: parent.height
-        leftPadding: 0
-        rightPadding: 0
-
-        from: timerDuration
-        to: 0
-
-        handle: Item {
-            visible: true
-            width: 1
-            height: 1
-            x: 0
-            y: 0
-
-            Rectangle {
-                anchors.centerIn: parent
-                width: 1
-                height: 1
-                visible: false
-            }
-        }
-
-        //    #ff43BDF4
-        background: Rectangle {
-            id: progressBarBackground
-            color: appwindow.isDarkTheme ? "#d8000000" : "white"
-            radius: 10  
-
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                maskSource: Rectangle {
-                    width: progressBarBackground.width
-                    height: progressBarBackground.height
-                    radius: progressBarBackground.radius
+                anchors.fill: parent
+                interactive: false
+                model: 12
+                delegate: JClockElement {
+                    type: "hours"
+                    selectedValue: root.hours
+                    onClicked: root.hours = index
                 }
-            }
-
-            Rectangle {
-                width: (1 - timerElapsed / timerDuration) * parent.width
-                height: parent.height
-                color: {
-                    if(appwindow.isDarkTheme){
-                        timerRunning ? "#39c17b" : "#555555"
-                    }else {
-                        timerRunning ? "#39c17b" : "#333C3F48"
+                
+                path: Path {
+                    PathAngleArc {
+                        centerX: clock.width / 2
+                        centerY: clock.height / 2
+                        radiusX: (Math.min(
+                                      clock.width,
+                                      clock.height) - Kirigami.Units.gridUnit) / 4
+                        radiusY: radiusX
+                        startAngle: -90
+                        sweepAngle: 360
                     }
+                }
+            }
 
+            //Minutes clock
+            PathView {
+                id: minutesClock
+
+                anchors.fill: parent
+                interactive: false
+                model: 60
+
+                delegate: JClockElement {
+                    type: "minutes"
+                    selectedValue: root.minutes
+                    onClicked: root.minutes = index
+                }
+
+                path: Path {
+                    PathAngleArc {
+                        centerX: clock.width / 2
+                        centerY: clock.height / 2
+                        radiusX: (Math.min(
+                                      clock.width,
+                                      clock.height) - Kirigami.Units.gridUnit) / 2
+                        radiusY: radiusX
+                        startAngle: -90
+                        sweepAngle: 360
+                    }
                 }
             }
         }
-    }
-
-    Rectangle {
-        width: 240  
-        height: 42  
-        anchors.centerIn: parent
-        color: "transparent"
 
         RowLayout {
-            anchors.centerIn: parent
+            Layout.alignment: Qt.AlignHCenter
 
-            Label {
-                text: getHours()
-                font.pixelSize: fontSize 
-                font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
+            Controls2.Label {
+                text: ((root.hours < 10) ? "0" : "") + root.hours + ":"
+                      + ((root.minutes < 10) ? "0" : "") + root.minutes
+                color: "white"
+                font.pixelSize: 24
             }
-            Label {
-                text: ":"
-                font.pixelSize: fontSize 
-                font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
+
+            Rectangle {
+                width: 60
+                height: parent.height
             }
-            Label {
-                text: getMinutes()
-                font.pixelSize: fontSize 
-                font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
-            }
-            Label {
-                text: ":"
-                font.pixelSize: fontSize 
-                font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
-            }
-            Label {
-                text: getSeconds()
-                font.pixelSize: fontSize 
-                font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
+
+            Controls2.ToolButton {
+                id: pm
+
+                checked: root.pm
+                checkable: true
+                implicitWidth: 100
+                implicitHeight: 42
+
+                contentItem: Controls2.Label {
+                    text: parent.checked ? "PM" : "AM"
+                    font.pixelSize: 24
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: root.pm = checked
+                background: Rectangle {
+                    border.width: 2
+                    border.color: "black"
+                    color: "#4a4a4a"
+                }
             }
         }
     }
