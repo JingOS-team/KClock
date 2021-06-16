@@ -1,6 +1,5 @@
 /*
- * Copyright 2020 Devin Lin <espidev@gmail.com>
- *                Han Young <hanyoung@protonmail.com>
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,54 +17,62 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+import QtQuick 2.0
+import QtGraphicalEffects 1.0
 
-#pragma once
+Item {
 
-#include <QAbstractListModel>
-#include <QObject>
+    property int mouseX
+    property int mouseY
+    property var sourceView
+    property string coverColor: "#aa000000"
+    property real coverRadius: 40 * appwindow.officalScale
 
-#include "alarmmodelinterface.h"
-class Alarm;
-class AlarmModel : public QAbstractListModel
-{
-    Q_OBJECT
-public:
-    static AlarmModel *instance()
-    {
-        static AlarmModel *singleton = new AlarmModel();
-        return singleton;
+    ShaderEffectSource {
+        id: eff
+        sourceItem: sourceView
+        anchors.centerIn: fastBlur
+        width: fastBlur.width
+        visible: false
+        height: fastBlur.height
+        sourceRect: Qt.rect(mouseX, mouseY, width, height)
+
+        function getItemX(width, height) {
+            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
+                                        width, height)
+            return mapItem.x
+        }
+        function getItemY(width, height) {
+            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
+                                        width, height)
+            return mapItem.y
+        }
     }
-
-    enum {
-        NameRole = Qt::DisplayRole,
-        EnabledRole = Qt::UserRole + 1,
-        HoursRole,
-        MinutesRole,
-        DaysOfWeekRole,
-        AlarmRole,
-        SnoozeRole,
-    };
-
-    int rowCount(const QModelIndex &parent) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
-    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
-    Qt::ItemFlags flags(const QModelIndex &index) const override;
-    QHash<int, QByteArray> roleNames() const override;
-
-    Q_INVOKABLE void updateUi();
-
-    Q_INVOKABLE void remove(int index);
-
-    Q_INVOKABLE void addAlarm(int hours, int minutes, int daysOfWeek, QString name, QString ringtonePath = 0, int snoozeMinutes = 0); // in 24 hours units, ringTone could be chosen from a list
-
-    Q_INVOKABLE QString timeToRingFormated(int hours, int minutes, int daysOfWeek); // for new alarm use
-private Q_SLOTS:
-    void addAlarm(QString uuid);
-    void removeAlarm(QString uuid);
-
-private:
-    org::kde::kclock::AlarmModel *m_interface;
-
-    explicit AlarmModel(QObject *parent = nullptr);
-    QList<Alarm *> alarmsList;
-};
+    FastBlur {
+        id: fastBlur
+        anchors.fill: parent
+        source: eff
+        radius: 70
+        cached: true
+        visible: false
+    }
+    Rectangle {
+        id: maskRect
+        anchors.fill: fastBlur
+        visible: false
+        clip: true
+        radius: coverRadius
+    }
+    OpacityMask {
+        id: mask
+        anchors.fill: maskRect
+        visible: true
+        source: fastBlur
+        maskSource: maskRect
+    }
+    Rectangle {
+        anchors.fill: parent
+        color: coverColor
+        radius: coverRadius
+    }
+}
