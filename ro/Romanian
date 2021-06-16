@@ -1,131 +1,90 @@
-/*
- * Copyright 2019 Nick Reitemeyer <nick.reitemeyer@web.de>
- *           2020 Devin Lin <espidev@gmail.com>
- *                Han Young <hanyoung@protonmail.com>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-#include <malloc.h>
-
-#include <QApplication>
-#include <QCommandLineParser>
-#include <QMetaObject>
-#include <QQmlApplicationEngine>
-#include <QQmlContext>
-#include <QQmlDebuggingEnabler>
-#include <QQuickWindow>
-#include <QStringLiteral>
-
-#include <KAboutData>
-#include <KConfig>
-#include <KLocalizedContext>
-#include <KLocalizedString>
-
-#include <KDBusService>
-
-#include "alarmmodel.h"
-#include "alarmplayer.h"
-#include "alarms.h"
-#include "kclockformat.h"
-#include "kclocksettings.h"
-#include "stopwatchtimer.h"
-#include "timer.h"
-#include "timermodel.h"
-#include "timezoneselectormodel.h"
-#include "utilmodel.h"
-
-QCommandLineParser *createParser()
-{
-    QCommandLineParser *parser = new QCommandLineParser;
-    parser->addOption(QCommandLineOption(QStringLiteral("page"), i18n("Select opened page"), QStringLiteral("page"), "main"));
-    parser->addHelpOption();
-    return parser;
-};
-
-int main(int argc, char *argv[])
-{
-    QApplication app(argc, argv);
-
-    /*
-    QSurfaceFormat format = QSurfaceFormat::defaultFormat();
-    format.setDepthBufferSize(0);
-    format.setStencilBufferSize(0);
-    QSurfaceFormat::setDefaultFormat(format);
-*/
-    QQmlDebuggingEnabler enabler;
-
-    // KLocalizedString::setApplicationDomain("kclock");
-    KLocalizedString::setApplicationDomain("j-clock");
-    KAboutData aboutData("kclock", "Clock", "0.2", "Simple clock made in Kirigami", KAboutLicense::GPL, i18n("© 2020 KDE Community"));
-    aboutData.addAuthor(i18n("Devin Lin"), QString(), QStringLiteral("espidev@gmail.com"));
-    aboutData.addAuthor(i18n("Han Young"), QString(), QStringLiteral("hanyoung@protonmail.com"));
-    KAboutData::setApplicationData(aboutData);
-
-    // only allow one instance
-    // KDBusService service(KDBusService::Unique);
-
-    // initialize models
-    auto *timeZoneModel = new TimeZoneSelectorModel();
-
-    auto *timeZoneViewModel = new QSortFilterProxyModel();
-    timeZoneViewModel->setFilterFixedString("true");
-    timeZoneViewModel->setSourceModel(timeZoneModel);
-    timeZoneViewModel->setFilterRole(TimeZoneSelectorModel::ShownRole);
-
-    auto *timeZoneFilterModel = new TimeZoneFilterModel(timeZoneModel);
-    auto *stopwatchTimer = new StopwatchTimer();
-    auto *kclockFormat = new KclockFormat();
-    auto *weekModel = new WeekModel();
-
-    // register QML types
-    qmlRegisterType<Alarm>("kclock", 1, 0, "Alarm");
-    qmlRegisterType<Timer>("kclock", 1, 0, "Timer");
-
-    QQmlApplicationEngine *engine = new QQmlApplicationEngine();
-
-    UtilModel::instance()->setApplicationLoaded(true);
-    QObject::connect(&app, &QApplication::applicationStateChanged, [](Qt::ApplicationStates state) {
-        if (state == Qt::ApplicationActive)
-            UtilModel::instance()->setApplicationLoaded(true);
-        else
-            UtilModel::instance()->setApplicationLoaded(false);
-    });
-
-    engine->rootContext()->setContextObject(new KLocalizedContext(engine));
-    // models
-    engine->rootContext()->setContextProperty("timeZoneShowModel", timeZoneViewModel);
-    engine->rootContext()->setContextProperty("timeZoneFilterModel", timeZoneFilterModel);
-    engine->rootContext()->setContextProperty("alarmModel", AlarmModel::instance());
-    engine->rootContext()->setContextProperty("timerModel", TimerModel::instance());
-    engine->rootContext()->setContextProperty("utilModel", UtilModel::instance());
-    engine->rootContext()->setContextProperty("stopwatchTimer", stopwatchTimer);
-    engine->rootContext()->setContextProperty("alarmPlayer", &AlarmPlayer::instance());
-    engine->rootContext()->setContextProperty("kclockFormat", kclockFormat);
-    engine->rootContext()->setContextProperty("weekModel", weekModel);
-    engine->rootContext()->setContextProperty("settingsModel", &KClockSettings::instance());
-
-    engine->load(QUrl(QStringLiteral("qrc:/qml/main.qml")));
-
-    {
-        QScopedPointer<QCommandLineParser> parser(createParser());
-        parser->process(app);
-        if (parser->isSet(QStringLiteral("page"))) {
-            QMetaObject::invokeMethod(engine->rootObjects().first(), "switchToPage", Q_ARG(QVariant, parser->value("page")));
-        }
-    }
-    return app.exec();
-}
+<RCC>
+    <qresource prefix="/">
+        <file>qml/main.qml</file>
+        <file>qml/AnalogClock.qml</file>
+        <file>qml/BottomToolbar.qml</file>
+        <file>assets/RedHatText-Regular.ttf</file>
+        <file>image/timer_pad.png</file>
+        <file>image/watch_pad.png</file>
+        <file>qml/TimerDigitalComponent.qml</file>
+        <file>image/pause.png</file>
+        <file>image/delete.png</file>
+        <file>image/play.png</file>
+        <file>image/reset.png</file>
+        <file>image/lap.png</file>
+        <file>image/create.png</file>
+        <file>qml/JTimerPicker.qml</file>
+        <file>qml/JClockElement.qml</file>
+        <file>image/error.png</file>
+        <file>qml/AlarmItemView.qml</file>
+        <file>qml/DigitalClock.qml</file>
+        <file>qml/JStopwatchPage.qml</file>
+        <file>qml/JButton.qml</file>
+        <file>qml/JLogo.qml</file>
+        <file>image/background.png</file>
+        <file>qml/JBackground.qml</file>
+        <file>qml/JTimerPage.qml</file>
+        <file>qml/JAlarmPage.qml</file>
+        <file>qml/WheelView.qml</file>
+        <file>qml/TimeSelectWheelView.qml</file>
+        <file>qml/JAlarmEditDialog.qml</file>
+        <file>CommonSize.js</file>
+        <file>qml/ClockElement.qml</file>
+        <file>image/row_time.png</file>
+        <file>image/row_snooze.png</file>
+        <file>image/row_repeat.png</file>
+        <file>image/row_label.png</file>
+        <file>image/icon_right.png</file>
+        <file>qml/JTimerProgressComponent.qml</file>
+        <file>qml/JAlarmDelDialog.qml</file>
+        <file>qml/DeleteMenu.qml</file>
+        <file>image/clock_logo.png</file>
+        <file>qml/JTumbler.qml</file>
+        <file>qml/StringUtils.js</file>
+        <file>image/footer_alarm_grey.png</file>
+        <file>image/footer_alarm_grey.svg</file>
+        <file>image/footer_alarm_grey_l.png</file>
+        <file>image/footer_alarm_grey_l.svg</file>
+        <file>image/footer_alarm_w.png</file>
+        <file>image/footer_sw_grey.png</file>
+        <file>image/footer_sw_grey.svg</file>
+        <file>image/footer_sw_grey_l.png</file>
+        <file>image/footer_sw_grey_l.svg</file>
+        <file>image/footer_sw_w.png</file>
+        <file>image/footer_timer_grey.png</file>
+        <file>image/footer_timer_grey.svg</file>
+        <file>image/footer_timer_grey_l.png</file>
+        <file>image/footer_timer_grey_l.svg</file>
+        <file>image/footer_timer_w.png</file>
+        <file>image/sw_lap.png</file>
+        <file>image/sw_lap_l.png</file>
+        <file>image/sw_pause.png</file>
+        <file>image/sw_reset.png</file>
+        <file>image/sw_reset_l.png</file>
+        <file>image/sw_start.png</file>
+        <file>image/timer_done.png</file>
+        <file>image/timer_done_l.png</file>
+        <file>image/timer_resume.png</file>
+        <file>image/alarm_add.png</file>
+        <file>image/alarm_add_l.png</file>
+        <file>image/back.png</file>
+        <file>image/back_l.png</file>
+        <file>image/dlg_ok.png</file>
+        <file>image/dlg_close.png</file>
+        <file>image/dlg_ok_l.png</file>
+        <file>image/dlg_close_l.png</file>
+        <file>image/timer_new.png</file>
+        <file>image/time_wheel_up.png</file>
+        <file>image/time_wheel_down.png</file>
+        <file>image/big_up.png</file>
+        <file>image/big_up_l.png</file>
+        <file>image/big_dow.png</file>
+        <file>image/big_dow_l.png</file>
+        <file>assets/Gilroy-Thin.otf</file>
+        <file>assets/Gidole-Regular.woff2.ttf</file>
+        <file>qml/VagueBackground.qml</file>
+        <file>qml/JDoubleGradientView.qml</file>
+        <file>image/repeat_ok.png</file>
+        <file>image/menu_delete.png</file>
+    </qresource>
+</RCC>
