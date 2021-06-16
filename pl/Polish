@@ -1,41 +1,61 @@
-set(kclock_SRCS
-    alarms.cpp
-    alarmmodel.cpp
-    timer.cpp
-    timermodel.cpp
-    utilmodel.cpp
-    stopwatchtimer.cpp
-    alarmplayer.cpp
-    kclockformat.cpp
-    kclocksettings.cpp
-    resources.qrc
-    )
-
-set(SettingsXML ${CMAKE_CURRENT_BINARY_DIR}/../org.kde.kclockd.KClockSettings.xml)
-set(AlarmXML ${CMAKE_CURRENT_BINARY_DIR}/../org.kde.kclockd.Alarm.xml)
-set(AlarmModelXML ${CMAKE_CURRENT_BINARY_DIR}/../org.kde.kclockd.AlarmModel.xml)
-set(TimermModelXML ${CMAKE_CURRENT_BINARY_DIR}/../org.kde.kclockd.TimerModel.xml)
-set(TimerXML ${CMAKE_CURRENT_BINARY_DIR}/../org.kde.kclockd.Timer.xml)
-
-qt5_add_dbus_interface(kclock_SRCS ${SettingsXML} kclocksettingsinterface )
-qt5_add_dbus_interface(kclock_SRCS ${AlarmXML} alarminterface )
-qt5_add_dbus_interface(kclock_SRCS ${AlarmModelXML} alarmmodelinterface )
-qt5_add_dbus_interface(kclock_SRCS ${TimermModelXML} timermodelinterface )
-qt5_add_dbus_interface(kclock_SRCS ${TimerXML} timerinterface )
-
-add_executable(kclock main.cpp timezoneselectormodel.cpp ${kclock_SRCS} )
-add_dependencies(kclock kclockd)
-target_link_libraries(kclock
-        Qt5::Qml
-        Qt5::Gui
-        Qt5::QuickControls2
-        Qt5::Widgets
-        Qt5::Multimedia
-        KF5::I18n
-        KF5::ConfigCore
-        KF5::ConfigGui
-        KF5::CoreAddons
-        KF5::Notifications
-        KF5::DBusAddons
-        )
-install(TARGETS kclock ${KF5_INSTALL_TARGETS_DEFAULT_ARGS})
+function func() {
+}
+function setScreenDisplay(x, y) {
+    console.log('-------------- setScreenDisplay ' + x + ':' + y);
+    screenWidth = x;
+    screenHeight = y;
+}
+var screenWidth = 1920;
+var screenHeight = 1200;
+//var screenWidth = 1368
+//var screenHeight = 912
+var testHeight = 1080;
+var defaultBkgColor = '#D8D8D8';
+var monthView = {
+    'width': 1340,
+    'header_commonMargin': 50,
+    'header_leftMargin': 50,
+    //    "header_topMargin":80,
+    'header_topMargin': 50,
+    'header_rightMargin': 50,
+    'header_bottomMargin': 50,
+    'dayRectWidth': 180
+};
+var dayDelegate = {
+    'width': 180,
+    'event_circle': 14,
+    'rect_radius': 24,
+    'today_rect_color': '#E95B4E'
+};
+var calendarScheduleView = {
+    'width': 560,
+    //    "common_margin":50,
+    'common_margin': 40,
+    'content_margin': 18,
+    'listView_topMargin': 40,
+    'section_listView_height': 80,
+    'lable_color_height': 6
+};
+var popEventEditor = {
+    'common_margin': 20,
+    'icon_margin': 30,
+    'column_spacing': 15,
+    'icon_text_margin': 10
+};
+//var popEventEditor = {
+//     "common_margin":40,
+//     "icon_margin":60,
+//     "column_spacing":30,
+//     "icon_text_margin":20
+//}
+var timeSelectWheelView = { 'bg_color': '#EFEFF0' };
+var dateSelectWheelView = { 'bg_color': '#EFEFF0' };
+var fontSize = {
+    'f1_5': Kirigami.Units.fontMetrics.font.pixelSize * '1.5',
+    'f1_6': Kirigami.Units.fontMetrics.font.pixelSize * '1.6',
+    'f1_8': Kirigami.Units.fontMetrics.font.pixelSize * '1.8',
+    'f2': Kirigami.Units.fontMetrics.font.pixelSize * 2,
+    'f2_5': Kirigami.Units.fontMetrics.font.pixelSize * '2.5',
+    'f3': Kirigami.Units.fontMetrics.font.pixelSize * 3,
+    'f4': Kirigami.Units.fontMetrics.font.pixelSize * 4
+};
