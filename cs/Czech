@@ -19,70 +19,139 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <QDateTime>
+#ifndef KIRIGAMICLOCK_ALARMS_H
+#define KIRIGAMICLOCK_ALARMS_H
 
-#include <KLocalizedString>
+#include <QFileDialog>
+#include <QObject>
+#include <QStandardPaths>
+#include <QString>
+#include <QUrl>
+#include <QUuid>
 
-#include "alarmmodel.h"
-#include "alarms.h"
-#include "utilmodel.h"
-
-Alarm::Alarm() {};
-Alarm::Alarm(QString uuid)
+#include "alarminterface.h"
+class Alarm : public QObject
 {
-    m_interface = new org::kde::kclock::Alarm(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms/") + uuid, QDBusConnection::sessionBus(), this);
-
-    if (m_interface->isValid()) {
-        connect(m_interface, &OrgKdeKclockAlarmInterface::propertyChanged, this, &Alarm::updateProperty);
-        connect(m_interface, &OrgKdeKclockAlarmInterface::alarmChanged, [this] { m_nextRingTime = m_interface->nextRingTime(); });
-
-        m_uuid = QUuid(m_interface->getUUID());
-        m_name = m_interface->name();
-        m_enabled = m_interface->enabled();
-        m_hours = m_interface->hours();
-        m_minutes = m_interface->minutes();
-        m_daysOfWeek = m_interface->daysOfWeek();
-        m_snooze = m_interface->snoozedMinutes() * 60;
-        m_snoozeMinutes = m_interface->snoozeMinutes();
-        m_ringtonePath = m_interface->ringtonePath();
-        m_nextRingTime = m_interface->nextRingTime();
-    } else {
-        m_isValid = false;
+    Q_OBJECT
+    Q_PROPERTY(QString name READ name WRITE setName NOTIFY propertyChanged)
+    Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY propertyChanged)
+    Q_PROPERTY(int hours READ hours WRITE setHours NOTIFY propertyChanged)
+    Q_PROPERTY(int minutes READ minutes WRITE setMinutes NOTIFY propertyChanged)
+    Q_PROPERTY(int daysOfWeek READ daysOfWeek WRITE setDaysOfWeek NOTIFY propertyChanged)
+    Q_PROPERTY(int snoozedMinutes READ snoozedMinutes NOTIFY propertyChanged)
+    Q_PROPERTY(int snoozeMinutes READ snoozeMinutes WRITE setSnoozeMinutes)
+    Q_PROPERTY(QString ringtonePath READ ringtonePath WRITE setRingtonePath NOTIFY propertyChanged)
+public:
+    explicit Alarm();
+    explicit Alarm(QString uuid);
+    const QString &name() const
+    {
+        return m_name;
     }
-}
+    void setName(QString name)
+    {
+        m_interface->setProperty("name", name);
+    }
+    const QUuid &uuid() const
+    {
+        return m_uuid;
+    }
+    const bool &enabled() const
+    {
+        return m_enabled;
+    }
+    void setEnabled(bool enabled)
+    {
+        m_interface->setProperty("enabled", enabled);
+        m_enabled = enabled;
+    }
+    const int &hours() const
+    {
+        return m_hours;
+    }
+    void setHours(int hours)
+    {
+        m_hours = hours;
+        m_interface->setProperty("hours", hours);
+    }
+    const int &minutes() const
+    {
+        return m_minutes;
+    }
+    void setMinutes(int minutes)
+    {
+        m_minutes = minutes;
+        m_interface->setProperty("minutes", minutes);
+    }
+    const int &daysOfWeek() const
+    {
+        return m_daysOfWeek;
+    }
+    void setDaysOfWeek(int daysOfWeek)
+    {
+        m_daysOfWeek = daysOfWeek;
+        m_interface->setProperty("daysOfWeek", daysOfWeek);
+    }
+    int snoozedMinutes() const
+    {
+        return m_snooze / 60;
+    }
 
-QString Alarm::timeToRingFormated()
-{
-    this->calculateNextRingTime();
-
-    return UtilModel::instance()->timeToRingFormatted(this->nextRingTime());
-}
-
-void Alarm::updateProperty(QString property)
-{
-    if (property == QStringLiteral("name"))
-        this->m_name = m_interface->property("name").toString();
-    else if (property == QStringLiteral("enabled"))
-        this->m_enabled = m_interface->property("enabled").toBool();
-    else if (property == QStringLiteral("hours"))
-        this->m_hours = m_interface->property("hours").toInt();
-    else if (property == QStringLiteral("minutes"))
-        this->m_minutes = m_interface->property("minutes").toInt();
-    else if (property == QStringLiteral("daysOfWeek"))
-        this->m_daysOfWeek = m_interface->property("daysOfWeek").toInt();
-    else if (property == QStringLiteral("snoozedMinutes"))
-        this->m_snooze = m_interface->property("snoozedMinutes").toInt() * 60;
-    else if (property == QStringLiteral("ringtonePath"))
-        this->m_ringtonePath = m_interface->property("ringtonePath").toBool();
-    Q_EMIT propertyChanged();
-}
-
-void Alarm::calculateNextRingTime()
-{
-    if (!this->m_enabled) { // if not enabled, means this would never ring
-        m_nextRingTime = -1;
-        return;
+    int snoozeMinutes() const 
+    {
+        return m_snoozeMinutes;
     }
     
-    m_nextRingTime = UtilModel::instance()->calculateNextRingTime(this->m_hours, this->m_minutes, this->m_daysOfWeek, this->m_snooze);
-}
+    void setSnoozeMinutes(int minutes) {
+        m_snoozeMinutes = minutes;
+        m_interface->setProperty("snoozeMinutes", m_snoozeMinutes);
+    }
+
+    const QString &ringtonePath() const
+    {
+        return m_ringtonePath;
+    };
+    void setRingtonePath(QString path)
+    {
+        m_interface->setProperty("ringtonePath", path);
+    }
+
+    bool isValid()
+    {
+        return m_isValid;
+    };
+
+    Q_INVOKABLE QString timeToRingFormated();
+
+    Q_INVOKABLE void save()
+    {
+        m_interface->alarmChanged();
+    };
+Q_SIGNALS:
+    void propertyChanged();
+private Q_SLOTS:
+    void updateProperty(QString property);
+
+private:
+    const qint64 &nextRingTime() const
+    {
+        return m_nextRingTime;
+    };
+
+    void calculateNextRingTime();
+
+    org::kde::kclock::Alarm *m_interface;
+
+    QString m_ringtonePath;
+    QString m_name;
+    QUuid m_uuid;
+    bool m_enabled;
+    int m_hours, m_minutes, m_daysOfWeek;
+    qint64 m_snooze;
+    int m_snoozeMinutes = 0;
+    qint64 m_nextRingTime;
+
+    bool m_isValid = true;
+};
+
+#endif // KIRIGAMICLOCK_ALARMS_H
