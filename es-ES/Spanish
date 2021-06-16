@@ -1,5 +1,5 @@
 /*
- * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,88 +17,156 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "kclocksettings.h"
-#include "alarmplayer.h"
-#include <KLocalizedString>
-#include <QDebug>
-KClockSettings::KClockSettings()
-    : m_interface(new LocalKClockSettingsInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Settings"), QDBusConnection::sessionBus()))
-{
-    m_volume = m_interface->alarmVolume();
-    AlarmPlayer::instance().setVolume(m_volume);
+import QtQuick 2.12
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.2
+import QtQuick.Shapes 1.12
+import org.kde.kirigami 2.11 as Kirigami
 
-    m_alarmSilenceAfter = m_interface->alarmSilenceAfter();
-    m_alarmSnoozeLength = m_interface->alarmSnoozeLength();
+Rectangle {
 
-    connect(m_interface, &LocalKClockSettingsInterface::alarmVolumeChanged, this, &KClockSettings::updateVolume);
-    connect(m_interface, &LocalKClockSettingsInterface::alarmSilenceAfterChanged, this, &KClockSettings::updateAlarmSilenceAfter);
-    connect(m_interface, &LocalKClockSettingsInterface::alarmSnoozeLengthChanged, this, &KClockSettings::updateAlarmSnoozeLength);
+    id: root
+    anchors.centerIn: parent
 
-    // init display
-    switch (m_alarmSilenceAfter) {
-    case 30:
-        m_alarmSilenceAfterDisplay = i18n("30 seconds");
-        break;
-    case 60:
-        m_alarmSilenceAfterDisplay = i18n("1 minute");
-        break;
-    case 300:
-        m_alarmSilenceAfterDisplay = i18n("5 minutes");
-        break;
-    case 600:
-        m_alarmSilenceAfterDisplay = i18n("10 minutes");
-        break;
-    case 900:
-        m_alarmSilenceAfterDisplay = i18n("15 minutes");
-        break;
-    case -1:
-        m_alarmSilenceAfterDisplay = i18n("Never");
-        break;
+    property int timerDuration
+    property int timerElapsed
+    property bool timerRunning
+    property int fontSize: 80
+
+    color: "transparent"
+
+    function getTimeLeft() {
+        return timerDuration - timerElapsed
+    }
+    function getHours() {
+        return ("0" + parseInt(getTimeLeft() / 60 / 60).toFixed(0)).slice(-2)
+    }
+    function getMinutes() {
+        return ("0" + parseInt(getTimeLeft() / 60 - 60 * getHours())).slice(-2)
+    }
+    function getSeconds() {
+        return ("0" + parseInt(getTimeLeft() - 60 * getMinutes())).slice(-2)
     }
 
-    switch (m_alarmSnoozeLength) {
-    case 1:
-        m_alarmSnoozeLengthDisplay = i18n("1 minute");
-        break;
-    case 2:
-        m_alarmSnoozeLengthDisplay = i18n("2 minutes");
-        break;
-    case 3:
-        m_alarmSnoozeLengthDisplay = i18n("3 minutes");
-        break;
-    case 4:
-        m_alarmSnoozeLengthDisplay = i18n("4 minutes");
-        break;
-    case 5:
-        m_alarmSnoozeLengthDisplay = i18n("5 minutes");
-        break;
-    case 10:
-        m_alarmSnoozeLengthDisplay = i18n("10 minutes");
-        break;
-    case 30:
-        m_alarmSnoozeLengthDisplay = i18n("30 minutes");
-        break;
-    case 60:
-        m_alarmSnoozeLengthDisplay = i18n("1 hour");
-        break;
+    // clock display
+    RowLayout {
+        id: timeLabels
+        anchors.centerIn: parent
+
+        Label {
+            id: hoursText
+            text: getHours()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+            visible: true
+        }
+        Label {
+            text: ":"
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+            visible: true
+        }
+        Label {
+            id: minutesText
+            text: getMinutes()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+        Label {
+            text: ":"
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+        Label {
+            text: getSeconds()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
     }
-    qDebug() << m_alarmSnoozeLengthDisplay;
-}
 
-void KClockSettings::updateVolume()
-{
-    m_volume = m_interface->alarmVolume();
-    Q_EMIT volumeChanged();
-}
+    Rectangle {
+        width: timeLabels.width
+        height: 2
+        color: "#aaffffff"
+        anchors.left: timeLabels.left
+        anchors.right: timeLabels.right
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: -60
+    }
 
-void KClockSettings::updateAlarmSilenceAfter()
-{
-    m_alarmSilenceAfter = m_interface->alarmSilenceAfter();
-    Q_EMIT alarmSilenceChanged();
-}
+    Rectangle {
+        width: timeLabels.width
+        height: 2
+        color: "#aaffffff"
+        anchors.left: timeLabels.left
+        anchors.right: timeLabels.right
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: 60
+    }
 
-void KClockSettings::updateAlarmSnoozeLength()
-{
-    m_alarmSnoozeLength = m_interface->alarmSnoozeLength();
-    Q_EMIT alarmSnoozedChanged();
+    Rectangle {
+        width: 500
+        height: 94
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: timeLabels.bottom
+        anchors.topMargin: 33
+        visible: false
+        color: "black"
+
+        RowLayout {
+            anchors.fill: parent
+
+            Image {
+                id: reset
+                source: "qrc:/image/reset.png"
+                width: 28
+                height: 28
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.reset()
+                    }
+                }
+            }
+
+            Image {
+                id: ppBtn
+                source: timerPage.timer.running ? "qrc:/image/pause.png" : "qrc:/image/play.png"
+                anchors.centerIn: parent
+                Layout.alignment: Qt.AlignCenter
+                width: 94
+                height: 94
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.toggleRunning()
+                    }
+                }
+            }
+
+            Image {
+                id: delBtn
+                source: "qrc:/image/delete.png"
+                width: 28
+                height: 28
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.reset()
+                        timerModel.remove(0)
+                        timerPage.justCreated = true
+                    }
+                }
+            }
+        }
+    }
 }
