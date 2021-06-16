@@ -1,58 +1,20 @@
-/*
- * Copyright 2020 Devin Lin <espidev@gmail.com>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
+# TODO: adapt "org.kde.plasma" here & elsewhere if needed (see README)
+add_definitions(-DTRANSLATION_DOMAIN=\"plasma_applet_org.kde.plasma.kclock_1x2\")
 
-#ifndef KIRIGAMICLOCK_UTILMODEL_H
-#define KIRIGAMICLOCK_UTILMODEL_H
+set(kclock_1x2_SRCS
+    kclock_1x2.cpp
+)
+add_library(plasma_applet_kclock_1x2 MODULE ${kclock_1x2_SRCS})
 
-#include <QObject>
-#include <QString>
+kcoreaddons_desktop_to_json(plasma_applet_kclock_1x2 package/metadata.desktop SERVICE_TYPES plasma-applet.desktop)
 
-class UtilModel;
-class UtilModel : public QObject
-{
-    Q_OBJECT
+target_link_libraries(plasma_applet_kclock_1x2
+                      Qt5::Gui
+                      Qt5::DBus
+                      KF5::Plasma
+                      KF5::I18n)
 
-    Q_PROPERTY(QString tzName READ getCurrentTimeZoneName NOTIFY propertyChanged)
 
-public:
-    static UtilModel *instance()
-    {
-        static UtilModel * singleton = new UtilModel;
-        return singleton;
-    }
-    
-    QString getCurrentTimeZoneName();
-    bool applicationLoaded();
-    void setApplicationLoaded(bool applicationLoaded);
-    
-    long long calculateNextRingTime(int hours, int minutes, int daysOfWeek, int snooze = 0);
-    QString timeToRingFormatted(const long long &timestamp);
-    Q_INVOKABLE bool is24HourFormat();
-    
-private:
-    UtilModel(){}; // explicitly declare it private
-    bool m_applicationLoaded = false;
-    
-Q_SIGNALS:
-    void propertyChanged();
-    void applicationLoadedChanged();
-};
+install(TARGETS plasma_applet_kclock_1x2 DESTINATION ${KDE_INSTALL_PLUGINDIR}/plasma/applets)
 
-#endif // KIRIGAMICLOCK_UTILMODEL_H
+plasma_install_package(package org.kde.plasma.kclock_1x2)
