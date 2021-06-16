@@ -1,6 +1,5 @@
 /*
- * Copyright 2020 Han Young <hanyoung@protonmail.com>
- * Copyright 2020 Devin Lin <espidev@gmail.com>
+ * Copyright 2020   Han Young <hanyoung@protonmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,52 +17,74 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#ifndef KCLOCKFORMAT_H
+#define KCLOCKFORMAT_H
 
-#ifndef STOPWATCHTIMER_H
-#define STOPWATCHTIMER_H
-
-#include <QDateTime>
+#include <QAbstractListModel>
 #include <QObject>
-
+#include <array>
+#include <tuple>
 class QTimer;
-class StopwatchTimer : public QObject
+class WeekModel;
+class KclockFormat : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(int elapsedTime READ elapsedTime NOTIFY timeChanged)
-    Q_PROPERTY(QString minutes READ minutesDisplay NOTIFY timeChanged)
-    Q_PROPERTY(QString seconds READ secondsDisplay NOTIFY timeChanged)
-    Q_PROPERTY(QString small READ smallDisplay NOTIFY timeChanged)
-
+    Q_PROPERTY(QString currentTime READ currentTime NOTIFY timeChanged)
+    Q_PROPERTY(int seconds READ seconds NOTIFY secondChanged)
+    Q_PROPERTY(int minutes READ minutes NOTIFY timeChanged)
+    Q_PROPERTY(int hours READ hours NOTIFY hourChanged)
 public:
-    explicit StopwatchTimer(QObject *parent = nullptr);
+    explicit KclockFormat(QObject *parent = nullptr);
+    Q_INVOKABLE QString formatTimeString(int hours, int minutes);
+    Q_INVOKABLE bool isChecked(int dayIndex, int daysOfWeek);
+    QString currentTime()
+    {
+        return m_currentTime;
+    };
+    int seconds()
+    {
+        return m_minutesCounter;
+    }
+    int minutes()
+    {
+        return m_hoursCounter;
+    }
+    int hours()
+    {
+        return m_hours;
+    }
 
-    long long minutes();
-    long long seconds();
-    long long small();
-    QString minutesDisplay();
-    QString secondsDisplay();
-    QString smallDisplay();
-
-    long long elapsedTime();
-
-    Q_INVOKABLE void reset();
-    Q_INVOKABLE void toggle();
-
-signals:
-    void timeChanged();
-
-private slots:
+private Q_SLOTS:
     void updateTime();
+Q_SIGNALS:
+    void timeChanged();
+    void startDayChanged();
+    void secondChanged();
+    void hourChanged();
 
 private:
-    const int m_interval = 41; // 24fps
+    void startTimer(); // basic settings for updating time display
 
-    long long timerStartStamp = QDateTime::currentMSecsSinceEpoch();
-    long long pausedStamp = QDateTime::currentMSecsSinceEpoch();
-    long long pausedElapsed = 0;
-
-    bool stopped = true, paused = false;
     QTimer *m_timer;
+    WeekModel *m_weekModel;
+    QString m_currentTime;
+
+    int m_hours, m_hoursCounter = 0, m_minutesCounter = 0;
 };
 
-#endif // STOPWATCHTIMER_H
+using weekListItem = std::array<std::tuple<QString, int>, 7>;
+class WeekModel : public QAbstractListModel
+{
+    Q_OBJECT
+public:
+    enum { NameRole = Qt::DisplayRole, FlagRole = Qt::UserRole + 1 };
+    explicit WeekModel(QObject *parent = nullptr);
+    int rowCount(const QModelIndex &parent) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
+    QHash<int, QByteArray> roleNames() const override;
+
+private:
+    weekListItem m_listItem;
+};
+
+#endif // KCLOCKFORMAT_H
