@@ -1,5 +1,5 @@
 /*
- * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,95 +17,156 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#pragma once
+import QtQuick 2.12
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.2
+import QtQuick.Shapes 1.12
+import org.kde.kirigami 2.11 as Kirigami
 
-#include "kclocksettingsinterface.h"
-#include <QObject>
+Rectangle {
 
-class KClockSettings : public QObject
-{
-    Q_OBJECT
-    Q_PROPERTY(int volume READ volume WRITE setVolume NOTIFY volumeChanged)
-    Q_PROPERTY(QString alarmSilenceAfterDisplay READ alarmSilenceAfterDisplay WRITE setAlarmSilenceAfterDisplay NOTIFY alarmSilenceChanged)
-    Q_PROPERTY(QString alarmSnoozeLengthDisplay READ alarmSnoozeLengthDisplay WRITE setAlarmSnoozeLengthDisplay NOTIFY alarmSnoozedChanged)
-    Q_PROPERTY(int alarmSilenceAfter READ alarmSilenceAfter WRITE setAlarmSilenceAfter NOTIFY alarmSilenceChanged)
-    Q_PROPERTY(int alarmSnoozeLength READ alarmSnoozeLength WRITE setAlarmSnoozeLength NOTIFY alarmSnoozedChanged)
+    id: root
+    anchors.centerIn: parent
 
-public:
-    static KClockSettings &instance()
-    {
-        static KClockSettings singleton;
-        return singleton;
-    };
+    property int timerDuration
+    property int timerElapsed
+    property bool timerRunning
+    property int fontSize: 80
 
-    const int &volume() const
-    {
-        return m_volume;
+    color: "transparent"
+
+    function getTimeLeft() {
+        return timerDuration - timerElapsed
+    }
+    function getHours() {
+        return ("0" + parseInt(getTimeLeft() / 60 / 60).toFixed(0)).slice(-2)
+    }
+    function getMinutes() {
+        return ("0" + parseInt(getTimeLeft() / 60 - 60 * getHours())).slice(-2)
+    }
+    function getSeconds() {
+        return ("0" + parseInt(getTimeLeft() - 60 * getMinutes())).slice(-2)
     }
 
-    void setVolume(int volume)
-    {
-        m_interface->setProperty("alarmVolume", volume);
+    // clock display
+    RowLayout {
+        id: timeLabels
+        anchors.centerIn: parent
+
+        Label {
+            id: hoursText
+            text: getHours()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+            visible: true
+        }
+        Label {
+            text: ":"
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+            visible: true
+        }
+        Label {
+            id: minutesText
+            text: getMinutes()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+        Label {
+            text: ":"
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+        Label {
+            text: getSeconds()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
     }
 
-    const QString &alarmSilenceAfterDisplay() const
-    {
-        return m_alarmSilenceAfterDisplay;
+    Rectangle {
+        width: timeLabels.width
+        height: 2
+        color: "#aaffffff"
+        anchors.left: timeLabels.left
+        anchors.right: timeLabels.right
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: -60
     }
 
-    void setAlarmSilenceAfterDisplay(QString str)
-    {
-        m_alarmSilenceAfterDisplay = str;
+    Rectangle {
+        width: timeLabels.width
+        height: 2
+        color: "#aaffffff"
+        anchors.left: timeLabels.left
+        anchors.right: timeLabels.right
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: 60
     }
 
-    const QString &alarmSnoozeLengthDisplay() const
-    {
-        return m_alarmSnoozeLengthDisplay;
+    Rectangle {
+        width: 500
+        height: 94
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: timeLabels.bottom
+        anchors.topMargin: 33
+        visible: false
+        color: "black"
+
+        RowLayout {
+            anchors.fill: parent
+
+            Image {
+                id: reset
+                source: "qrc:/image/reset.png"
+                width: 28
+                height: 28
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.reset()
+                    }
+                }
+            }
+
+            Image {
+                id: ppBtn
+                source: timerPage.timer.running ? "qrc:/image/pause.png" : "qrc:/image/play.png"
+                anchors.centerIn: parent
+                Layout.alignment: Qt.AlignCenter
+                width: 94
+                height: 94
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.toggleRunning()
+                    }
+                }
+            }
+
+            Image {
+                id: delBtn
+                source: "qrc:/image/delete.png"
+                width: 28
+                height: 28
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.reset()
+                        timerModel.remove(0)
+                        timerPage.justCreated = true
+                    }
+                }
+            }
+        }
     }
-
-    void setAlarmSnoozeLengthDisplay(QString str)
-    {
-        m_alarmSnoozeLengthDisplay = str;
-    }
-
-    const int &alarmSilenceAfter() const
-    {
-        return m_alarmSilenceAfter;
-    }
-
-    void setAlarmSilenceAfter(int length)
-    {
-        m_interface->setProperty("alarmSilenceAfter", length);
-    }
-
-    void setAlarmSnoozeLength(int length)
-    {
-        m_interface->setProperty("alarmSnoozeLength", length);
-    }
-
-    const int &alarmSnoozeLength() const
-    {
-        return m_alarmSnoozeLength;
-    }
-
-Q_SIGNALS:
-    void volumeChanged();
-    void alarmSilenceChanged();
-    void alarmSnoozedChanged();
-
-private Q_SLOTS:
-    void updateVolume();
-    void updateAlarmSilenceAfter();
-    void updateAlarmSnoozeLength();
-
-private:
-    KClockSettings();
-    LocalKClockSettingsInterface *m_interface;
-
-    QString m_alarmSilenceAfterDisplay;
-    QString m_alarmSnoozeLengthDisplay;
-
-    int m_volume;
-    int m_alarmSilenceAfter;
-    int m_alarmSnoozeLength;
-};
+}
