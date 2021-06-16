@@ -1,5 +1,6 @@
 /*
- * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,95 +18,96 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#pragma once
 
-#include "kclocksettingsinterface.h"
-#include <QObject>
+#include "stopwatchtimer.h"
+#include <QDebug>
+#include <QTimer>
 
-class KClockSettings : public QObject
+StopwatchTimer::StopwatchTimer(QObject *parent)
+    : QObject(parent)
 {
-    Q_OBJECT
-    Q_PROPERTY(int volume READ volume WRITE setVolume NOTIFY volumeChanged)
-    Q_PROPERTY(QString alarmSilenceAfterDisplay READ alarmSilenceAfterDisplay WRITE setAlarmSilenceAfterDisplay NOTIFY alarmSilenceChanged)
-    Q_PROPERTY(QString alarmSnoozeLengthDisplay READ alarmSnoozeLengthDisplay WRITE setAlarmSnoozeLengthDisplay NOTIFY alarmSnoozedChanged)
-    Q_PROPERTY(int alarmSilenceAfter READ alarmSilenceAfter WRITE setAlarmSilenceAfter NOTIFY alarmSilenceChanged)
-    Q_PROPERTY(int alarmSnoozeLength READ alarmSnoozeLength WRITE setAlarmSnoozeLength NOTIFY alarmSnoozedChanged)
+    m_timer = new QTimer(this);
+    connect(m_timer, &QTimer::timeout, this, &StopwatchTimer::updateTime);
+}
 
-public:
-    static KClockSettings &instance()
-    {
-        static KClockSettings singleton;
-        return singleton;
-    };
+void StopwatchTimer::updateTime()
+{
+    emit timeChanged();
+}
 
-    const int &volume() const
-    {
-        return m_volume;
+void StopwatchTimer::toggle()
+{
+    if (stopped) { // start (from zero)
+        stopped = false;
+        paused = false;
+
+        timerStartStamp = QDateTime::currentMSecsSinceEpoch();
+        pausedElapsed = 0;
+
+        m_timer->start(m_interval);
+    } else if (paused) { // unpause
+        paused = false;
+
+        pausedElapsed += QDateTime::currentMSecsSinceEpoch() - pausedStamp;
+
+        m_timer->start(m_interval);
+    } else { // pause
+        paused = true;
+        pausedStamp = QDateTime::currentMSecsSinceEpoch();
+        m_timer->stop();
     }
+}
 
-    void setVolume(int volume)
-    {
-        m_interface->setProperty("alarmVolume", volume);
+void StopwatchTimer::reset()
+{
+    m_timer->stop();
+    pausedElapsed = 0;
+    stopped = true;
+    paused = false;
+    emit timeChanged();
+}
+
+long long StopwatchTimer::elapsedTime()
+{
+    long long cur = QDateTime::currentMSecsSinceEpoch();
+    if (stopped) {
+        return 0;
+    } else if (paused) {
+        return cur - timerStartStamp - pausedElapsed - (cur - pausedStamp);
+    } else {
+        return cur - timerStartStamp - pausedElapsed;
     }
+}
 
-    const QString &alarmSilenceAfterDisplay() const
-    {
-        return m_alarmSilenceAfterDisplay;
-    }
+long long StopwatchTimer::minutes()
+{
+    return elapsedTime() / 1000 / 60;
+}
 
-    void setAlarmSilenceAfterDisplay(QString str)
-    {
-        m_alarmSilenceAfterDisplay = str;
-    }
+long long StopwatchTimer::seconds()
+{
+    return elapsedTime() / 1000 - 60 * minutes();
+}
 
-    const QString &alarmSnoozeLengthDisplay() const
-    {
-        return m_alarmSnoozeLengthDisplay;
-    }
+long long StopwatchTimer::small()
+{
+    return elapsedTime() / 10 - 100 * seconds() - 100 * 60 * minutes();
+}
 
-    void setAlarmSnoozeLengthDisplay(QString str)
-    {
-        m_alarmSnoozeLengthDisplay = str;
-    }
+QString StopwatchTimer::minutesDisplay()
+{
+    long long amount = minutes();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
 
-    const int &alarmSilenceAfter() const
-    {
-        return m_alarmSilenceAfter;
-    }
+QString StopwatchTimer::secondsDisplay()
+{
+    long long amount = seconds();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
 
-    void setAlarmSilenceAfter(int length)
-    {
-        m_interface->setProperty("alarmSilenceAfter", length);
-    }
-
-    void setAlarmSnoozeLength(int length)
-    {
-        m_interface->setProperty("alarmSnoozeLength", length);
-    }
-
-    const int &alarmSnoozeLength() const
-    {
-        return m_alarmSnoozeLength;
-    }
-
-Q_SIGNALS:
-    void volumeChanged();
-    void alarmSilenceChanged();
-    void alarmSnoozedChanged();
-
-private Q_SLOTS:
-    void updateVolume();
-    void updateAlarmSilenceAfter();
-    void updateAlarmSnoozeLength();
-
-private:
-    KClockSettings();
-    LocalKClockSettingsInterface *m_interface;
-
-    QString m_alarmSilenceAfterDisplay;
-    QString m_alarmSnoozeLengthDisplay;
-
-    int m_volume;
-    int m_alarmSilenceAfter;
-    int m_alarmSnoozeLength;
-};
+QString StopwatchTimer::smallDisplay()
+{
+    long long amount = small();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
