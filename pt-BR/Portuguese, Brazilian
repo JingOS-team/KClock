@@ -17,130 +17,108 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+ 
 import QtQuick 2.0
-import QtQuick.Layouts 1.2
-import QtQuick.Controls 2.12
-import "StringUtils.js" as StringUtils
+import QtGraphicalEffects 1.12
 
 Item {
-    id: root
 
-    // property int digitalFontSize: appwindow.fontSize + 118
-    // property int amFontSize: appwindow.fontSize + 6
-    property int digitalFontSize: 90
-    property int amFontSize: 22
-    // 12 / 24
-    property bool is12HoursType: utilModel.is24HourFormat()
+    // property real mScale: appwindow.officalScale * 1.3
+    property alias text: content_txt.text
 
-    implicitHeight: parent.height
-    implicitWidth: parent.width
-
-    Component.onCompleted: {
-        console.log("111是不是24 小时....." , is12HoursType)
-        getAmPm()
-    }
-
-    onVisibleChanged: {
-        is12HoursType = utilModel.is24HourFormat()
-         console.log("222是不是24 小时....." , is12HoursType)
-    }
-
-    function getHoursValue(hours) {
-        if (!is12HoursType) {
-            if (hours == 0) {
-                return 12
-            } else if (hours <= 12 && hours > 0) {
-                return hours < 10 ? "0" + hours : hours
-            } else {
-                return hours - 12
-            }
-        } else {
-            return hours < 10 ? "0" + hours : hours
-        }
-    }
-
-    function getAmPm(){
-        // Qt.formatDateTime(new Date(), "hh-mm-ss")
-        var dateValue = new Date() 
-        var hours = dateValue.getHours()
-        // var timeValue =  Qt.formatDateTime(new Date(), "hh:mm ddd")
-        console.log(" --- 当前的小时::: " , hours)
-        // console.log(" 当前的ooo::: " , timeValue)
-        if(hours > 12){
-            return true  
-        }else {
-            return false 
-        }
-    }
+    width:  80
+    height: width
 
     Rectangle {
-        width: parent.width
-        height: parent.height
+
+        id:_rect
+        anchors.fill: parent
         color: "transparent"
+        radius: 10 
+
+        layer.enabled: true
+        layer.effect: OpacityMask {
+            maskSource: Rectangle {
+                width: _rect.width
+                height: _rect.height
+                radius: _rect.radius
+            }
+        }
+
         Rectangle {
             width: parent.width
-            height : digitalFontSize
+            height: 50  
             color: "transparent"
-            anchors.verticalCenter : parent.verticalCenter
 
-            RowLayout {
-                anchors.centerIn: parent
-                anchors.horizontalCenter: parent.horizontalCenter
-                Layout.alignment: Qt.AlignCenter
-                height:digitalFontSize
-                spacing: 0
+            anchors {
+                top: parent.top
+                left: parent.left
+            }
 
-                Text {
-                    font.pixelSize: digitalFontSize
-                    font.family: "Gilroy Thin"
-                    font.weight: Font.Light
-                    text: getHoursValue(kclockFormat.hours)
-                    color: appwindow.isDarkTheme ? "white":"black"
-                    Layout.alignment: Qt.AlignCenter
-                    height:digitalFontSize
-                }
-
-                Text {
-                    font.pixelSize: digitalFontSize
-                    text: ":"
-                    font.family: "Gilroy Thin"
-                    color: appwindow.isDarkTheme ? "white":"black"
-                    font.weight: Font.Light
-                    Layout.alignment: Qt.AlignCenter
-                    height:digitalFontSize
-                }
-
-                Text {
-                    id: txt_minutes
-                    font.weight: Font.Light
-                    font.pixelSize: digitalFontSize
-                    font.family: "Gilroy Thin"
-                    text: kclockFormat.minutes < 10 ? "0" + kclockFormat.minutes : kclockFormat.minutes
-                    color: appwindow.isDarkTheme ? "white":"black"
-                    Layout.alignment: Qt.AlignCenter
-                    height:digitalFontSize
-                }
-
-                Text {
-                    id: am_txt
-                    font.pixelSize: amFontSize
-                    text: getAmPm() ?  i18n("PM") : i18n("AM")
-                    color: appwindow.isDarkTheme ? "white":"black"
-                    anchors.top: txt_minutes.top
-                    anchors.topMargin: am_txt.height /2 
-                    visible: !is12HoursType
-                    height:amFontSize
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-
-                    onClicked: {
-                        is12HoursType = !is12HoursType
+            LinearGradient {
+                ///--[Mark]
+                anchors.fill: parent
+                start: Qt.point(0, 0)
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: appwindow.isDarkTheme ? "#ff000000" :"#ffffffff"
+                    }
+                    GradientStop {
+                        position: 0.3
+                        color: appwindow.isDarkTheme ? "#cf000000" :"#cfffffff"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: "#00000000"
                     }
                 }
             }
         }
-        
+
+        Rectangle {
+            width: parent.width
+            height: 50  
+            color: "transparent"
+            clip: true
+
+            anchors {
+                bottom: parent.bottom
+                left: parent.left
+            }
+
+            LinearGradient {
+                ///--[Mark]
+                anchors.fill: parent
+                start: Qt.point(0, 0)
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: "#00000000"
+                    }
+                    GradientStop {
+                        position: 0.7
+                        color: appwindow.isDarkTheme ? "#ff000000" :"#ffffffff"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: appwindow.isDarkTheme ? "#ff000000" :"#ffffffff"
+                    }
+                }
+            }
+        }
+
+        Text {
+            id:content_txt
+            text: i18n("Hours")
+            color: appwindow.isDarkTheme ? "#6affffff": "#ff000000"
+            font.pixelSize: 11  
+            anchors {
+                bottom: parent.bottom
+                bottomMargin: 7
+                horizontalCenter: parent.horizontalCenter
+            }
+        }
+
     }
 }
