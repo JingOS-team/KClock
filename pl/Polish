@@ -17,159 +17,130 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
- 
-import QtQuick 2.12
-import QtQuick.Controls 2.4
+import QtQuick 2.0
 import QtQuick.Layouts 1.2
-import org.kde.kirigami 2.12 as Kirigami
+import QtQuick.Controls 2.12
+import "StringUtils.js" as StringUtils
 
-Rectangle {
+Item {
     id: root
 
-    property bool status: true
-    property string statusPress: appwindow.isDarkTheme ? "#ffffff" :"#000000"
-    property string statusRelease: "#5e5e5e"
-    property alias btn_content: btn_content_widget.text
-    property alias btn_icon: btn_icon_widget.source
-    property int btn_width: 160  
-    property int btn_height: 160  
-    property double iconSize: 22  
-    property double shrinkIconSize: 16 
-    property double fontSize: 17
-    property double shrinkFontSize: 12
+    // property int digitalFontSize: appwindow.fontSize + 118
+    // property int amFontSize: appwindow.fontSize + 6
+    property int digitalFontSize: 90
+    property int amFontSize: 22
+    // 12 / 24
+    property bool is12HoursType: utilModel.is24HourFormat()
 
-    signal jbtnClick
-    width: btn_width
-    height: btn_height
+    implicitHeight: parent.height
+    implicitWidth: parent.width
 
-    color: appwindow.isDarkTheme ? "#5e000000" : "white"
-    radius: 10
+    Component.onCompleted: {
+        console.log("111是不是24 小时....." , is12HoursType)
+        getAmPm()
+    }
+
+    onVisibleChanged: {
+        is12HoursType = utilModel.is24HourFormat()
+         console.log("222是不是24 小时....." , is12HoursType)
+    }
+
+    function getHoursValue(hours) {
+        if (!is12HoursType) {
+            if (hours == 0) {
+                return 12
+            } else if (hours <= 12 && hours > 0) {
+                return hours < 10 ? "0" + hours : hours
+            } else {
+                return hours - 12
+            }
+        } else {
+            return hours < 10 ? "0" + hours : hours
+        }
+    }
+
+    function getAmPm(){
+        // Qt.formatDateTime(new Date(), "hh-mm-ss")
+        var dateValue = new Date() 
+        var hours = dateValue.getHours()
+        // var timeValue =  Qt.formatDateTime(new Date(), "hh:mm ddd")
+        console.log(" --- 当前的小时::: " , hours)
+        // console.log(" 当前的ooo::: " , timeValue)
+        if(hours > 12){
+            return true  
+        }else {
+            return false 
+        }
+    }
 
     Rectangle {
-        id: cover_bg
-        anchors.fill: parent
+        width: parent.width
+        height: parent.height
         color: "transparent"
-        radius: 10
-    }
-
-    Behavior on color {
-        ColorAnimation {
-            duration: 100
-            easing.type: Easing.InOutQuad
-        }
-    }
-
-    MouseArea {
-        id: mouseArea
-        hoverEnabled: true
-        anchors.fill: parent
-        onEntered: {
-            cover_bg.color = "#0c767680"
-        }
-
-        onExited: {
-            cover_bg.color = "transparent"
-        }
-
-        onClicked: {
-            jbtnClick()
-        }
-
-        onPressed: {
-            cover_bg.color = "#10787880"
-            widthAnim.to = root.shrinkIconSize
-            heightAnim.to = root.shrinkIconSize
-            fontAnim.to = root.shrinkFontSize
-            widthAnim.restart()
-            heightAnim.restart()
-            fontAnim.restart()
-        }
-        onReleased: {
-            cover_bg.color = "transparent"
-            if (!widthAnim.running) {
-                widthAnim.to = root.iconSize
-                widthAnim.restart()
-            }
-            if (!heightAnim.running) {
-                heightAnim.to = root.iconSize
-                heightAnim.restart()
-            }
-            if (!fontAnim.running) {
-                fontAnim.to = root.fontSize
-                fontAnim.restart()
-            }
-        }
-    }
-
-    ColumnLayout {
-        id: itemColumn
-        anchors.centerIn: parent
-        spacing: 0
-
-        Kirigami.Icon {
-            id: btn_icon_widget
-            color: status ? statusPress : statusRelease
-            source: ""
-            Layout.alignment: Qt.AlignCenter
-            Layout.preferredHeight: iconSize
-            Layout.preferredWidth: iconSize
-
-            ColorAnimation on color {
-                easing.type: Easing.Linear
-            }
-            NumberAnimation on Layout.preferredWidth {
-                id: widthAnim
-                easing.type: Easing.Linear
-                duration: 130
-                onFinished: {
-                    if (widthAnim.to !== root.iconSize && !mouseArea.pressed) {
-                        widthAnim.to = root.iconSize
-                        widthAnim.start()
-                    }
-                }
-            }
-            NumberAnimation on Layout.preferredHeight {
-                id: heightAnim
-                easing.type: Easing.Linear
-                duration: 130
-                onFinished: {
-                    if (heightAnim.to !== root.iconSize && !mouseArea.pressed) {
-                        heightAnim.to = root.iconSize
-                        heightAnim.start()
-                    }
-                }
-            }
-        }
-
         Rectangle {
             width: parent.width
-            height: 4  
+            height : digitalFontSize
             color: "transparent"
-        }
+            anchors.verticalCenter : parent.verticalCenter
 
-        Label {
-            id: btn_content_widget
-            color: status ? statusPress : statusRelease
-            text: ""
-            Layout.alignment: Qt.AlignCenter
-            horizontalAlignment: Text.AlignVCenter
-            elide: Text.ElideLeft
-            font.pixelSize: root.fontSize
+            RowLayout {
+                anchors.centerIn: parent
+                anchors.horizontalCenter: parent.horizontalCenter
+                Layout.alignment: Qt.AlignCenter
+                height:digitalFontSize
+                spacing: 0
 
-            ColorAnimation on color {
-                easing.type: Easing.Linear
-            }
-            NumberAnimation on font.pixelSize {
-                id: fontAnim
-                easing.type: Easing.Linear
-                duration: 130
-                onFinished: {
-                    if (fontAnim.to !== root.fontSize && !mouseArea.pressed) {
-                        fontAnim.to = root.fontSize
-                        fontAnim.start()
+                Text {
+                    font.pixelSize: digitalFontSize
+                    font.family: "Gilroy Thin"
+                    font.weight: Font.Light
+                    text: getHoursValue(kclockFormat.hours)
+                    color: appwindow.isDarkTheme ? "white":"black"
+                    Layout.alignment: Qt.AlignCenter
+                    height:digitalFontSize
+                }
+
+                Text {
+                    font.pixelSize: digitalFontSize
+                    text: ":"
+                    font.family: "Gilroy Thin"
+                    color: appwindow.isDarkTheme ? "white":"black"
+                    font.weight: Font.Light
+                    Layout.alignment: Qt.AlignCenter
+                    height:digitalFontSize
+                }
+
+                Text {
+                    id: txt_minutes
+                    font.weight: Font.Light
+                    font.pixelSize: digitalFontSize
+                    font.family: "Gilroy Thin"
+                    text: kclockFormat.minutes < 10 ? "0" + kclockFormat.minutes : kclockFormat.minutes
+                    color: appwindow.isDarkTheme ? "white":"black"
+                    Layout.alignment: Qt.AlignCenter
+                    height:digitalFontSize
+                }
+
+                Text {
+                    id: am_txt
+                    font.pixelSize: amFontSize
+                    text: getAmPm() ?  i18n("PM") : i18n("AM")
+                    color: appwindow.isDarkTheme ? "white":"black"
+                    anchors.top: txt_minutes.top
+                    anchors.topMargin: am_txt.height /2 
+                    visible: !is12HoursType
+                    height:amFontSize
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+
+                    onClicked: {
+                        is12HoursType = !is12HoursType
                     }
                 }
             }
         }
+        
     }
 }
