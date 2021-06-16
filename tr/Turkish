@@ -17,134 +17,72 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+import QtQuick 2.7
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.3
+import org.kde.kirigami 2.3 as Kirigami
+import QtQuick.Controls.Styles 1.4
+import "../CommonSize.js" as CS
 
-import QtQuick 2.12
-import QtQuick.Controls 2.4
-import QtQuick.Layouts 1.2
-import QtQuick.Shapes 1.12
-import org.kde.kirigami 2.11 as Kirigami
-import QtGraphicalEffects 1.0
+Popup {
+    id:root
 
-Rectangle {
-    id: root
+    property string uid
+    property var description: ""
+    property int px: 0
+    property int py: 0
+    property int popWidth: 200
+    property int popHeight: 45
+    property int selectIndex
 
-    property int timerDuration
-    property int timerElapsed
-    property bool timerRunning
-    property int fontSize: 34
+    x: px
+    y: py
+    width: popWidth
+    height: popHeight
 
-    width: 320  
-    height: 80   
-    color: "transparent"
-    anchors.centerIn: parent
+    modal: true
+    focus: true
 
-    function getTimeLeft() {
-        return timerDuration - timerElapsed
-    }
-    function getHours() {
-        return ("0" + parseInt(getTimeLeft() / 60 / 60).toFixed(0)).slice(-2)
-    }
-    function getMinutes() {
-        return ("0" + parseInt(getTimeLeft() / 60 - 60 * getHours())).slice(-2)
-    }
-    function getSeconds() {
-        return ("0" + parseInt(getTimeLeft() - 60 * getMinutes())).slice(-2)
+    background: Rectangle {
+        id: background
+        color: "transparent"
     }
 
-    Slider {
-        id: sliderArea
-
+    contentItem: Rectangle {
+        id: contentItem
         width: parent.width
         height: parent.height
-        leftPadding: 0
-        rightPadding: 0
+        radius: 10
+        color: "#a2000000"
 
-        from: timerDuration
-        to: 0
+        anchors.left: parent.left
+        anchors.right: parent.right
 
-        handle: Item {
-            visible: true
-            width: 1
-            height: 1
-            x: 0
-            y: 0
-
-            Rectangle {
-                anchors.centerIn: parent
-                width: 1
-                height: 1
-                visible: false
-            }
+        Label {
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.left: parent.left
+            anchors.leftMargin: 20
+            text: i18n("Delete")
+            color: "white"
+            font.pixelSize: 14
         }
 
-        //    #ff43BDF4
-        background: Rectangle {
-            id: progressBarBackground
-            color: appwindow.isDarkTheme ? "#d8000000" : "white"
-            radius: 10  
+        Image {
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.right: parent.right
+            anchors.rightMargin: 20
 
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                maskSource: Rectangle {
-                    width: progressBarBackground.width
-                    height: progressBarBackground.height
-                    radius: progressBarBackground.radius
-                }
-            }
-
-            Rectangle {
-                width: (1 - timerElapsed / timerDuration) * parent.width
-                height: parent.height
-                color: {
-                    if(appwindow.isDarkTheme){
-                        timerRunning ? "#39c17b" : "#555555"
-                    }else {
-                        timerRunning ? "#39c17b" : "#333C3F48"
-                    }
-
-                }
-            }
+            width: 16
+            height: 16
+            source: "qrc:/image/delete.png"
         }
-    }
 
-    Rectangle {
-        width: 240  
-        height: 42  
-        anchors.centerIn: parent
-        color: "transparent"
-
-        RowLayout {
-            anchors.centerIn: parent
-
-            Label {
-                text: getHours()
-                font.pixelSize: fontSize 
-                font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
-            }
-            Label {
-                text: ":"
-                font.pixelSize: fontSize 
-                font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
-            }
-            Label {
-                text: getMinutes()
-                font.pixelSize: fontSize 
-                font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
-            }
-            Label {
-                text: ":"
-                font.pixelSize: fontSize 
-                font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
-            }
-            Label {
-                text: getSeconds()
-                font.pixelSize: fontSize 
-                font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                alarmModel.remove(selectIndex)
+                alarmModel.updateUi()
+                root.close()
             }
         }
     }
