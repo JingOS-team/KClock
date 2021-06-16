@@ -17,102 +17,119 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-#include "utilmodel.h"
-
-#include <QString>
-#include <QTimeZone>
-#include <KSharedConfig>
-#include <KConfigGroup>
+#include <QDebug>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QtGlobal>
 
 #include <KLocalizedString>
 
-#define FORMAT24H "HH:mm:ss"
-#define FORMAT12H "h:mm:ss ap"
+#include "timer.h"
+#include "timermodel.h"
 
-QString UtilModel::getCurrentTimeZoneName()
+/* ~ TimerModel ~ */
+TimerModel::TimerModel(QObject *parent)
+    : m_interface(new OrgKdeKclockTimerModelInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers"), QDBusConnection::sessionBus(), this))
 {
-    return QTimeZone::systemTimeZoneId();
+    if (m_interface->isValid()) {
+        connect(m_interface, SIGNAL(timerAdded(QString)), this, SLOT(addTimer(QString)));
+        connect(m_interface, SIGNAL(timerRemoved(QString)), this, SLOT(removeTimer(QString)));
+    }
+    QDBusInterface *interface = new QDBusInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers"), QStringLiteral("org.freedesktop.DBus.Introspectable"), QDBusConnection::sessionBus(), this);
+    QDBusReply<QString> reply = interface->call(QStringLiteral("Introspect"));
+    if (reply.isValid()) {
+        auto xmlMsg = reply.value();
+        QXmlStreamReader xml(xmlMsg);
+        while (!xml.atEnd()) {
+            xml.readNext();
+            if (xml.name() == QStringLiteral("node") && xml.attributes().hasAttribute(QStringLiteral("name"))) {
+                if (xml.attributes().value(QStringLiteral("name")).toString().indexOf(QStringLiteral("org")) == -1) {
+                    // already existed on kclock launch, not justCreated
+                    this->addTimer(xml.attributes().value(QStringLiteral("name")).toString(), false);
+                }
+            }
+        }
+    }
+    interface->deleteLater();
 }
 
-bool UtilModel::applicationLoaded()
+int TimerModel::rowCount(const QModelIndex &parent) const
 {
-    return m_applicationLoaded;
+    Q_UNUSED(parent);
+    return m_timersList.size();
 }
 
-void UtilModel::setApplicationLoaded(bool applicationLoaded)
+int TimerModel::count()
 {
-    if (applicationLoaded != m_applicationLoaded) {
-        m_applicationLoaded = applicationLoaded;
-        Q_EMIT applicationLoadedChanged();
-    }
+    return m_timersList.size();
 }
 
-bool UtilModel::is24HourFormat()
+QVariant TimerModel::data(const QModelIndex &index, int role) const
 {
-    KSharedConfig::Ptr  m_localeConfig = KSharedConfig::openConfig(QStringLiteral("kdeglobals"), KConfig::SimpleConfig);
-    KConfigGroup  m_localeSettings = KConfigGroup(m_localeConfig, "Locale");
-
-    QString timeFormat =  m_localeSettings.readEntry("TimeFormat", QStringLiteral(FORMAT24H));
-    return (timeFormat == FORMAT24H) ;
+    return QVariant();
 }
 
-long long UtilModel::calculateNextRingTime(int hours, int minutes, int daysOfWeek, int snooze)
+void TimerModel::addTimer(int length, QString label, bool running)
 {
-    // get the time that the alarm will ring on the day
-    QTime alarmTime = QTime(hours, minutes, 0).addSecs(snooze);
-
-    QDateTime date = QDateTime::currentDateTime();
-
-    if (daysOfWeek == 0) {              // alarm does not repeat (no days of the week are specified)
-        if (alarmTime >= date.time()) { // alarm occurs later today
-            return QDateTime(date.date(), alarmTime).toSecsSinceEpoch();
-        } else { // alarm occurs on the next day
-            return QDateTime(date.date().addDays(1), alarmTime).toSecsSinceEpoch();
-        }
-    } else { // repeat alarm
-        bool first = true;
-
-        // keeping looping forward a single day until the day of week is accepted
-        while (((daysOfWeek & (1 << (date.date().dayOfWeek() - 1))) == 0) // check day
-               || (first && (alarmTime < date.time())))                   // check time if the current day is accepted (keep looping forward if alarmTime has passed)
-        {
-            date = date.addDays(1); // go forward a day
-            first = false;
-        }
-
-        return QDateTime(date.date(), alarmTime).toSecsSinceEpoch();
-    }
-};
-
-QString UtilModel::timeToRingFormatted(const long long &timestamp)
-{
-    auto remaining = timestamp - QDateTime::currentSecsSinceEpoch();
-    int day = remaining / (24 * 3600);
-    int hour = remaining / 3600 - day * 24;
-    int minute = remaining / 60 - day * 24 * 60 - hour * 60;
-    QString arg;
-    if (day > 0) {
-        arg += i18np("%1 day", "%1 days", day);
-    }
-    if (hour > 0) {
-        if (day > 0 && minute > 0) {
-            arg += i18n(", ");
-        } else if (day > 0) {
-            arg += i18n(" and ");
-        }
-        arg += i18np("%1 hour", "%1 hours", hour);
-    }
-    if (minute > 0) {
-        if (day > 0 || hour > 0) {
-            arg += i18n(" and ");
-        }
-        arg += i18np("%1 minute", "%1 minutes", minute);
-    }
+    // modified by steven
+//    if (m_timersList.size() >= TIMER_MAX) {
+//        //EXIST,  REMOVE FIRST
+//        remove(0);
+//    }
     
-    if (day <= 0 && hour <= 0 && minute <= 0) {
-        return i18n("Alarm will be rung within a minute");
-    } else {
-        return i18n("Alarm will be rung after %1", arg);
+    m_interface->addTimer(length, label, running);
+}
+
+bool TimerModel::hasTimer() {
+    return !m_timersList.isEmpty();
+}
+
+void TimerModel::remove(int index)
+{
+    if (index < 0 || index >= m_timersList.size())
+        return;
+
+    m_interface->removeTimer(m_timersList.at(index)->uuid().toString());
+    m_timersList.at(index)->deleteLater();
+
+    Q_EMIT beginRemoveRows(QModelIndex(), index, index);
+    m_timersList.removeAt(index);
+    Q_EMIT endRemoveRows();
+}
+
+Timer *TimerModel::get(int index)
+{
+    if ((index < 0) || (index >= m_timersList.count()))
+        return {};
+
+    return m_timersList.at(index);
+}
+
+void TimerModel::addTimer(QString uuid)
+{
+    this->addTimer(uuid, true);
+}
+
+void TimerModel::addTimer(QString uuid, bool justCreated)
+{
+    auto *timer = new Timer(uuid.remove(QRegularExpression(QStringLiteral("[{}-]"))), justCreated);
+
+    Q_EMIT beginInsertRows(QModelIndex(), 0, 0);
+    m_timersList.insert(0, timer);
+    Q_EMIT endInsertRows();
+}
+
+void TimerModel::removeTimer(QString uuid)
+{
+    auto index = 0;
+    for (auto timer : m_timersList) {
+        if (timer->uuid().toString() == uuid) {
+            break;
+        }
+        ++index;
     }
+
+    // don't need to check index out of bound, remove(index) takes care of that
+    remove(index);
 }
