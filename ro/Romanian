@@ -1,74 +1,119 @@
 /*
-    SPDX-FileCopyrightText: 2020 HanY <hanyoung@protonmail.com>
-    SPDX-License-Identifier: LGPL-2.1-or-later
-*/
-
-#include "kclock_1x2.h"
-#include <QDBusConnection>
-#include <QDBusInterface>
-#include <QDBusReply>
-#include <QProcess>
+ * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License or (at your option) version 3 or any later version
+ * accepted by the membership of KDE e.V. (or its successor approved
+ * by the membership of KDE e.V.), which shall act as a proxy
+ * defined in Section 14 of version 3 of the license.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+#include "kclockformat.h"
+#include "utilmodel.h"
+#include <QLocale>
+#include <QTime>
 #include <QTimer>
-#include <klocalizedstring.h>
-
-KClock_1x2::KClock_1x2(QObject *parent, const QVariantList &args)
-    : Plasma::Applet(parent, args)
+KclockFormat::KclockFormat(QObject *parent)
+    : QObject(parent)
+    , m_timer(new QTimer(this))
 {
-    m_timer = new QTimer(this);
-    connect(m_timer, &QTimer::timeout, this, &KClock_1x2::initialTimeUpdate);
-    m_timer->setSingleShot(true);
-    // initial interval is milliseconds to next minute
-    m_timer->start((60 - (QTime::currentTime().msecsSinceStartOfDay() / 1000) % 60) * 1000); // seconds to next minute
+    connect(UtilModel::instance(), &UtilModel::applicationLoadedChanged, this, [this] {
+        if (UtilModel::instance()->applicationLoaded()) {
+            this->startTimer();
+        } else {
+            this->m_timer->stop();
+        }
+    });
+    connect(m_timer, &QTimer::timeout, this, &KclockFormat::updateTime);
+}
 
-    if (!QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms"), QStringLiteral("org.kde.kclock.AlarmModel"), QStringLiteral("nextAlarm"), this, SLOT(updateAlarm(qulonglong))))
-        m_string = QStringLiteral("connect failed");
-
-    QDBusInterface *interface = new QDBusInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms"), QStringLiteral("org.kde.kclock.AlarmModel"), QDBusConnection::sessionBus(), this);
-    QDBusReply<quint64> reply = interface->call(QStringLiteral("getNextAlarm"));
-    if (reply.isValid()) {
-        auto alarmTime = reply.value();
-        if (alarmTime > 0) {
-            auto dateTime = QDateTime::fromSecsSinceEpoch(alarmTime).toLocalTime();
-            m_string = m_local.standaloneDayName(dateTime.date().dayOfWeek(), QLocale::ShortFormat) + QStringLiteral(", ") + m_local.toString(dateTime.time(), QStringLiteral("hh:mm"));
-            m_hasAlarm = true;
-        } else
-            m_hasAlarm = false;
+void KclockFormat::updateTime()
+{
+    if (m_minutesCounter == 60) {
+        m_currentTime = QLocale::system().toString(QTime::currentTime(), QLocale::ShortFormat);
+        Q_EMIT timeChanged();
+        m_minutesCounter = 0;
+        m_hoursCounter++;
     }
-    emit propertyChanged();
-}
-
-void KClock_1x2::updateAlarm(qulonglong time)
-{
-    auto dateTime = QDateTime::fromSecsSinceEpoch(time).toLocalTime();
-    if (time > 0) {
-        m_string = m_local.standaloneDayName(dateTime.date().dayOfWeek(), QLocale::ShortFormat) + QStringLiteral(", ") + m_local.toString(dateTime.time(), QStringLiteral("hh:mm"));
-        m_hasAlarm = true;
-    } else {
-        m_hasAlarm = false;
+    if (m_hoursCounter == 60) {
+        m_hoursCounter = 0;
+        m_hours = QTime::currentTime().hour() >= 12 ? QTime::currentTime().hour() - 12 : QTime::currentTime().hour();
+        Q_EMIT hourChanged();
     }
-    emit propertyChanged();
-}
-void KClock_1x2::openKClock()
-{
-    m_process = new QProcess(this);
-    m_process->start(QStringLiteral("kclock"), QStringList());
-}
-void KClock_1x2::initialTimeUpdate()
-{
-    emit timeChanged();
-    disconnect(m_timer, &QTimer::timeout, this, &KClock_1x2::initialTimeUpdate); // disconnect
-    m_timer->setSingleShot(false);
-    connect(m_timer, &QTimer::timeout, this, &KClock_1x2::timeChanged);
-    m_timer->start(60000); // update every minute
-}
-QString KClock_1x2::time()
-{
-    return m_local.toString(QTime::currentTime(), QStringLiteral("hh:mm"));
-}
-KClock_1x2::~KClock_1x2()
-{
+    m_minutesCounter++;
+//    Q_EMIT secondChanged();
+     Q_EMIT timeChanged();
 }
 
-K_EXPORT_PLASMA_APPLET_WITH_JSON(kclock_1x2, KClock_1x2, "metadata.json")
+QString KclockFormat::formatTimeString(int hours, int minutes)
+{
+    return QLocale::system().toString(QTime(hours, minutes), QStringLiteral("hh:mm"));
+}
 
-#include "kclock_1x2.moc"
+bool KclockFormat::isChecked(int dayIndex, int daysOfWeek)
+{
+    // convert start day to standard start day of week, Monday
+    dayIndex += QLocale::system().firstDayOfWeek() - 1;
+    while (dayIndex > 6)
+        dayIndex -= 7;
+
+    int day = 1;
+    day <<= dayIndex;
+    return daysOfWeek & day;
+}
+
+void KclockFormat::startTimer()
+{
+    m_currentTime = QLocale::system().toString(QTime::currentTime(), QStringLiteral("hh:mm"));
+//    m_hours = QTime::currentTime().hour() >= 12 ? QTime::currentTime().hour() - 12 : QTime::currentTime().hour();
+    m_hours = QTime::currentTime().hour();
+    m_minutesCounter = (QTime::currentTime().msecsSinceStartOfDay() / 1000) % 60; // seconds to next minute
+    m_hoursCounter = QTime::currentTime().minute();
+    m_timer->start(1000);
+}
+
+WeekModel::WeekModel(QObject *parent)
+    : QAbstractListModel(parent)
+{
+    // init week and flag value
+    int dayFlag[] = {1, 2, 4, 8, 16, 32, 64}, i = 0;
+    for (int j = QLocale::system().firstDayOfWeek(); j <= 7; j++) {
+        m_listItem[i++] = std::tuple<QString, int>(QLocale::system().dayName(j, QLocale::LongFormat), dayFlag[j - 1]);
+    }
+
+    for (int j = 1; j < QLocale::system().firstDayOfWeek(); j++) {
+        m_listItem[i++] = std::tuple<QString, int>(QLocale::system().dayName(j, QLocale::LongFormat), dayFlag[j - 1]);
+    }
+}
+
+int WeekModel::rowCount(const QModelIndex &parent) const
+{
+    return 7;
+}
+
+QVariant WeekModel::data(const QModelIndex &index, int role) const
+{
+    if (!index.isValid() || index.row() >= 7) {
+        return QVariant();
+    }
+    if (role == NameRole)
+        return std::get<0>(m_listItem[index.row()]);
+    else if (role == FlagRole)
+        return std::get<1>(m_listItem[index.row()]);
+    else
+        return QVariant();
+}
+
+QHash<int, QByteArray> WeekModel::roleNames() const
+{
+    return {{NameRole, "name"}, {FlagRole, "flag"}};
+}
