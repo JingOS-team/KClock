@@ -17,74 +17,88 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef KCLOCKFORMAT_H
-#define KCLOCKFORMAT_H
-
-#include <QAbstractListModel>
-#include <QObject>
-#include <array>
-#include <tuple>
-class QTimer;
-class WeekModel;
-class KclockFormat : public QObject
+#include "kclocksettings.h"
+#include "alarmplayer.h"
+#include <KLocalizedString>
+#include <QDebug>
+KClockSettings::KClockSettings()
+    : m_interface(new LocalKClockSettingsInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Settings"), QDBusConnection::sessionBus()))
 {
-    Q_OBJECT
-    Q_PROPERTY(QString currentTime READ currentTime NOTIFY timeChanged)
-    Q_PROPERTY(int seconds READ seconds NOTIFY secondChanged)
-    Q_PROPERTY(int minutes READ minutes NOTIFY timeChanged)
-    Q_PROPERTY(int hours READ hours NOTIFY hourChanged)
-public:
-    explicit KclockFormat(QObject *parent = nullptr);
-    Q_INVOKABLE QString formatTimeString(int hours, int minutes);
-    Q_INVOKABLE bool isChecked(int dayIndex, int daysOfWeek);
-    QString currentTime()
-    {
-        return m_currentTime;
-    };
-    int seconds()
-    {
-        return m_minutesCounter;
+    m_volume = m_interface->alarmVolume();
+    AlarmPlayer::instance().setVolume(m_volume);
+
+    m_alarmSilenceAfter = m_interface->alarmSilenceAfter();
+    m_alarmSnoozeLength = m_interface->alarmSnoozeLength();
+
+    connect(m_interface, &LocalKClockSettingsInterface::alarmVolumeChanged, this, &KClockSettings::updateVolume);
+    connect(m_interface, &LocalKClockSettingsInterface::alarmSilenceAfterChanged, this, &KClockSettings::updateAlarmSilenceAfter);
+    connect(m_interface, &LocalKClockSettingsInterface::alarmSnoozeLengthChanged, this, &KClockSettings::updateAlarmSnoozeLength);
+
+    // init display
+    switch (m_alarmSilenceAfter) {
+    case 30:
+        m_alarmSilenceAfterDisplay = i18n("30 seconds");
+        break;
+    case 60:
+        m_alarmSilenceAfterDisplay = i18n("1 minute");
+        break;
+    case 300:
+        m_alarmSilenceAfterDisplay = i18n("5 minutes");
+        break;
+    case 600:
+        m_alarmSilenceAfterDisplay = i18n("10 minutes");
+        break;
+    case 900:
+        m_alarmSilenceAfterDisplay = i18n("15 minutes");
+        break;
+    case -1:
+        m_alarmSilenceAfterDisplay = i18n("Never");
+        break;
     }
-    int minutes()
-    {
-        return m_hoursCounter;
+
+    switch (m_alarmSnoozeLength) {
+    case 1:
+        m_alarmSnoozeLengthDisplay = i18n("1 minute");
+        break;
+    case 2:
+        m_alarmSnoozeLengthDisplay = i18n("2 minutes");
+        break;
+    case 3:
+        m_alarmSnoozeLengthDisplay = i18n("3 minutes");
+        break;
+    case 4:
+        m_alarmSnoozeLengthDisplay = i18n("4 minutes");
+        break;
+    case 5:
+        m_alarmSnoozeLengthDisplay = i18n("5 minutes");
+        break;
+    case 10:
+        m_alarmSnoozeLengthDisplay = i18n("10 minutes");
+        break;
+    case 30:
+        m_alarmSnoozeLengthDisplay = i18n("30 minutes");
+        break;
+    case 60:
+        m_alarmSnoozeLengthDisplay = i18n("1 hour");
+        break;
     }
-    int hours()
-    {
-        return m_hours;
-    }
+    qDebug() << m_alarmSnoozeLengthDisplay;
+}
 
-private Q_SLOTS:
-    void updateTime();
-Q_SIGNALS:
-    void timeChanged();
-    void startDayChanged();
-    void secondChanged();
-    void hourChanged();
-
-private:
-    void startTimer(); // basic settings for updating time display
-
-    QTimer *m_timer;
-    WeekModel *m_weekModel;
-    QString m_currentTime;
-
-    int m_hours, m_hoursCounter = 0, m_minutesCounter = 0;
-};
-
-using weekListItem = std::array<std::tuple<QString, int>, 7>;
-class WeekModel : public QAbstractListModel
+void KClockSettings::updateVolume()
 {
-    Q_OBJECT
-public:
-    enum { NameRole = Qt::DisplayRole, FlagRole = Qt::UserRole + 1 };
-    explicit WeekModel(QObject *parent = nullptr);
-    int rowCount(const QModelIndex &parent) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
-    QHash<int, QByteArray> roleNames() const override;
+    m_volume = m_interface->alarmVolume();
+    Q_EMIT volumeChanged();
+}
 
-private:
-    weekListItem m_listItem;
-};
+void KClockSettings::updateAlarmSilenceAfter()
+{
+    m_alarmSilenceAfter = m_interface->alarmSilenceAfter();
+    Q_EMIT alarmSilenceChanged();
+}
 
-#endif // KCLOCKFORMAT_H
+void KClockSettings::updateAlarmSnoozeLength()
+{
+    m_alarmSnoozeLength = m_interface->alarmSnoozeLength();
+    Q_EMIT alarmSnoozedChanged();
+}
