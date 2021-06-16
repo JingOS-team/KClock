@@ -17,62 +17,135 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.0
+
+import QtQuick 2.12
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.2
+import QtQuick.Shapes 1.12
+import org.kde.kirigami 2.11 as Kirigami
 import QtGraphicalEffects 1.0
 
-Item {
+Rectangle {
+    id: root
 
-    property int mouseX
-    property int mouseY
-    property var sourceView
-    property string coverColor: "#aa000000"
-    property real coverRadius: 40 * appwindow.officalScale
+    property int timerDuration
+    property int timerElapsed
+    property bool timerRunning
+    property int fontSize: 34
 
-    ShaderEffectSource {
-        id: eff
-        sourceItem: sourceView
-        anchors.centerIn: fastBlur
-        width: fastBlur.width
-        visible: false
-        height: fastBlur.height
-        sourceRect: Qt.rect(mouseX, mouseY, width, height)
+    width: 320  
+    height: 80   
+    color: "transparent"
+    anchors.centerIn: parent
 
-        function getItemX(width, height) {
-            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
-                                        width, height)
-            return mapItem.x
+    function getTimeLeft() {
+        return timerDuration - timerElapsed
+    }
+    function getHours() {
+        return ("0" + parseInt(getTimeLeft() / 60 / 60).toFixed(0)).slice(-2)
+    }
+    function getMinutes() {
+        return ("0" + parseInt(getTimeLeft() / 60 - 60 * getHours())).slice(-2)
+    }
+    function getSeconds() {
+        return ("0" + parseInt(getTimeLeft() - 60 * getMinutes())).slice(-2)
+    }
+
+    Slider {
+        id: sliderArea
+
+        width: parent.width
+        height: parent.height
+        leftPadding: 0
+        rightPadding: 0
+
+        from: timerDuration
+        to: 0
+
+        handle: Item {
+            visible: true
+            width: 1
+            height: 1
+            x: 0
+            y: 0
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: 1
+                height: 1
+                visible: false
+            }
         }
-        function getItemY(width, height) {
-            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
-                                        width, height)
-            return mapItem.y
+
+        //    #ff43BDF4
+        background: Rectangle {
+            id: progressBarBackground
+            color: appwindow.isDarkTheme ? "#d8000000" : "white"
+            radius: 10  
+
+            layer.enabled: true
+            layer.effect: OpacityMask {
+                maskSource: Rectangle {
+                    width: progressBarBackground.width
+                    height: progressBarBackground.height
+                    radius: progressBarBackground.radius
+                }
+            }
+
+            Rectangle {
+                width: (1 - timerElapsed / timerDuration) * parent.width
+                height: parent.height
+                color: {
+                    if(appwindow.isDarkTheme){
+                        timerRunning ? "#39c17b" : "#555555"
+                    }else {
+                        timerRunning ? "#39c17b" : "#333C3F48"
+                    }
+
+                }
+            }
         }
     }
-    FastBlur {
-        id: fastBlur
-        anchors.fill: parent
-        source: eff
-        radius: 70
-        cached: true
-        visible: false
-    }
+
     Rectangle {
-        id: maskRect
-        anchors.fill: fastBlur
-        visible: false
-        clip: true
-        radius: coverRadius
-    }
-    OpacityMask {
-        id: mask
-        anchors.fill: maskRect
-        visible: true
-        source: fastBlur
-        maskSource: maskRect
-    }
-    Rectangle {
-        anchors.fill: parent
-        color: coverColor
-        radius: coverRadius
+        width: 240  
+        height: 42  
+        anchors.centerIn: parent
+        color: "transparent"
+
+        RowLayout {
+            anchors.centerIn: parent
+
+            Label {
+                text: getHours()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: ":"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: getMinutes()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: ":"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: getSeconds()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+        }
     }
 }
