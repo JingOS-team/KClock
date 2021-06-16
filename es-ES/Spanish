@@ -19,38 +19,90 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
+ 
 import QtQuick 2.12
 import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.2
+import QtQuick.Window 2.11
 import QtGraphicalEffects 1.12
-import org.kde.kirigami 2.11 as Kirigami
-import kclock 1.0
+
+import org.kde.kirigami 2.4 as Kirigami
 
 Kirigami.Page {
-    id: timerPage
+    id: stopwatchpage
 
-    property Timer timer: timerModel.get(0)
-    property int timerIndex
-    property bool justCreated: timer == null
-    property bool showFullscreen: false
-    property int elapsed: timer == null ? 0 : timer.elapsed
-    property int duration: timer == null ? 0 : timer.length
-    property bool running: timer == null ? 0 : timer.running
-    property real mScale: appwindow.officalScale
+    property bool running: false
+    property int elapsedTime: stopwatchTimer.elapsedTime
+    property int stopwatchFontSize: 90
+    property alias sLeft: stopwatchArea.left
+    property alias sRight: stopwatchArea.right
+    property alias sTop: stopwatchArea.top
+    property alias sBottom: stopwatchArea.bottom
 
+    property int lapTitleFontSize: 11
+    property int listitemFontSize: 17
+
+    Layout.fillWidth: true
     leftPadding: 0
     rightPadding: 0
     topPadding: 0
     bottomPadding: 0
     globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
+    anchors.margins: 0
 
     // background: Item {}
     background:JBackground{}
 
-    // topbar action
+    function getStopwatchTime(result) {
+
+        var h = Math.floor(
+                    result / 3600) < 10 ? '0' + Math.floor(
+                                              result / 3600) : Math.floor(
+                                              result / 3600)
+        var m = Math.floor(
+                    (result / 60 % 60)) < 10 ? '0' + Math.floor(
+                                                   (result / 60 % 60)) : Math.floor(
+                                                   (result / 60 % 60))
+        var ss = result % 60 < 10 ? '0' + result % 60 : result % 60
+        var s = number(ss, 2)
+        if (s < 10) {
+            s = '0' + s
+        }
+        if (h == "00") {
+            return m + ":" + s
+        }
+        return h + ":" + m + ":" + s
+    }
+
+    function number(data, val) {
+        var numbers = ''
+        // 保留几位小数后面添加几个0
+        for (var i = 0; i < val; i++) {
+            numbers += '0'
+        }
+        var s = 1 + numbers
+        // 如果是整数需要添加后面的0
+        var spot = "." + numbers
+        // Math.round四舍五入
+        //  parseFloat() 函数可解析一个字符串，并返回一个浮点数。
+        var value = Math.round(parseFloat(data) * s) / s
+        // 从小数点后面进行分割
+        var d = value.toString().split(".")
+        if (d.length == 1) {
+            value = value.toString() + spot
+            return value
+        }
+        if (d.length > 1) {
+            if (d[1].length < 2) {
+                value = value.toString() + "0"
+            }
+            return value
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
+        id: contentLayout
         color: "#00000000"
 
         JLogo {}
@@ -59,254 +111,295 @@ Kirigami.Page {
             width: parent.width
             height: parent.height - toolbarHeight
             color: "transparent"
-
             Rectangle {
                 id: controlLayout
                 width: parent.width
-                height: 80  
+                height: 100  
                 anchors.verticalCenter: parent.verticalCenter
                 color: "transparent"
 
                 Rectangle {
                     id: stopwatchArea
-                    width: parent.width / 3
-                    height: parent.height - 20  
+                    width: parent.width / 8 * 3
+                    height: parent.height - 2 
                     anchors.centerIn: parent
-                    visible: justCreated
                     color: "transparent"
-                    // color:"red"
+                }
 
-                    Rectangle {
-                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
-                        width: 80  
-                        height: width
-                        anchors {
-                            left: parent.left
-                            verticalCenter: parent.verticalCenter
-                        }
-                        radius:  10  
+                JButton {
+                    btn_width: 80  
+                    btn_height: btn_width
+                    btn_icon: appwindow.isDarkTheme ? "qrc:/image/sw_lap.png" : "qrc:/image/sw_lap_l.png"
+                    btn_content: "Lap"
+                    visible: running
+                    anchors {
+                        verticalCenter: parent.verticalCenter
+                        right: stopwatchArea.left
+                        rightMargin: 62
                     }
-                    Rectangle {
-                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
-                        width: 80  
-                        height: width
-                        anchors {
-                            centerIn: parent
-                        }
-                        radius:  10  
-                    }
-                    Rectangle {
-                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
-                        width: 80  
-                        height: width
-                        anchors {
-                            right: parent.right
-                            verticalCenter: parent.verticalCenter
-                        }
-                        radius:  10  
+
+                    onJbtnClick: {
+                        roundModel.insert(0, {
+                                              "time": elapsedTime
+                                          })
                     }
                 }
 
                 JButton {
-                    visible: justCreated
                     btn_width: 80  
                     btn_height: btn_width
-                    btn_icon: appwindow.isDarkTheme ? "qrc:/image/sw_reset.png" : "qrc:/image/sw_reset_l.png"
+                    btn_icon: appwindow.isDarkTheme ? "qrc:/image/sw_reset.png":"qrc:/image/sw_reset_l.png"
                     btn_content: "Reset"
+                    visible: !running
                     anchors {
                         verticalCenter: parent.verticalCenter
                         right: stopwatchArea.left
-                        rightMargin: 68  
+                        rightMargin: 62 
                     }
 
                     onJbtnClick: {
-                        hoursTumber.currentIndex = 0
-                        minutesTumber.currentIndex = 5
-                        secondsTumber.currentIndex = 0
+                        console.log("Hello World222")
+                        stopwatchTimer.reset()
+                        roundModel.clear()
                     }
                 }
 
                 JButton {
-                    visible: !justCreated
                     btn_width: 80  
                     btn_height: btn_width
-                    btn_icon:  appwindow.isDarkTheme ? "qrc:/image/timer_done.png" :  "qrc:/image/timer_done_l.png"
-                    btn_content: "Done"
-                    anchors {
-                        verticalCenter: parent.verticalCenter
-                        right: stopwatchArea.left
-                        rightMargin: 68  
-                    }
-
-                    onJbtnClick: {
-                        timer.reset()
-                        timerModel.remove(0)
-                        justCreated = true
-                    }
-                }
-
-                JButton {
-                    visible: justCreated
-                    btn_width: 80  
-                    btn_height: btn_width
-                    btn_icon: "qrc:/image/timer_new.png"
-                    btn_content: "New"
-                    statusPress: "#39c17b"
-                    anchors {
-                        verticalCenter: parent.verticalCenter
-                        left: stopwatchArea.right
-                        leftMargin: 68  
-                    }
-
-                    onJbtnClick: {
-                        timerModel.addNew()
-                        timer = timerModel.get(0)
-                        console.log("first timer is : ", timerModel.get(0))
-                        var length = hoursTumber.currentIndex * 60 * 60
-                                + minutesTumber.currentIndex * 60 + secondsTumber.currentIndex
-                        if (length <= 0) {
-                            showPassiveNotification(i18n("倒计时时长不合法"))
-                            return
+                    btn_icon: running ? "qrc:/image/sw_pause.png" : "qrc:/image/sw_start.png"
+                    btn_content: running ? "Stop" : "Start"
+                    statusPress:
+                    {
+                        if(appwindow.isDarkTheme){
+                            running ? "#e95b4e" : "#39c17b"
+                        }else {
+                            running ? "#e95b4e" : "#39c17b"
                         }
-                        timer.length = length
-                        justCreated = false
                     }
-                }
-
-                JButton {
-                    visible: !justCreated
-                    btn_width: 80  
-                    btn_height: btn_width
-                    btn_icon: timer.running ? "qrc:/image/sw_pause.png" : "qrc:/image/sw_start.png"
-                    btn_content: timer.running ? "Pause" : "Start"
-                    statusPress: timer.running ? "#e95b4e" : "#39c17b"
+                         
                     anchors {
                         verticalCenter: parent.verticalCenter
                         left: stopwatchArea.right
-                        leftMargin: 68  
+                        leftMargin: 62  
                     }
 
                     onJbtnClick: {
-                        timer.toggleRunning()
+                        //                    console.log("Hello World" , isStopRunning())
+                        running = !running
+                        stopwatchTimer.toggle()
                     }
                 }
             }
 
             Rectangle {
-                id: timerLayoutHolder
-                width: parent.width / 3
-                height: parent.height - 20  
+                id: stopwatchAreaHold
+                width: parent.width / 8 * 3
+                height: 90  
                 anchors.centerIn: parent
                 color: "transparent"
-                // color: "yellow"
             }
 
-            JTimerProgressComponent {
-                visible: !justCreated
-                timerDuration: duration
-                timerElapsed: elapsed
-                timerRunning: running
-            }
-
-            Kirigami.FormLayout {
-                id: form
-                
-                property int fontSize: 34  
+            Rectangle {
+                id: stopwatchAreaHoldNew
+                width: parent.width / 8 * 3
+                height: 90  
                 anchors.centerIn: parent
-                implicitWidth: timerLayoutHolder.width + 2 
-                // implicitHeight: (370 + 88 + 2 + 120)  
-                implicitHeight: 300
-                visible: justCreated
+                anchors.verticalCenterOffset: -100  
+                color: "transparent"
+            }
 
-                Rectangle {
-                    anchors.fill: parent
-                    color: "transparent"
+            Rectangle {
+                id: lapTitleLayout
+                width: parent.width / 8 * 3
+                height: 14 
+                anchors.centerIn: parent
+                anchors.verticalCenterOffset: -10  
+                color: "transparent"
+                            //    color: "yellow"
+                z: 20
+                visible: running || roundModel.count > 0
 
-                    Row {
-                        id: row
-                        width: form.width
-                        height: form.height
+                Label {
+                    text: i18n("LAP NO.")
+                    color: appwindow.isDarkTheme ? "#aaffffff":"#993C3F48"
+                    font.pixelSize: lapTitleFontSize
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                }
 
-                        JTumbler {
-                            id: hoursTumber
-                            widget_h: parent.height
-                            widget_w: 80 
-                            modelValue: 24
-                            textSize: form.fontSize
-                            textColor:  appwindow.isDarkTheme ? "white" :"black"
-                            anchors.left: parent.left
-                            visibleItemCountValue: 3
-                            btn_w: 50 
-                            btn_h: btn_w
+                Label {
+                    text: i18n("SPLIT")
+                    color: appwindow.isDarkTheme ? "#aaffffff":"#993C3F48"
+                    font.pixelSize: lapTitleFontSize
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Label {
+                    text: i18n("TOTAL")
+                    color: appwindow.isDarkTheme ? "#aaffffff":"#993C3F48"
+                    font.pixelSize: lapTitleFontSize
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
+            Rectangle {
+                id: stopwatchLayout
+                anchors {
+                    left: stopwatchAreaHold.left
+                    top: running
+                         || roundModel.count > 0 ? stopwatchAreaHoldNew.top : stopwatchAreaHold.top
+                    right: stopwatchAreaHold.right
+                    bottom: running || roundModel.count
+                            > 0 ? stopwatchAreaHold.top : stopwatchAreaHold.bottom
+                }
+                color: "transparent"
+
+                RowLayout {
+                    id: timeLabels
+                    //                Layout.alignment: Qt.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.verticalCenterOffset: -5
+                    anchors.horizontalCenter: parent.horizontalCenter
+
+                    Text {
+                        id: minutesText
+                        width: 172  
+                        text: stopwatchTimer.minutes
+                        color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                        font.pixelSize: stopwatchFontSize
+                        font.family: clockFont.name
+                        Layout.alignment: Qt.AlignVCenter
+                        anchors {
+                            right: left_tag.left
+                            rightMargin: 2  
+                        }
+                    }
+                    Text {
+                        id: left_tag
+                        text: ":"
+                        color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                        font.pixelSize: stopwatchFontSize
+                        font.family: clockFont.name
+                        anchors {
+                            right: sw_minutes.left
+                            rightMargin: 2  
+                        }
+                    }
+                    Text {
+                        id: sw_minutes
+                        text: stopwatchTimer.seconds
+                        width: 172  
+                        color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                        font.pixelSize: stopwatchFontSize
+                        font.family: clockFont.name
+                        anchors.centerIn: parent
+                    }
+                    Text {
+                        id: right_tag
+                        text: "."
+                        color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                        font.pixelSize: stopwatchFontSize
+                        font.family: clockFont.name
+                        anchors {
+                            left: sw_minutes.right
+                            leftMargin: 2  
+                        }
+                    }
+                    Text {
+                        width: 172  
+                        id: secondsText
+                        text: stopwatchTimer.small
+                        color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                        font.pixelSize: stopwatchFontSize
+                        font.family: clockFont.name
+                        anchors {
+                            left: right_tag.right
+                            leftMargin: 2  
+                        }
+                    }
+                }
+            }
+
+            ListView {
+                id: modellist
+                model: roundModel
+                spacing: 20 
+                anchors.left: lapTitleLayout.left
+                anchors.right: lapTitleLayout.right
+                anchors.topMargin: 20
+                anchors.top: lapTitleLayout.bottom
+                anchors.bottom: contentLayout.bottom
+                anchors.bottomMargin: 85
+                height: 164  
+                Layout.fillHeight: true
+
+                //            ScrollBar.vertical: ScrollBar {}
+                delegate: Item {
+
+                    width: parent.width
+                    height: 21
+
+                    RowLayout {
+                        width: modellist.width
+                        Layout.fillHeight: true
+                        Layout.alignment: Qt.AlignVCenter
+
+                        Rectangle {
+                            id: countLayout
+                            implicitWidth: 210
+                            implicitHeight: 33
+                            color: "transparent"
+                            // color:"red"
+                            Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
+                            Label {
+                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.left: parent.left
+                                color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                                font.pixelSize: listitemFontSize
+                                text: i18n("LAP %1" ,  (roundModel.count - model.index))
+                            }
                         }
 
-                        JTumbler {
-                            id: minutesTumber
-                            widget_h: parent.height
-                            widget_w: 80  
-                            modelValue: 60
-                            textSize: form.fontSize
-                            textColor:  appwindow.isDarkTheme ? "white" :"black"
-                            visibleItemCountValue: 3
-                            btn_w: 50  
-                            btn_h: btn_w
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            currentIndex: 5
+                        Rectangle {
+                            implicitWidth: 210  
+                            implicitHeight: 28
+                            color: "transparent"
+                            // color:"green"
+                            anchors.centerIn: parent
+                            Label {
+                                anchors.centerIn: parent
+                                color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                                font.pixelSize: listitemFontSize
+                                text: index == roundModel.count - 1 ? getStopwatchTime(
+                                                                          parseFloat(model.time / 1000).toFixed(2)) : getStopwatchTime(parseFloat((model.time - roundModel.get(index + 1).time) / 1000).toFixed(2))
+                            }
                         }
 
-                        JTumbler {
-                            id: secondsTumber
-                            widget_h: parent.height
-                            widget_w: 80
-                            modelValue: 60
-                            textSize: form.fontSize
-                            textColor:  appwindow.isDarkTheme ? "white" :"black"
+                        Rectangle {
                             anchors.right: parent.right
-                            visibleItemCountValue: 3
-                            btn_w: 50  
-                            btn_h: btn_w
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: "transparent"
+                            // color: "blue"
+                            Layout.fillHeight: true
+                            Label {
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: appwindow.isDarkTheme ? "white" :"#FF3C3F48"
+                                font.pixelSize: listitemFontSize
+                                text: getStopwatchTime(
+                                          parseFloat(
+                                              model.time / 1000).toFixed(2))
+                            }
                         }
                     }
                 }
             }
 
-            Rectangle {
-                id: special_view
-                width: parent.width / 3
-                height: controlLayout.height
-                anchors.centerIn: parent
-                visible: justCreated
-                color: "transparent"
-
-                JDoubleGradientView {
-                    text: i18n("Hours")
-                    height: parent.height
-                    width: height
-                    anchors {
-                        left: parent.left
-                        verticalCenter: parent.verticalCenter
-                    }
-                }
-
-                JDoubleGradientView {
-                    text: i18n("Minutes")
-                    height: parent.height
-                    width: height
-                    anchors {
-                        centerIn: parent
-                    }
-                }
-
-                JDoubleGradientView {
-                    text: i18n("Seconds")
-                    height: parent.height
-                    width: height
-
-                    anchors {
-                        right: parent.right
-                        verticalCenter: parent.verticalCenter
-                    }
-                }
+            ListModel {
+                id: roundModel
             }
         }
     }
