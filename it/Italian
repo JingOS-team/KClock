@@ -1,68 +1,20 @@
-[Desktop Entry]
-Name=KClock_1x2
-Name[ca]=KClock_1x2
-Name[ca@valencia]=KClock_1x2
-Name[el]=KClock_1x2
-Name[en_GB]=KClock_1x2
-Name[es]=KClock_1x2
-Name[et]=KClock_1x2
-Name[eu]=KClock_1x2
-Name[fr]=KClock_1x2
-Name[it]=KClock_1x2
-Name[ko]=KClock_1x2
-Name[nl]=KClock_1x2
-Name[nn]=Klokke (1 × 2)
-Name[pt]=KClock_1x2
-Name[pt_BR]=KClock_1x2
-Name[ro]=KClock_1x2
-Name[sk]=KClock_1x2
-Name[sl]=KClock 1x2
-Name[sv]=KClock_1x2
-Name[uk]=KClock_1x2
-Name[x-test]=xxKClock_1x2xx
-Comment=KClock widget (1x2)
-Comment[ca]=Estri del KClock (1x2)
-Comment[ca@valencia]=Estri del KClock (1x2)
-Comment[el]=Γραφικό συστατικό KClock (1x2)
-Comment[en_GB]=KClock widget (1x2)
-Comment[es]=Widget de KClock (1x2)
-Comment[et]=KClocki vidin (1x2)
-Comment[eu]=KClock trepeta (1x2)
-Comment[fr]=Composant graphique « KClock » (1x2)
-Comment[it]=Oggetto KClock (1x2)
-Comment[ko]=KClock 위젯(1x2)
-Comment[nl]=KClock-widget (1x2)
-Comment[nn]=Klokke-element (1 × 2)
-Comment[pt]=Elemento gráfico do KClock (1x2)
-Comment[pt_BR]=Widget do KClock (1x2)
-Comment[ro]=Control grafic KClock (1x2)
-Comment[sk]=KClock widget (1x2)
-Comment[sl]=Gradnik KClock (1x2)
-Comment[sv]=KClock grafisk komponent (1 x 2)
-Comment[uk]=Віджет KClock (1x2)
-Comment[x-test]=xxKClock widget (1x2)xx
+# TODO: adapt "org.kde.plasma" here & elsewhere if needed (see README)
+add_definitions(-DTRANSLATION_DOMAIN=\"plasma_applet_org.kde.plasma.kclock_1x2\")
+
+set(kclock_1x2_SRCS
+    kclock_1x2.cpp
+)
+add_library(plasma_applet_kclock_1x2 MODULE ${kclock_1x2_SRCS})
+
+kcoreaddons_desktop_to_json(plasma_applet_kclock_1x2 package/metadata.desktop SERVICE_TYPES plasma-applet.desktop)
+
+target_link_libraries(plasma_applet_kclock_1x2
+                      Qt5::Gui
+                      Qt5::DBus
+                      KF5::Plasma
+                      KF5::I18n)
 
 
-Icon=kclock
-Type=Service
-X-KDE-ServiceTypes=Plasma/Applet
-X-KDE-Library=plasma_applet_kclock_1x2
+install(TARGETS plasma_applet_kclock_1x2 DESTINATION ${KDE_INSTALL_PLUGINDIR}/plasma/applets)
 
-X-Plasma-Provides=org.kde.plasma.time
-X-Plasma-DBusActivationService=org.kde.kclock.*
-
-X-Plasma-NotificationArea=true
-X-Plasma-NotificationAreaCategory=ApplicationStatus
-
-X-KDE-PluginInfo-Author=HanY
-X-KDE-PluginInfo-Email=hanyoung@protonmail.com
-X-KDE-PluginInfo-Name=org.kde.plasma.kclock_1x2
-X-KDE-PluginInfo-Version=1.0
-X-KDE-PluginInfo-Website=https://plasma.kde.org/
-X-KDE-PluginInfo-Category=Utilities
-X-KDE-PluginInfo-License=LGPL-2.1+
-X-KDE-PluginInfo-EnabledByDefault=true
-
-X-Plasma-API=declarativeappletscript
-X-Plasma-MainScript=ui/main.qml
-
+plasma_install_package(package org.kde.plasma.kclock_1x2)
