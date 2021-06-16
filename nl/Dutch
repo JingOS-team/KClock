@@ -18,90 +18,61 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 import QtQuick 2.0
-import "../CommonSize.js" as CS
-PathView {
-    id: root
+import QtGraphicalEffects 1.0
 
-    property bool bgShow
-    property variant value
-    property int displayFontSize: width/4
-    property real displayStep: 0.6 // displayStep > 0
-    signal viewMove(var index)
+Item {
 
-    width: 100; height: 300
-    clip: true
-    pathItemCount: 7
-    preferredHighlightBegin: 0.5
-    preferredHighlightEnd: 0.5
-    dragMargin: root.width/2
-    Component.onCompleted: findCurrentIndex()
+    property int mouseX
+    property int mouseY
+    property var sourceView
+    property string coverColor: "#aa000000"
+    property real coverRadius: 40 * appwindow.officalScale
 
-    onMovementEnded: {
-        viewMove(model[currentIndex].value)
-    }
-    onValueChanged: {
-        findCurrentIndex()
-    }
+    ShaderEffectSource {
+        id: eff
+        sourceItem: sourceView
+        anchors.centerIn: fastBlur
+        width: fastBlur.width
+        visible: false
+        height: fastBlur.height
+        sourceRect: Qt.rect(mouseX, mouseY, width, height)
 
-
-    Keys.onUpPressed: {
-        root.incrementCurrentIndex()
-        value = (model[currentIndex].value)
-    }
-
-    Keys.onDownPressed: {
-        root.decrementCurrentIndex()
-        value = (model[currentIndex].value)
-    }
-    Rectangle{
-        id:backgroud
-        visible: bgShow
-        width: parent.width
-        height: 80
-        color: "blue"
-        anchors.centerIn: parent
-        radius: 14
-
-        MouseArea {
-            anchors.fill: parent
-           onClicked: {
-               console.log("WheelvIEW .....ONCLICK")
-               mouse.accepted = true
-           }
+        function getItemX(width, height) {
+            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
+                                        width, height)
+            return mapItem.x
+        }
+        function getItemY(width, height) {
+            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
+                                        width, height)
+            return mapItem.y
         }
     }
-
-    delegate: Item {
-        id:delegate
-        width: root.width
-        height: root.height/pathItemCount
-        Text {
-            anchors.centerIn: parent
-            font.pixelSize: displayFontSize*Number(delegate.PathView.textFontPercent);
-            text: modelData.display
-            color: appwindow.isDarkTheme ? "white" :"black"
-            opacity:  currentIndex == index ? 1 : 0.3
-        }
+    FastBlur {
+        id: fastBlur
+        anchors.fill: parent
+        source: eff
+        radius: 70
+        cached: true
+        visible: false
     }
-
-    path: Path {
-        startX: root.width/2; startY: 0
-
-        PathAttribute { name: "textFontPercent"; value: displayStep }
-
-        PathLine { x: root.width/2; y: root.height/2 }
-
-        PathAttribute { name: "textFontPercent"; value: 1}
-
-        PathLine { x: root.width/2; y: root.height }
-
-        PathAttribute { name: "textFontPercent"; value: displayStep }
+    Rectangle {
+        id: maskRect
+        anchors.fill: fastBlur
+        visible: false
+        clip: true
+        radius: coverRadius
     }
-
-    function findCurrentIndex() {
-        for (var i = 0; i < count; i++)
-            if (model[i].value === value)
-                currentIndex = i;
+    OpacityMask {
+        id: mask
+        anchors.fill: maskRect
+        visible: true
+        source: fastBlur
+        maskSource: maskRect
+    }
+    Rectangle {
+        anchors.fill: parent
+        color: coverColor
+        radius: coverRadius
     }
 }
-
