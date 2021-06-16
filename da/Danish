@@ -17,62 +17,156 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.0
-import QtGraphicalEffects 1.0
+import QtQuick 2.12
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.2
+import QtQuick.Shapes 1.12
+import org.kde.kirigami 2.11 as Kirigami
 
-Item {
+Rectangle {
 
-    property int mouseX
-    property int mouseY
-    property var sourceView
-    property string coverColor: "#aa000000"
-    property real coverRadius: 40 * appwindow.officalScale
+    id: root
+    anchors.centerIn: parent
 
-    ShaderEffectSource {
-        id: eff
-        sourceItem: sourceView
-        anchors.centerIn: fastBlur
-        width: fastBlur.width
-        visible: false
-        height: fastBlur.height
-        sourceRect: Qt.rect(mouseX, mouseY, width, height)
+    property int timerDuration
+    property int timerElapsed
+    property bool timerRunning
+    property int fontSize: 80
 
-        function getItemX(width, height) {
-            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
-                                        width, height)
-            return mapItem.x
+    color: "transparent"
+
+    function getTimeLeft() {
+        return timerDuration - timerElapsed
+    }
+    function getHours() {
+        return ("0" + parseInt(getTimeLeft() / 60 / 60).toFixed(0)).slice(-2)
+    }
+    function getMinutes() {
+        return ("0" + parseInt(getTimeLeft() / 60 - 60 * getHours())).slice(-2)
+    }
+    function getSeconds() {
+        return ("0" + parseInt(getTimeLeft() - 60 * getMinutes())).slice(-2)
+    }
+
+    // clock display
+    RowLayout {
+        id: timeLabels
+        anchors.centerIn: parent
+
+        Label {
+            id: hoursText
+            text: getHours()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+            visible: true
         }
-        function getItemY(width, height) {
-            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
-                                        width, height)
-            return mapItem.y
+        Label {
+            text: ":"
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+            visible: true
+        }
+        Label {
+            id: minutesText
+            text: getMinutes()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+        Label {
+            text: ":"
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+        Label {
+            text: getSeconds()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
         }
     }
-    FastBlur {
-        id: fastBlur
-        anchors.fill: parent
-        source: eff
-        radius: 70
-        cached: true
-        visible: false
-    }
+
     Rectangle {
-        id: maskRect
-        anchors.fill: fastBlur
-        visible: false
-        clip: true
-        radius: coverRadius
+        width: timeLabels.width
+        height: 2
+        color: "#aaffffff"
+        anchors.left: timeLabels.left
+        anchors.right: timeLabels.right
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: -60
     }
-    OpacityMask {
-        id: mask
-        anchors.fill: maskRect
-        visible: true
-        source: fastBlur
-        maskSource: maskRect
-    }
+
     Rectangle {
-        anchors.fill: parent
-        color: coverColor
-        radius: coverRadius
+        width: timeLabels.width
+        height: 2
+        color: "#aaffffff"
+        anchors.left: timeLabels.left
+        anchors.right: timeLabels.right
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: 60
+    }
+
+    Rectangle {
+        width: 500
+        height: 94
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: timeLabels.bottom
+        anchors.topMargin: 33
+        visible: false
+        color: "black"
+
+        RowLayout {
+            anchors.fill: parent
+
+            Image {
+                id: reset
+                source: "qrc:/image/reset.png"
+                width: 28
+                height: 28
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.reset()
+                    }
+                }
+            }
+
+            Image {
+                id: ppBtn
+                source: timerPage.timer.running ? "qrc:/image/pause.png" : "qrc:/image/play.png"
+                anchors.centerIn: parent
+                Layout.alignment: Qt.AlignCenter
+                width: 94
+                height: 94
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.toggleRunning()
+                    }
+                }
+            }
+
+            Image {
+                id: delBtn
+                source: "qrc:/image/delete.png"
+                width: 28
+                height: 28
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.reset()
+                        timerModel.remove(0)
+                        timerPage.justCreated = true
+                    }
+                }
+            }
+        }
     }
 }
