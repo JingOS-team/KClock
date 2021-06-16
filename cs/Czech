@@ -17,91 +17,156 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.0
-import "../CommonSize.js" as CS
-PathView {
+import QtQuick 2.12
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.2
+import QtQuick.Shapes 1.12
+import org.kde.kirigami 2.11 as Kirigami
+
+Rectangle {
+
     id: root
+    anchors.centerIn: parent
 
-    property bool bgShow
-    property variant value
-    property int displayFontSize: width/4
-    property real displayStep: 0.6 // displayStep > 0
-    signal viewMove(var index)
+    property int timerDuration
+    property int timerElapsed
+    property bool timerRunning
+    property int fontSize: 80
 
-    width: 100; height: 300
-    clip: true
-    pathItemCount: 7
-    preferredHighlightBegin: 0.5
-    preferredHighlightEnd: 0.5
-    dragMargin: root.width/2
-    Component.onCompleted: findCurrentIndex()
+    color: "transparent"
 
-    onMovementEnded: {
-        viewMove(model[currentIndex].value)
+    function getTimeLeft() {
+        return timerDuration - timerElapsed
     }
-    onValueChanged: {
-        findCurrentIndex()
+    function getHours() {
+        return ("0" + parseInt(getTimeLeft() / 60 / 60).toFixed(0)).slice(-2)
     }
-
-
-    Keys.onUpPressed: {
-        root.incrementCurrentIndex()
-        value = (model[currentIndex].value)
+    function getMinutes() {
+        return ("0" + parseInt(getTimeLeft() / 60 - 60 * getHours())).slice(-2)
+    }
+    function getSeconds() {
+        return ("0" + parseInt(getTimeLeft() - 60 * getMinutes())).slice(-2)
     }
 
-    Keys.onDownPressed: {
-        root.decrementCurrentIndex()
-        value = (model[currentIndex].value)
-    }
-    Rectangle{
-        id:backgroud
-        visible: bgShow
-        width: parent.width
-        height: 80
-        color: "blue"
+    // clock display
+    RowLayout {
+        id: timeLabels
         anchors.centerIn: parent
-        radius: 14
 
-        MouseArea {
+        Label {
+            id: hoursText
+            text: getHours()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+            visible: true
+        }
+        Label {
+            text: ":"
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+            visible: true
+        }
+        Label {
+            id: minutesText
+            text: getMinutes()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+        Label {
+            text: ":"
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+        Label {
+            text: getSeconds()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+    }
+
+    Rectangle {
+        width: timeLabels.width
+        height: 2
+        color: "#aaffffff"
+        anchors.left: timeLabels.left
+        anchors.right: timeLabels.right
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: -60
+    }
+
+    Rectangle {
+        width: timeLabels.width
+        height: 2
+        color: "#aaffffff"
+        anchors.left: timeLabels.left
+        anchors.right: timeLabels.right
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: 60
+    }
+
+    Rectangle {
+        width: 500
+        height: 94
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: timeLabels.bottom
+        anchors.topMargin: 33
+        visible: false
+        color: "black"
+
+        RowLayout {
             anchors.fill: parent
-           onClicked: {
-               console.log("WheelvIEW .....ONCLICK")
-               mouse.accepted = true
-           }
+
+            Image {
+                id: reset
+                source: "qrc:/image/reset.png"
+                width: 28
+                height: 28
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.reset()
+                    }
+                }
+            }
+
+            Image {
+                id: ppBtn
+                source: timerPage.timer.running ? "qrc:/image/pause.png" : "qrc:/image/play.png"
+                anchors.centerIn: parent
+                Layout.alignment: Qt.AlignCenter
+                width: 94
+                height: 94
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.toggleRunning()
+                    }
+                }
+            }
+
+            Image {
+                id: delBtn
+                source: "qrc:/image/delete.png"
+                width: 28
+                height: 28
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.reset()
+                        timerModel.remove(0)
+                        timerPage.justCreated = true
+                    }
+                }
+            }
         }
-    }
-
-    delegate: Item {
-        id:delegate
-        width: root.width
-        height: root.height/pathItemCount
-        Text {
-            anchors.centerIn: parent
-            font.pixelSize: displayFontSize*Number(delegate.PathView.textFontPercent);
-            text: modelData.display
-            color: appwindow.isDarkTheme ? "white" :"black"
-            opacity:  currentIndex == index ? 1 : 0.3
-        }
-    }
-
-    path: Path {
-        startX: root.width/2; startY: 0
-
-        PathAttribute { name: "textFontPercent"; value: displayStep }
-
-        PathLine { x: root.width/2; y: root.height/2 }
-
-        PathAttribute { name: "textFontPercent"; value: 1}
-
-        PathLine { x: root.width/2; y: root.height }
-
-        PathAttribute { name: "textFontPercent"; value: displayStep }
-    }
-
-    function findCurrentIndex() {
-        for (var i = 0; i < count; i++)
-            if (model[i].value === value)
-                currentIndex = i;
     }
 }
-
