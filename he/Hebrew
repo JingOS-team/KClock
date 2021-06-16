@@ -1,423 +1,298 @@
-import QtQuick 2.14
-import QtQuick.Layouts 1.3
-import QtQuick.Controls 2.0 as Controls2
-import org.kde.kirigami 2.3 as Kirigami
-import "../CommonSize.js" as CS
+/*
+ *  SPDX-FileCopyrightText: 2020 Carson Black <uhhadd@gmail.com>
+ *
+ *  SPDX-License-Identifier: LGPL-2.0-or-later
+ */
 
-RowLayout {
-    id: timeRow
+import QtQuick 2.12
+import QtQuick.Layouts 1.12
+import QtQuick.Controls 2.12
+import org.kde.kirigami 2.13 as Kirigami
 
-    property alias hourNumber: hour_wheel.value
-    property alias minutesNumber: minute_wheel.value
+/**
+ * SwipeNavigator is a control providing for lateral navigation.
+ *
+ * @include swipenavigator/main.qml
+ */
+Item {
+    id: swipeNavigatorRoot
 
-    property real mScale: appwindow.officalScale
-    property int widget_width: 305 
-    property int widget_height: 130 
+    implicitWidth: stackView.implicitWidth
+    implicitHeight: stackView.implicitHeight
 
-    signal minChanged(var minValue)
-    signal hourChanged(var hourValue)
+    /**
+     * pages: list<Kirigami.Page>
+     *
+     * A list of pages to swipe between.
+     */
+    default property list<Kirigami.Page> pages
 
-    width: widget_width
-    height: widget_height
+    /**
+     * layers: StackView
+     *
+     * The StackView holding the core item, allowing users of a SwipeNavigator
+     * in order to push pages on top of the SwipeNavigator.
+     */
+    property alias layers: stackView
 
-    spacing: 10 * appwindow.officalScale
+    /**
+     * big: bool
+     *
+     * Whether or not to present the SwipeNavigator in a larger format
+     * suitable for rendering on televisions.
+     */
+    property bool big: false
 
-    // hours
-    Rectangle {
-        id: hour_view
-        width: 40 
-        height: parent.height
-        color: appwindow.isDarkTheme ? "#dd000000" : "#FFE4E4E6"
-        Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-        radius: 10
-        property real hour_beginX
-        property real hour_beginY
-        property int hour_direction
-        property bool pressState1: false
+    /**
+     * header: Item
+     *
+     * The item that will be displayed before the tabs.
+     */
+    property Component header: Item {visible: false}
 
-        Rectangle {
-            anchors.top: parent.top
-            anchors.topMargin: 5
-            width: parent.width
-            height: 11
-            color: "transparent"
+    /**
+     * footer: Item
+     *
+     * The item that will be displayed after the tabs.
+     */
+    property Component footer: Item {visible: false}
 
-            Image {
-                sourceSize.width: 10
-                sourceSize.height: 6
-                anchors.centerIn: parent
-                source: "qrc:/image/time_wheel_up.png"
-            }
+    /**
+     * initialIndex: int
+     *
+     * The initial tab index of the SwipeNavigator.
+     */
+    property int initialIndex: 0
 
-            MouseArea {
-                anchors.fill: parent
-                propagateComposedEvents: true
-                onClicked: {
-                    // console.log("hour : ", hour_wheel.value)
-                    // if (hour_wheel.value === 0) {
-                    //     hour_wheel.value = 23
-                    // } else {
-                    //     hour_wheel.value -= 1
-                    // }
-                    // hourNumber = hour_wheel.value
-                    // hourChanged(hourNumber)
+    /**
+     * currentIndex: int
+     *
+     * The currently displayed index of the SwipeNavigator.
+     */
+    property alias currentIndex: columnView.currentIndex
 
-                    if (hour_wheel.value === 23) {
-                        hour_wheel.value = 0
-                    } else {
-                        hour_wheel.value += 1
-                    }
-                    hourNumber = hour_wheel.value
-                    hourChanged(hourNumber)
-                    mouse.accepted = true
+    QtObject {
+        id: _gridManager
+        readonly property bool tall: (_header.width + __main.implicitWidth + Math.abs(__main.offset) + _footer.width) > swipeNavigatorRoot.width
+        readonly property int rowOne: Kirigami.Settings.isMobile ? 1 : 0
+        readonly property int rowTwo: Kirigami.Settings.isMobile ? 0 : 1
+        readonly property int rowDirection: Kirigami.Settings.isMobile ? 1 : -1
+        property Item item: Item {
+            states: [
+                State {
+                    name: "small"
+                    when: !_gridManager.tall
+                },
+                State {
+                    name: "tall"
+                    when: _gridManager.tall
                 }
-            }
-        }
-
-        Rectangle {
-            anchors.fill: hour_wheel
-            color:"transparent"
-            MouseArea {
-                anchors.fill:parent 
-                onClicked:{
-                    console.log("--------hour click-------");
-                }
-            }
-        }
-
-        WheelView {
-            id: hour_wheel
-            anchors.centerIn: parent
-            width: 26
-            height: 20 
-
-            model: {
-                var list = []
-                for (var i = 0; i < 24; i++)
-                    list.push({
-                                  "display": (i / 10 < 1 ? "0" + i : "" + i),
-                                  "value": i
-                              })
-                return list
-            }
-
-            value: 0
-            pathItemCount: 1
-            displayFontSize: 20
-            onViewMove: {
-                hourNumber = index
-            }
-            onValueChanged: {
-                console.log("hour changed")
-                hourChanged(hourNumber)
-            }
-        }
-
-        Rectangle {
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 5 
-            width: parent.width
-            height: 11 
-            color: "transparent"
-
-            Image {
-                sourceSize.width: 10
-                sourceSize.height: 6 
-                anchors.centerIn: parent
-                source: "qrc:/image/time_wheel_down.png"
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    // if (hour_wheel.value === 23) {
-                    //     hour_wheel.value = 0
-                    // } else {
-                    //     hour_wheel.value += 1
-                    // }
-                    // hourNumber = hour_wheel.value
-                    // hourChanged(hourNumber)
-                    // mouse.accepted = true
-
-                    console.log("hour : ", hour_wheel.value)
-                    if (hour_wheel.value === 0) {
-                        hour_wheel.value = 23
-                    } else {
-                        hour_wheel.value -= 1
+            ]
+            transitions: [
+                Transition {
+                    to: "tall"
+                    ScriptAction {
+                        script: {
+                            // Let's take these out of the layout first...
+                            _dummyOne.visible = false
+                            _dummyTwo.visible = false
+                            // Now we move the header and footer up
+                            _header.Layout.row += _gridManager.rowDirection
+                            _footer.Layout.row += _gridManager.rowDirection
+                            // Now that the header and footer are out of the way,
+                            // let's expand the tabs
+                            __main.Layout.column--
+                            __main.Layout.columnSpan = 3
+                        }
                     }
-                    hourNumber = hour_wheel.value
-                    hourChanged(hourNumber)
-                }
-            }
-        }
+                },
+                Transition {
+                    to: "small"
+                    ScriptAction {
+                        script: {
+                            // Let's move the tabs back to where they belong
+                            __main.Layout.columnSpan = 1
+                            __main.Layout.column++
+                            // Move the header and footer down into the empty space
+                            _header.Layout.row -= _gridManager.rowDirection
+                            _footer.Layout.row -= _gridManager.rowDirection
 
-        MouseArea {
-            anchors.fill: parent
-            propagateComposedEvents: true
-
-            onPressed: {
-                hour_view.pressState1 = true
-                hour_view.hour_beginY = mouseY
-                hour_view.hour_beginX = mouseX
-                preventStealing = true
-            }
-
-            onPositionChanged: {
-                var min_distance = 10
-                if (mouseY - hour_view.hour_beginY > min_distance) {
-                    if (hour_wheel.value === 0) {
-                        hour_wheel.value = 23
-                    } else {
-                        hour_wheel.value -= 1
-                    }
-                } else if (mouseY - hour_view.hour_beginY < -min_distance) {
-                    if (hour_wheel.value === 23) {
-                        hour_wheel.value = 0
-                    } else {
-                        hour_wheel.value += 1
+                            // Now we can bring these guys back in
+                            _dummyOne.visible = false
+                            _dummyTwo.visible = false
+                        }
                     }
                 }
-
-                hourNumber = hour_wheel.value
-                hour_view.hour_beginX = mouseX
-                hour_view.hour_beginY = mouseY
-            }
-
-            onWheel: {
-                if (wheel.angleDelta.y >= 120) {
-                    if (hour_wheel.value === 0) {
-                        hour_wheel.value = 23
-                    } else {
-                        hour_wheel.value -= 1
-                    }
-                } else if(wheel.angleDelta.y <= -120){
-                    if (hour_wheel.value === 23) {
-                        hour_wheel.value = 0
-                    } else {
-                        hour_wheel.value += 1
-                    }
-                }
-                hourNumber = hour_wheel.value
-            }
-
-            onReleased: {
-                hour_view.pressState1 = false
-                hour_view.hour_beginX = -1
-                hour_view.hour_beginY = -1
-                preventStealing = true
-            }
-
-            onClicked: {
-                mouse.accepted = false
-            }
+            ]
         }
     }
 
-    // :
-    Rectangle {
-        width: timeRow.width / 30
-        height: timeRow.width / 20* 5
-        Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-        color: "transparent"
-        Controls2.Label {
-            anchors.centerIn: parent
-            text: ":"
-            color: appwindow.isDarkTheme ? "white" :"black"
-            font.pixelSize: CS.fontSize.f3
-            // font.bold: true
-            anchors.verticalCenter: parent.verticalCenter
+
+    StackView {
+        id: stackView
+
+        anchors.fill: parent
+
+        function clear() {
+            //don't let it kill the main page row
+            var d = stackView.depth;
+            for (var i = 1; i < d; ++i) {
+                pop();
+            }
         }
-    }
 
-    // minutes
-    Rectangle {
-        width: 40 
-        height: parent.height
-        color: appwindow.isDarkTheme ? "#dd000000" : "#FFE4E4E6"
-        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-        radius: 10
-        id: min_view
+        initialItem: GridLayout {
+            id: swipeNavigatorGrid
+            rowSpacing: 0
+            columns: 1
 
-        property real min_beginX
-        property real min_beginY
-        property int min_direction
-        property bool pressState: false
+            ToolBar {
+                id: topToolBar
 
-        Rectangle {
-            anchors.top: parent.top
-            anchors.topMargin: 5
-            width: parent.width
-            height: 11
-            color: "transparent"
+                padding: 0
+                bottomPadding: 1
+                position: Kirigami.Settings.isMobile ? ToolBar.Footer : ToolBar.Header
 
-            Image {
-                sourceSize.width: 10
-                sourceSize.height: 6 
-                anchors.centerIn: parent
-                source: "qrc:/image/time_wheel_up.png"
+                Layout.row: Kirigami.Settings.isMobile ? 1 : 0
+
+                GridLayout {
+                    id: _grid
+
+                    rowSpacing: 0
+                    columnSpacing: 0
+                    anchors.fill: parent
+                    rows: 2
+                    columns: 3
+
+                    // Row one
+                    Item { id: _spacer; Layout.row: 0; Layout.column: 1; Layout.fillWidth: true }
+                    Item { id: _dummyOne; Layout.row: 0; Layout.column: 0 }
+                    Item { id: _dummyTwo; Layout.row: 0; Layout.column: 2 }
+
+                    // Row two
+                    Loader { id: _header; sourceComponent: swipeNavigatorRoot.header; Layout.row: 1; Layout.column: 0 }
+                    PrivateSwipeTabBar {
+                        id: __main
+                        readonly property int offset: _header.width - _footer.width
+                        readonly property int effectiveOffset: _gridManager.tall ? 0 : offset
+                        Layout.rightMargin: effectiveOffset > 0 ? effectiveOffset : 0
+                        Layout.leftMargin: effectiveOffset < 0 ? -effectiveOffset : 0
+                        Layout.fillHeight: true
+                        Layout.fillWidth: true//Kirigami.Settings.isMobile && swipeNavigatorRoot.height > swipeNavigatorRoot.width
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.row: 1
+                        Layout.column: 1
+
+                    }
+                    Loader { id: _footer; sourceComponent: swipeNavigatorRoot.footer; Layout.row: 1; Layout.column: 2 }
+                }
+
+                Layout.fillWidth: true
+
+                Accessible.role: Accessible.PageTabList
             }
 
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    // console.log("hour : ", hour_wheel.value)
-                    // if (minute_wheel.value === 0) {
-                    //     minute_wheel.value = 59
-                    // } else {
-                    //     minute_wheel.value -= 1
-                    // }
 
-                    // minutesNumber = minute_wheel.value
-                    // minChanged(minutesNumber)
+            Kirigami.ColumnView {
+                id: columnView
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.row: Kirigami.Settings.isMobile ? 0 : 1
 
-                     console.log("min +")
-                    if (minute_wheel.value === 59) {
-                        minute_wheel.value = 0
-                    } else {
-                        minute_wheel.value += 1
-                    }
-                    minutesNumber = minute_wheel.value
-                    minChanged(minutesNumber)
+                columnResizeMode: Kirigami.ColumnView.SingleColumn
+
+                contentChildren: swipeNavigatorRoot.pages
+
+                Component.onCompleted: {
+                    columnView.currentIndex = swipeNavigatorRoot.initialIndex
+                }
+            }
+        }
+        popEnter: Transition {
+            OpacityAnimator {
+                from: 0
+                to: 1
+                duration: Kirigami.Units.longDuration
+                easing.type: Easing.InOutCubic
+            }
+        }
+        popExit: Transition {
+            ParallelAnimation {
+                OpacityAnimator {
+                    from: 1
+                    to: 0
+                    duration: Kirigami.Units.longDuration
+                    easing.type: Easing.InOutCubic
+                }
+                YAnimator {
+                    from: 0
+                    to: height/2
+                    duration: Kirigami.Units.longDuration
+                    easing.type: Easing.InCubic
                 }
             }
         }
 
-        Rectangle {
-            anchors.fill: minute_wheel
-             color:"transparent"
-            MouseArea {
-                anchors.fill:parent 
-                onClicked:{
-                    console.log("--------minitue click-------");
+        pushEnter: Transition {
+            ParallelAnimation {
+                //NOTE: It's a PropertyAnimation instead of an Animator because with an animator the item will be visible for an instant before starting to fade
+                PropertyAnimation {
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: Kirigami.Units.longDuration
+                    easing.type: Easing.InOutCubic
+                }
+                YAnimator {
+                    from: height/2
+                    to: 0
+                    duration: Kirigami.Units.longDuration
+                    easing.type: Easing.OutCubic
                 }
             }
         }
 
-        WheelView {
-            id: minute_wheel
-            anchors.centerIn: parent
-            width: 26
-            height: 20 
-            model: {
-                var list = []
-                for (var i = 0; i < 60; i++)
-                    list.push({
-                                  "display": (i / 10 < 1 ? "0" + i : "" + i),
-                                  "value": i
-                              })
-                return list
-            }
-            value: 0
-            pathItemCount: 1
-            displayFontSize: 20
-            onViewMove: {
-                minutesNumber = index
-            }
-            onValueChanged: {
-                console.log("min changed -> ", minutesNumber)
-                minChanged(minutesNumber)
+
+        pushExit: Transition {
+            OpacityAnimator {
+                from: 1
+                to: 0
+                duration: Kirigami.Units.longDuration
+                easing.type: Easing.InOutCubic
             }
         }
 
-        Rectangle {
-
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 5
-            width: parent.width
-            height: 11
-            color: "transparent"
-
-            Image {
-                sourceSize.width: 10
-                sourceSize.height: 6 
-                anchors.centerIn: parent
-                source: "qrc:/image/time_wheel_down.png"
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    // console.log("min +")
-                    // if (minute_wheel.value === 59) {
-                    //     minute_wheel.value = 0
-                    // } else {
-                    //     minute_wheel.value += 1
-                    // }
-                    // minutesNumber = minute_wheel.value
-                    // minChanged(minutesNumber)
-
-                     console.log("hour : ", hour_wheel.value)
-                    if (minute_wheel.value === 0) {
-                        minute_wheel.value = 59
-                    } else {
-                        minute_wheel.value -= 1
-                    }
-
-                    minutesNumber = minute_wheel.value
-                    minChanged(minutesNumber)
+        replaceEnter: Transition {
+            ParallelAnimation {
+                OpacityAnimator {
+                    from: 0
+                    to: 1
+                    duration: Kirigami.Units.longDuration
+                    easing.type: Easing.InOutCubic
+                }
+                YAnimator {
+                    from: height/2
+                    to: 0
+                    duration: Kirigami.Units.longDuration
+                    easing.type: Easing.OutCubic
                 }
             }
         }
 
-        MouseArea {
-            anchors.fill: parent
-            propagateComposedEvents: true
-
-            onWheel: {
-                if (wheel.angleDelta.y >= 120) {
-                    if (minute_wheel.value === 0) {
-                        minute_wheel.value = 59
-                    } else {
-                        minute_wheel.value -= 1
-                    }
-                } else if (wheel.angleDelta.y <=  -120) {
-                    if (minute_wheel.value === 59) {
-                        minute_wheel.value = 0
-                    } else {
-                        minute_wheel.value += 1
-                    }
+        replaceExit: Transition {
+            ParallelAnimation {
+                OpacityAnimator {
+                    from: 1
+                    to: 0
+                    duration: Kirigami.Units.longDuration
+                    easing.type: Easing.InCubic
                 }
-
-                minutesNumber = minute_wheel.value
-            }
-
-            onPressed: {
-                min_view.pressState = true
-                min_view.min_beginY = mouseY
-                min_view.min_beginX = mouseX
-            }
-
-            onPositionChanged: {
-                var min_distance = 10
-                if (mouseY - min_view.min_beginY > min_distance) {
-
-                    if (minute_wheel.value === 0) {
-                        minute_wheel.value = 59
-                    } else {
-                        minute_wheel.value -= 1
-                    }
-                } else if (mouseY - min_view.min_beginY < -min_distance) {
-
-                    if (minute_wheel.value === 59) {
-                        minute_wheel.value = 0
-                    } else {
-                        minute_wheel.value += 1
-                    }
+                YAnimator {
+                    from: 0
+                    to: -height/2
+                    duration: Kirigami.Units.longDuration
+                    easing.type: Easing.InOutCubic
                 }
-                minutesNumber = minute_wheel.value
-
-                min_view.min_beginX = mouseX
-                min_view.min_beginY = mouseY
-            }
-
-            onReleased: {
-                min_view.pressState = false
-                min_view.min_beginX = -1
-                min_view.min_beginY = -1
-            }
-
-            onClicked: {
-                mouse.accepted = false
             }
         }
     }
