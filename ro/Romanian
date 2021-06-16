@@ -1,88 +1,15 @@
-/*
- * Copyright 2020 Devin Lin <espidev@gmail.com>
- *                Han Young <hanyoung@protonmail.com>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
-#include <QDateTime>
-
-#include <KLocalizedString>
-
-#include "alarmmodel.h"
-#include "alarms.h"
-#include "utilmodel.h"
-
-Alarm::Alarm() {};
-Alarm::Alarm(QString uuid)
-{
-    m_interface = new org::kde::kclock::Alarm(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms/") + uuid, QDBusConnection::sessionBus(), this);
-
-    if (m_interface->isValid()) {
-        connect(m_interface, &OrgKdeKclockAlarmInterface::propertyChanged, this, &Alarm::updateProperty);
-        connect(m_interface, &OrgKdeKclockAlarmInterface::alarmChanged, [this] { m_nextRingTime = m_interface->nextRingTime(); });
-
-        m_uuid = QUuid(m_interface->getUUID());
-        m_name = m_interface->name();
-        m_enabled = m_interface->enabled();
-        m_hours = m_interface->hours();
-        m_minutes = m_interface->minutes();
-        m_daysOfWeek = m_interface->daysOfWeek();
-        m_snooze = m_interface->snoozedMinutes() * 60;
-        m_snoozeMinutes = m_interface->snoozeMinutes();
-        m_ringtonePath = m_interface->ringtonePath();
-        m_nextRingTime = m_interface->nextRingTime();
-    } else {
-        m_isValid = false;
-    }
-}
-
-QString Alarm::timeToRingFormated()
-{
-    this->calculateNextRingTime();
-
-    return UtilModel::instance()->timeToRingFormatted(this->nextRingTime());
-}
-
-void Alarm::updateProperty(QString property)
-{
-    if (property == QStringLiteral("name"))
-        this->m_name = m_interface->property("name").toString();
-    else if (property == QStringLiteral("enabled"))
-        this->m_enabled = m_interface->property("enabled").toBool();
-    else if (property == QStringLiteral("hours"))
-        this->m_hours = m_interface->property("hours").toInt();
-    else if (property == QStringLiteral("minutes"))
-        this->m_minutes = m_interface->property("minutes").toInt();
-    else if (property == QStringLiteral("daysOfWeek"))
-        this->m_daysOfWeek = m_interface->property("daysOfWeek").toInt();
-    else if (property == QStringLiteral("snoozedMinutes"))
-        this->m_snooze = m_interface->property("snoozedMinutes").toInt() * 60;
-    else if (property == QStringLiteral("ringtonePath"))
-        this->m_ringtonePath = m_interface->property("ringtonePath").toBool();
-    Q_EMIT propertyChanged();
-}
-
-void Alarm::calculateNextRingTime()
-{
-    if (!this->m_enabled) { // if not enabled, means this would never ring
-        m_nextRingTime = -1;
-        return;
-    }
-    
-    m_nextRingTime = UtilModel::instance()->calculateNextRingTime(this->m_hours, this->m_minutes, this->m_daysOfWeek, this->m_snooze);
-}
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="45px" height="46px" viewBox="0 0 45 46" version="1.1">
+  <title>Group备份</title>
+  <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+    <g id="Group备份" transform="translate(0.000000, 0.990833)">
+      <line x1="32.4443545" y1="33.6992805" x2="36.6819444" y2="37.9368704" id="Path" stroke="#3C3F48" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="11.573612" y1="33.699629" x2="7.33638889" y2="37.9368704" id="Path" stroke="#3C3F48" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle id="Oval" stroke="#3C3F48" stroke-width="2.75" cx="22.0091667" cy="23.3847396" r="14.6727778"/>
+      <polyline id="Path" stroke="#3C3F48" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" points="21.5203247 16.429953 21.5203247 24.4864268 27.8532607 28.3474949"/>
+      <path d="M11.9216181,5.96081597 C14.3050633,5.96547957 16.491568,7.28443565 17.6073333,9.39057778 C15.3489994,10.0883425 13.2960725,11.3289149 11.6281764,13.0037493 C10.2737285,14.3674696 9.19622506,15.9806107 8.45518819,17.7540611 C6.61283741,16.589197 5.49774545,14.5598682 5.50226406,12.3801563 C5.50617322,8.83646155 8.37793725,5.96469753 11.9216181,5.96081597 Z" id="Path" stroke="#3C3F48" stroke-width="2.75"/>
+      <path d="M32.0967014,5.96081597 C35.640396,5.96469753 38.5121602,8.83646155 38.5160694,12.3801563 C38.5205878,14.5598682 37.405496,16.589197 35.5631451,17.7540611 C34.8221082,15.9806107 33.7446047,14.3674696 32.3901569,13.0037493 C30.7222608,11.3289149 28.669334,10.0883425 26.411,9.39057778 C27.5267653,7.28443565 29.71327,5.96547957 32.0967014,5.96081597 Z" id="Path" stroke="#3C3F48" stroke-width="2.75"/>
+      <polygon id="Path" points="0 0 44.0183333 0 44.0183333 44.0183333 0 44.0183333"/>
+    </g>
+  </g>
+</svg>
