@@ -1,5 +1,5 @@
 /*
- * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,74 +17,119 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef KCLOCKFORMAT_H
-#define KCLOCKFORMAT_H
+#include <QDebug>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QtGlobal>
 
-#include <QAbstractListModel>
-#include <QObject>
-#include <array>
-#include <tuple>
-class QTimer;
-class WeekModel;
-class KclockFormat : public QObject
+#include <KLocalizedString>
+
+#include "timer.h"
+#include "timermodel.h"
+
+/* ~ TimerModel ~ */
+TimerModel::TimerModel(QObject *parent)
+    : m_interface(new OrgKdeKclockTimerModelInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers"), QDBusConnection::sessionBus(), this))
 {
-    Q_OBJECT
-    Q_PROPERTY(QString currentTime READ currentTime NOTIFY timeChanged)
-    Q_PROPERTY(int seconds READ seconds NOTIFY secondChanged)
-    Q_PROPERTY(int minutes READ minutes NOTIFY timeChanged)
-    Q_PROPERTY(int hours READ hours NOTIFY hourChanged)
-public:
-    explicit KclockFormat(QObject *parent = nullptr);
-    Q_INVOKABLE QString formatTimeString(int hours, int minutes);
-    Q_INVOKABLE bool isChecked(int dayIndex, int daysOfWeek);
-    QString currentTime()
-    {
-        return m_currentTime;
-    };
-    int seconds()
-    {
-        return m_minutesCounter;
+    if (m_interface->isValid()) {
+        connect(m_interface, SIGNAL(timerAdded(QString)), this, SLOT(addTimer(QString)));
+        connect(m_interface, SIGNAL(timerRemoved(QString)), this, SLOT(removeTimer(QString)));
     }
-    int minutes()
-    {
-        return m_hoursCounter;
+    QDBusInterface *interface = new QDBusInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers"), QStringLiteral("org.freedesktop.DBus.Introspectable"), QDBusConnection::sessionBus(), this);
+    QDBusReply<QString> reply = interface->call(QStringLiteral("Introspect"));
+    if (reply.isValid()) {
+        auto xmlMsg = reply.value();
+        QXmlStreamReader xml(xmlMsg);
+        while (!xml.atEnd()) {
+            xml.readNext();
+            if (xml.name() == QStringLiteral("node") && xml.attributes().hasAttribute(QStringLiteral("name"))) {
+                if (xml.attributes().value(QStringLiteral("name")).toString().indexOf(QStringLiteral("org")) == -1) {
+                    // already existed on kclock launch, not justCreated
+                    this->addTimer(xml.attributes().value(QStringLiteral("name")).toString(), false);
+                }
+            }
+        }
     }
-    int hours()
-    {
-        return m_hours;
-    }
+    interface->deleteLater();
+}
 
-private Q_SLOTS:
-    void updateTime();
-Q_SIGNALS:
-    void timeChanged();
-    void startDayChanged();
-    void secondChanged();
-    void hourChanged();
-
-private:
-    void startTimer(); // basic settings for updating time display
-
-    QTimer *m_timer;
-    WeekModel *m_weekModel;
-    QString m_currentTime;
-
-    int m_hours, m_hoursCounter = 0, m_minutesCounter = 0;
-};
-
-using weekListItem = std::array<std::tuple<QString, int>, 7>;
-class WeekModel : public QAbstractListModel
+int TimerModel::rowCount(const QModelIndex &parent) const
 {
-    Q_OBJECT
-public:
-    enum { NameRole = Qt::DisplayRole, FlagRole = Qt::UserRole + 1 };
-    explicit WeekModel(QObject *parent = nullptr);
-    int rowCount(const QModelIndex &parent) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
-    QHash<int, QByteArray> roleNames() const override;
+    Q_UNUSED(parent);
+    return m_timersList.size();
+}
 
-private:
-    weekListItem m_listItem;
-};
+int TimerModel::count()
+{
+    return m_timersList.size();
+}
 
-#endif // KCLOCKFORMAT_H
+QVariant TimerModel::data(const QModelIndex &index, int role) const
+{
+    return QVariant();
+}
+
+void TimerModel::addTimer(int length, QString label, bool running)
+{
+    // modified by steven
+//    if (m_timersList.size() >= TIMER_MAX) {
+//        //EXIST,  REMOVE FIRST
+//        remove(0);
+//    }
+    
+    m_interface->addTimer(length, label, running);
+}
+
+bool TimerModel::hasTimer() {
+    return !m_timersList.isEmpty();
+}
+
+void TimerModel::remove(int index)
+{
+    if (index < 0 || index >= m_timersList.size())
+        return;
+
+    m_interface->removeTimer(m_timersList.at(index)->uuid().toString());
+    m_timersList.at(index)->deleteLater();
+
+    Q_EMIT beginRemoveRows(QModelIndex(), index, index);
+    m_timersList.removeAt(index);
+    Q_EMIT endRemoveRows();
+}
+
+Timer *TimerModel::get(int index)
+{
+    if ((index < 0) || (index >= m_timersList.count()))
+        return {};
+
+    return m_timersList.at(index);
+}
+
+void TimerModel::addTimer(QString uuid)
+{
+    this->addTimer(uuid, true);
+}
+
+void TimerModel::addTimer(QString uuid, bool justCreated)
+{
+    auto *timer = new Timer(uuid.remove(QRegularExpression(QStringLiteral("[{}-]"))), justCreated);
+
+    Q_EMIT beginInsertRows(QModelIndex(), 0, 0);
+    m_timersList.insert(0, timer);
+    Q_EMIT endInsertRows();
+}
+
+void TimerModel::removeTimer(QString uuid)
+{
+    auto index = 0;
+    for (auto timer : m_timersList) {
+        if (timer->uuid().toString() == uuid) {
+            break;
+        }
+        ++index;
+    }
+
+    // don't need to check index out of bound, remove(index) takes care of that
+    remove(index);
+}
