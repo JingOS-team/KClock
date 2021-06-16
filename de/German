@@ -1,74 +1,90 @@
-/*
-    SPDX-FileCopyrightText: 2020 HanY <hanyoung@protonmail.com>
-    SPDX-License-Identifier: LGPL-2.1-or-later
-*/
-
-#include "kclock_1x2.h"
-#include <QDBusConnection>
-#include <QDBusInterface>
-#include <QDBusReply>
-#include <QProcess>
-#include <QTimer>
-#include <klocalizedstring.h>
-
-KClock_1x2::KClock_1x2(QObject *parent, const QVariantList &args)
-    : Plasma::Applet(parent, args)
-{
-    m_timer = new QTimer(this);
-    connect(m_timer, &QTimer::timeout, this, &KClock_1x2::initialTimeUpdate);
-    m_timer->setSingleShot(true);
-    // initial interval is milliseconds to next minute
-    m_timer->start((60 - (QTime::currentTime().msecsSinceStartOfDay() / 1000) % 60) * 1000); // seconds to next minute
-
-    if (!QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms"), QStringLiteral("org.kde.kclock.AlarmModel"), QStringLiteral("nextAlarm"), this, SLOT(updateAlarm(qulonglong))))
-        m_string = QStringLiteral("connect failed");
-
-    QDBusInterface *interface = new QDBusInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms"), QStringLiteral("org.kde.kclock.AlarmModel"), QDBusConnection::sessionBus(), this);
-    QDBusReply<quint64> reply = interface->call(QStringLiteral("getNextAlarm"));
-    if (reply.isValid()) {
-        auto alarmTime = reply.value();
-        if (alarmTime > 0) {
-            auto dateTime = QDateTime::fromSecsSinceEpoch(alarmTime).toLocalTime();
-            m_string = m_local.standaloneDayName(dateTime.date().dayOfWeek(), QLocale::ShortFormat) + QStringLiteral(", ") + m_local.toString(dateTime.time(), QStringLiteral("hh:mm"));
-            m_hasAlarm = true;
-        } else
-            m_hasAlarm = false;
-    }
-    emit propertyChanged();
-}
-
-void KClock_1x2::updateAlarm(qulonglong time)
-{
-    auto dateTime = QDateTime::fromSecsSinceEpoch(time).toLocalTime();
-    if (time > 0) {
-        m_string = m_local.standaloneDayName(dateTime.date().dayOfWeek(), QLocale::ShortFormat) + QStringLiteral(", ") + m_local.toString(dateTime.time(), QStringLiteral("hh:mm"));
-        m_hasAlarm = true;
-    } else {
-        m_hasAlarm = false;
-    }
-    emit propertyChanged();
-}
-void KClock_1x2::openKClock()
-{
-    m_process = new QProcess(this);
-    m_process->start(QStringLiteral("kclock"), QStringList());
-}
-void KClock_1x2::initialTimeUpdate()
-{
-    emit timeChanged();
-    disconnect(m_timer, &QTimer::timeout, this, &KClock_1x2::initialTimeUpdate); // disconnect
-    m_timer->setSingleShot(false);
-    connect(m_timer, &QTimer::timeout, this, &KClock_1x2::timeChanged);
-    m_timer->start(60000); // update every minute
-}
-QString KClock_1x2::time()
-{
-    return m_local.toString(QTime::currentTime(), QStringLiteral("hh:mm"));
-}
-KClock_1x2::~KClock_1x2()
-{
-}
-
-K_EXPORT_PLASMA_APPLET_WITH_JSON(kclock_1x2, KClock_1x2, "metadata.json")
-
-#include "kclock_1x2.moc"
+<RCC>
+    <qresource prefix="/">
+        <file>qml/main.qml</file>
+        <file>qml/AnalogClock.qml</file>
+        <file>qml/BottomToolbar.qml</file>
+        <file>assets/RedHatText-Regular.ttf</file>
+        <file>image/timer_pad.png</file>
+        <file>image/watch_pad.png</file>
+        <file>qml/TimerDigitalComponent.qml</file>
+        <file>image/pause.png</file>
+        <file>image/delete.png</file>
+        <file>image/play.png</file>
+        <file>image/reset.png</file>
+        <file>image/lap.png</file>
+        <file>image/create.png</file>
+        <file>qml/JTimerPicker.qml</file>
+        <file>qml/JClockElement.qml</file>
+        <file>image/error.png</file>
+        <file>qml/AlarmItemView.qml</file>
+        <file>qml/DigitalClock.qml</file>
+        <file>qml/JStopwatchPage.qml</file>
+        <file>qml/JButton.qml</file>
+        <file>qml/JLogo.qml</file>
+        <file>image/background.png</file>
+        <file>qml/JBackground.qml</file>
+        <file>qml/JTimerPage.qml</file>
+        <file>qml/JAlarmPage.qml</file>
+        <file>qml/WheelView.qml</file>
+        <file>qml/TimeSelectWheelView.qml</file>
+        <file>qml/JAlarmEditDialog.qml</file>
+        <file>CommonSize.js</file>
+        <file>qml/ClockElement.qml</file>
+        <file>image/row_time.png</file>
+        <file>image/row_snooze.png</file>
+        <file>image/row_repeat.png</file>
+        <file>image/row_label.png</file>
+        <file>image/icon_right.png</file>
+        <file>qml/JTimerProgressComponent.qml</file>
+        <file>qml/JAlarmDelDialog.qml</file>
+        <file>qml/DeleteMenu.qml</file>
+        <file>image/clock_logo.png</file>
+        <file>qml/JTumbler.qml</file>
+        <file>qml/StringUtils.js</file>
+        <file>image/footer_alarm_grey.png</file>
+        <file>image/footer_alarm_grey.svg</file>
+        <file>image/footer_alarm_grey_l.png</file>
+        <file>image/footer_alarm_grey_l.svg</file>
+        <file>image/footer_alarm_w.png</file>
+        <file>image/footer_sw_grey.png</file>
+        <file>image/footer_sw_grey.svg</file>
+        <file>image/footer_sw_grey_l.png</file>
+        <file>image/footer_sw_grey_l.svg</file>
+        <file>image/footer_sw_w.png</file>
+        <file>image/footer_timer_grey.png</file>
+        <file>image/footer_timer_grey.svg</file>
+        <file>image/footer_timer_grey_l.png</file>
+        <file>image/footer_timer_grey_l.svg</file>
+        <file>image/footer_timer_w.png</file>
+        <file>image/sw_lap.png</file>
+        <file>image/sw_lap_l.png</file>
+        <file>image/sw_pause.png</file>
+        <file>image/sw_reset.png</file>
+        <file>image/sw_reset_l.png</file>
+        <file>image/sw_start.png</file>
+        <file>image/timer_done.png</file>
+        <file>image/timer_done_l.png</file>
+        <file>image/timer_resume.png</file>
+        <file>image/alarm_add.png</file>
+        <file>image/alarm_add_l.png</file>
+        <file>image/back.png</file>
+        <file>image/back_l.png</file>
+        <file>image/dlg_ok.png</file>
+        <file>image/dlg_close.png</file>
+        <file>image/dlg_ok_l.png</file>
+        <file>image/dlg_close_l.png</file>
+        <file>image/timer_new.png</file>
+        <file>image/time_wheel_up.png</file>
+        <file>image/time_wheel_down.png</file>
+        <file>image/big_up.png</file>
+        <file>image/big_up_l.png</file>
+        <file>image/big_dow.png</file>
+        <file>image/big_dow_l.png</file>
+        <file>assets/Gilroy-Thin.otf</file>
+        <file>assets/Gidole-Regular.woff2.ttf</file>
+        <file>qml/VagueBackground.qml</file>
+        <file>qml/JDoubleGradientView.qml</file>
+        <file>image/repeat_ok.png</file>
+        <file>image/menu_delete.png</file>
+    </qresource>
+</RCC>
