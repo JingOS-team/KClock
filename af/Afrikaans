@@ -17,259 +17,134 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.11
+
+import QtQuick 2.12
 import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.2
-import org.kde.kirigami 2.12 as Kirigami
-import kclock 1.0
+import QtQuick.Shapes 1.12
+import org.kde.kirigami 2.11 as Kirigami
+import QtGraphicalEffects 1.0
 
-Kirigami.Page {
+Rectangle {
     id: root
 
-    property bool createdTimer: false
-    // timer state :
-    // 0 reset ;
-    // 1.running;
-    property int timerState: 0
-    property Timer timer: timer
-    property bool justCreated: timer == null ? false : timer.justCreated
-    property bool showFullscreen: false
-    property int elapsed: timer == null ? 0 : timer.elapsed
-    property int duration: timer == null ? 0 : timer.length
-    property bool running: timer == null ? 0 : timer.running
-    property Timer timerDelegate: timerModel.get(0)
+    property int timerDuration
+    property int timerElapsed
+    property bool timerRunning
+    property int fontSize: 34
 
-    globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
-    Layout.fillWidth: true
-    spacing: 0
-    padding:0
+    width: 320  
+    height: 80   
+    color: "transparent"
+    anchors.centerIn: parent
 
-    mainAction: Kirigami.Action {
-        iconName: "list-add"
-        text: i18n("New Timer")
-        onTriggered: {
-            createdTimer = true
-            timerModel.addNew()
-        }
+    function getTimeLeft() {
+        return timerDuration - timerElapsed
+    }
+    function getHours() {
+        return ("0" + parseInt(getTimeLeft() / 60 / 60).toFixed(0)).slice(-2)
+    }
+    function getMinutes() {
+        return ("0" + parseInt(getTimeLeft() / 60 - 60 * getHours())).slice(-2)
+    }
+    function getSeconds() {
+        return ("0" + parseInt(getTimeLeft() - 60 * getMinutes())).slice(-2)
     }
 
+    Slider {
+        id: sliderArea
 
-    background: Rectangle {
-        anchors.fill: parent
-        color: "black"
-    }
+        width: parent.width
+        height: parent.height
+        leftPadding: 0
+        rightPadding: 0
 
-    Rectangle {
-        anchors.left: root.left
-        anchors.top: parent.top
-        anchors.margins: 0
-        width: root.width / 2 - 18
-        height: root.height
-        color: "red"
-        id: digitalContentLayout
+        from: timerDuration
+        to: 0
 
-        TimerComponent {
-            visible: !justCreated
-            timerDuration: duration
-            timerElapsed: elapsed
-            timerRunning: running
-        }
-    }
-
-    Rectangle {
-        anchors.left: digitalContentLayout.right
-        anchors.top: parent.top
-        width: root.width / 2 - 18
-        height: root.height
-        color: "green"
-        id: timerContentLayout
-
-        Kirigami.FormLayout {
-            id: form
-            anchors.centerIn: parent
-            implicitWidth: row.width
-            implicitHeight: row.height
-            property int fontSize: 60
+        handle: Item {
             visible: true
+            width: 1
+            height: 1
+            x: 0
+            y: 0
 
             Rectangle {
-                anchors.fill: parent
-                color: "orange"
-
-                Row {
-                    id: row
-                    width: 595
-                    height: 380
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 67
-
-                    Tumbler {
-                        id: hoursTumber
-                        width: 101
-                        height: parent.height
-                        model: 100
-                        visibleItemCount: 3
-
-                        delegate: Label {
-                            opacity: 1.0 - Math.abs(Tumbler.displacement)
-                                     / (Tumbler.tumbler.visibleItemCount / 2)
-                            text: modelData < 10 ? "0" + modelData : modelData
-                            color: "white"
-                            font.pixelSize: form.fontSize
-
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-
-                            function displacementItemOpacity(displacement, visibleItemCount) {
-                                return 1.0 - Math.abs(
-                                            displacement) / (visibleItemCount / 2)
-                            }
-                        }
-                    }
-                    Label {
-                        width: 15
-                        height: 90
-                        anchors.verticalCenter: row.verticalCenter
-                        Layout.alignment: Qt.AlignVCenter
-                        color: "white"
-                        text: ":"
-                        font.pixelSize: form.fontSize
-                    }
-
-                    Tumbler {
-                        id: minutesTumber
-                        width: 101
-                        height: parent.height
-                        model: 60
-                        visibleItemCount: 3
-
-                        delegate: Label {
-                            opacity: 1.0 - Math.abs(Tumbler.displacement)
-                                     / (Tumbler.tumbler.visibleItemCount / 2)
-                            color: "white"
-                            text: modelData < 10 ? "0" + modelData : modelData
-                            font.pixelSize: form.fontSize
-
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-
-                            function displacementItemOpacity(displacement, visibleItemCount) {
-                                return 1.0 - Math.abs(
-                                            displacement) / (visibleItemCount / 2)
-                            }
-                        }
-                    }
-                    Label {
-                        width: 15
-                        height: 90
-                        anchors.verticalCenter: parent.verticalCenter
-                        Layout.alignment: Qt.AlignVCenter
-                        color: "white"
-                        text: ":"
-                        font.pixelSize: form.fontSize
-                    }
-                    Tumbler {
-                        id: secondsTumber
-                        width: 101
-                        height: parent.height
-                        model: 60
-                        visibleItemCount: 3
-
-                        delegate: Label {
-                            opacity: 1.0 - Math.abs(Tumbler.displacement)
-                                     / (Tumbler.tumbler.visibleItemCount / 2)
-                            color: "white"
-                            text: modelData < 10 ? "0" + modelData : modelData
-                            font.pixelSize: form.fontSize
-
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-
-                            function displacementItemOpacity(displacement, visibleItemCount) {
-                                return 1.0 - Math.abs(
-                                            displacement) / (visibleItemCount / 2)
-                            }
-                        }
-                    }
-                }
-
-                Rectangle {
-                    width: row.width
-                    height: 2
-                    color: "#aaffffff"
-                    anchors.left: row.left
-                    anchors.right: row.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.verticalCenterOffset: -60
-                }
-
-                Rectangle {
-                    width: row.width
-                    height: 2
-                    color: "#aaffffff"
-                    anchors.left: row.left
-                    anchors.right: row.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.verticalCenterOffset: 60
-                }
+                anchors.centerIn: parent
+                width: 1
+                height: 1
+                visible: false
             }
-
-            function setDuration() {
-                timer.length = spinBoxHours.value * 60 * 60
-                        + spinBoxMinutes.value * 60 + spinBoxSeconds.value
-            }
-
-            Item {
-                Kirigami.FormData.isSection: true
-                Kirigami.FormData.label: "Label (optional)"
-            }
-
-
         }
 
+        //    #ff43BDF4
+        background: Rectangle {
+            id: progressBarBackground
+            color: appwindow.isDarkTheme ? "#d8000000" : "white"
+            radius: 10  
 
-        RowLayout {
-            anchors.left: form.left
-            anchors.right: form.right
-            anchors.top: form.bottom
-            height: 94
-            width: form.width
-
-            Kirigami.Heading {
-                level: 4
-                Layout.alignment: Qt.AlignLeft
-                text: timerDelegate.label
+            layer.enabled: true
+            layer.effect: OpacityMask {
+                maskSource: Rectangle {
+                    width: progressBarBackground.width
+                    height: progressBarBackground.height
+                    radius: progressBarBackground.radius
+                }
             }
 
-            Row {
-                anchors.fill: parent
-
-                ToolButton {
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    icon.name: "chronometer-reset"
-                    onClicked: {
-                        hoursTumber.currentIndex = 0
-                        minutesTumber.currentIndex = 0
-                        secondsTumber.currentIndex = 0
+            Rectangle {
+                width: (1 - timerElapsed / timerDuration) * parent.width
+                height: parent.height
+                color: {
+                    if(appwindow.isDarkTheme){
+                        timerRunning ? "#39c17b" : "#555555"
+                    }else {
+                        timerRunning ? "#39c17b" : "#333C3F48"
                     }
-                }
-                ToolButton {
-                    anchors.horizontalCenter : parent.horizontalCenter
-                    anchors.verticalCenter: parent.verticalCenter
-                    icon.name: timerDelegate.running ? "chronometer-pause" : "chronometer-start"
-                    onClicked: {
-                        console.log(hoursTumber.currentIndex)
-                        timerModel.addNew()
-                    }
-                }
 
-                ToolButton {
-                    anchors.left: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    icon.name: "delete"
-                    onClicked: timerModel.remove(index)
                 }
+            }
+        }
+    }
+
+    Rectangle {
+        width: 240  
+        height: 42  
+        anchors.centerIn: parent
+        color: "transparent"
+
+        RowLayout {
+            anchors.centerIn: parent
+
+            Label {
+                text: getHours()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: ":"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: getMinutes()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: ":"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: getSeconds()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
             }
         }
     }
