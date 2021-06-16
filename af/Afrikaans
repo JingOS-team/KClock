@@ -1,5 +1,5 @@
 /*
- * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,103 +17,119 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "kclockformat.h"
-#include "utilmodel.h"
-#include <QLocale>
-#include <QTime>
-#include <QTimer>
-KclockFormat::KclockFormat(QObject *parent)
-    : QObject(parent)
-    , m_timer(new QTimer(this))
+#include <QDebug>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QtGlobal>
+
+#include <KLocalizedString>
+
+#include "timer.h"
+#include "timermodel.h"
+
+/* ~ TimerModel ~ */
+TimerModel::TimerModel(QObject *parent)
+    : m_interface(new OrgKdeKclockTimerModelInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers"), QDBusConnection::sessionBus(), this))
 {
-    connect(UtilModel::instance(), &UtilModel::applicationLoadedChanged, this, [this] {
-        if (UtilModel::instance()->applicationLoaded()) {
-            this->startTimer();
-        } else {
-            this->m_timer->stop();
+    if (m_interface->isValid()) {
+        connect(m_interface, SIGNAL(timerAdded(QString)), this, SLOT(addTimer(QString)));
+        connect(m_interface, SIGNAL(timerRemoved(QString)), this, SLOT(removeTimer(QString)));
+    }
+    QDBusInterface *interface = new QDBusInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers"), QStringLiteral("org.freedesktop.DBus.Introspectable"), QDBusConnection::sessionBus(), this);
+    QDBusReply<QString> reply = interface->call(QStringLiteral("Introspect"));
+    if (reply.isValid()) {
+        auto xmlMsg = reply.value();
+        QXmlStreamReader xml(xmlMsg);
+        while (!xml.atEnd()) {
+            xml.readNext();
+            if (xml.name() == QStringLiteral("node") && xml.attributes().hasAttribute(QStringLiteral("name"))) {
+                if (xml.attributes().value(QStringLiteral("name")).toString().indexOf(QStringLiteral("org")) == -1) {
+                    // already existed on kclock launch, not justCreated
+                    this->addTimer(xml.attributes().value(QStringLiteral("name")).toString(), false);
+                }
+            }
         }
-    });
-    connect(m_timer, &QTimer::timeout, this, &KclockFormat::updateTime);
-}
-
-void KclockFormat::updateTime()
-{
-    if (m_minutesCounter == 60) {
-        m_currentTime = QLocale::system().toString(QTime::currentTime(), QLocale::ShortFormat);
-        Q_EMIT timeChanged();
-        m_minutesCounter = 0;
-        m_hoursCounter++;
     }
-    if (m_hoursCounter == 60) {
-        m_hoursCounter = 0;
-        m_hours = QTime::currentTime().hour() >= 12 ? QTime::currentTime().hour() - 12 : QTime::currentTime().hour();
-        Q_EMIT hourChanged();
+    interface->deleteLater();
+}
+
+int TimerModel::rowCount(const QModelIndex &parent) const
+{
+    Q_UNUSED(parent);
+    return m_timersList.size();
+}
+
+int TimerModel::count()
+{
+    return m_timersList.size();
+}
+
+QVariant TimerModel::data(const QModelIndex &index, int role) const
+{
+    return QVariant();
+}
+
+void TimerModel::addTimer(int length, QString label, bool running)
+{
+    // modified by steven
+//    if (m_timersList.size() >= TIMER_MAX) {
+//        //EXIST,  REMOVE FIRST
+//        remove(0);
+//    }
+    
+    m_interface->addTimer(length, label, running);
+}
+
+bool TimerModel::hasTimer() {
+    return !m_timersList.isEmpty();
+}
+
+void TimerModel::remove(int index)
+{
+    if (index < 0 || index >= m_timersList.size())
+        return;
+
+    m_interface->removeTimer(m_timersList.at(index)->uuid().toString());
+    m_timersList.at(index)->deleteLater();
+
+    Q_EMIT beginRemoveRows(QModelIndex(), index, index);
+    m_timersList.removeAt(index);
+    Q_EMIT endRemoveRows();
+}
+
+Timer *TimerModel::get(int index)
+{
+    if ((index < 0) || (index >= m_timersList.count()))
+        return {};
+
+    return m_timersList.at(index);
+}
+
+void TimerModel::addTimer(QString uuid)
+{
+    this->addTimer(uuid, true);
+}
+
+void TimerModel::addTimer(QString uuid, bool justCreated)
+{
+    auto *timer = new Timer(uuid.remove(QRegularExpression(QStringLiteral("[{}-]"))), justCreated);
+
+    Q_EMIT beginInsertRows(QModelIndex(), 0, 0);
+    m_timersList.insert(0, timer);
+    Q_EMIT endInsertRows();
+}
+
+void TimerModel::removeTimer(QString uuid)
+{
+    auto index = 0;
+    for (auto timer : m_timersList) {
+        if (timer->uuid().toString() == uuid) {
+            break;
+        }
+        ++index;
     }
-    m_minutesCounter++;
-//    Q_EMIT secondChanged();
-     Q_EMIT timeChanged();
-}
 
-QString KclockFormat::formatTimeString(int hours, int minutes)
-{
-    return QLocale::system().toString(QTime(hours, minutes), QStringLiteral("hh:mm"));
-}
-
-bool KclockFormat::isChecked(int dayIndex, int daysOfWeek)
-{
-    // convert start day to standard start day of week, Monday
-    dayIndex += QLocale::system().firstDayOfWeek() - 1;
-    while (dayIndex > 6)
-        dayIndex -= 7;
-
-    int day = 1;
-    day <<= dayIndex;
-    return daysOfWeek & day;
-}
-
-void KclockFormat::startTimer()
-{
-    m_currentTime = QLocale::system().toString(QTime::currentTime(), QStringLiteral("hh:mm"));
-//    m_hours = QTime::currentTime().hour() >= 12 ? QTime::currentTime().hour() - 12 : QTime::currentTime().hour();
-    m_hours = QTime::currentTime().hour();
-    m_minutesCounter = (QTime::currentTime().msecsSinceStartOfDay() / 1000) % 60; // seconds to next minute
-    m_hoursCounter = QTime::currentTime().minute();
-    m_timer->start(1000);
-}
-
-WeekModel::WeekModel(QObject *parent)
-    : QAbstractListModel(parent)
-{
-    // init week and flag value
-    int dayFlag[] = {1, 2, 4, 8, 16, 32, 64}, i = 0;
-    for (int j = QLocale::system().firstDayOfWeek(); j <= 7; j++) {
-        m_listItem[i++] = std::tuple<QString, int>(QLocale::system().dayName(j, QLocale::LongFormat), dayFlag[j - 1]);
-    }
-
-    for (int j = 1; j < QLocale::system().firstDayOfWeek(); j++) {
-        m_listItem[i++] = std::tuple<QString, int>(QLocale::system().dayName(j, QLocale::LongFormat), dayFlag[j - 1]);
-    }
-}
-
-int WeekModel::rowCount(const QModelIndex &parent) const
-{
-    return 7;
-}
-
-QVariant WeekModel::data(const QModelIndex &index, int role) const
-{
-    if (!index.isValid() || index.row() >= 7) {
-        return QVariant();
-    }
-    if (role == NameRole)
-        return std::get<0>(m_listItem[index.row()]);
-    else if (role == FlagRole)
-        return std::get<1>(m_listItem[index.row()]);
-    else
-        return QVariant();
-}
-
-QHash<int, QByteArray> WeekModel::roleNames() const
-{
-    return {{NameRole, "name"}, {FlagRole, "flag"}};
+    // don't need to check index out of bound, remove(index) takes care of that
+    remove(index);
 }
