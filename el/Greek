@@ -1,5 +1,5 @@
 /*
- * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,84 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include <QTimer>
 
-#include "timer.h"
-/* ~ Timer ~ */
-Timer::Timer()
-{
-}
-Timer::Timer(QString uuid, bool justCreated)
-    : m_interface(new OrgKdeKclockTimerInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers/") + uuid, QDBusConnection::sessionBus(), this))
-    , m_justCreated(justCreated)
-{
-    if (m_interface->isValid()) {
-        m_uuid = QUuid(m_interface->getUUID());
-        m_label = m_interface->label();
-        m_length = m_interface->length();
-        m_running = m_interface->running();
-        m_elapsed = m_interface->elapsed();
-        connect(m_interface, &OrgKdeKclockTimerInterface::lengthChanged, this, &Timer::updateLength);
-        connect(m_interface, &OrgKdeKclockTimerInterface::labelChanged, this, &Timer::updateLabel);
-        connect(m_interface, &OrgKdeKclockTimerInterface::runningChanged, this, &Timer::updateRunning);
+#ifndef KIRIGAMICLOCK_UTILMODEL_H
+#define KIRIGAMICLOCK_UTILMODEL_H
 
-        updateRunning(); // start animation
+#include <QObject>
+#include <QString>
+
+class UtilModel;
+class UtilModel : public QObject
+{
+    Q_OBJECT
+
+    Q_PROPERTY(QString tzName READ getCurrentTimeZoneName NOTIFY propertyChanged)
+
+public:
+    static UtilModel *instance()
+    {
+        static UtilModel * singleton = new UtilModel;
+        return singleton;
     }
-}
-
-void Timer::toggleRunning()
-{
-    m_interface->toggleRunning();
-}
-
-//void Timer::updateTrigger()
-//{
-//    m_interface->elapsed();
-//}
-
-void Timer::reset()
-{
-    m_interface->reset();
-
-    m_elapsed = m_interface->elapsed();
-    Q_EMIT elapsedChanged();
+    
+    QString getCurrentTimeZoneName();
+    bool applicationLoaded();
+    void setApplicationLoaded(bool applicationLoaded);
+    
+    long long calculateNextRingTime(int hours, int minutes, int daysOfWeek, int snooze = 0);
+    QString timeToRingFormatted(const long long &timestamp);
+    Q_INVOKABLE bool is24HourFormat();
+    
+private:
+    UtilModel(){}; // explicitly declare it private
+    bool m_applicationLoaded = false;
+    
+Q_SIGNALS:
+    void propertyChanged();
+    void applicationLoadedChanged();
 };
 
-void Timer::updateLength()
-{
-    m_length = m_interface->length();
-    Q_EMIT propertyChanged();
-}
-
-void Timer::updateLabel()
-{
-    m_label = m_interface->label();
-    Q_EMIT propertyChanged();
-}
-void Timer::updateRunning()
-{
-    m_running = m_interface->running();
-    Q_EMIT propertyChanged();
-
-    this->animation(m_running);
-
-    m_elapsed = m_interface->elapsed();
-    Q_EMIT elapsedChanged();
-}
-
-void Timer::animation(bool start)
-{
-    if (!m_timer) {
-        m_timer = new QTimer(this);
-        connect(m_timer, &QTimer::timeout, [this] {
-            m_elapsed = m_interface->elapsed();
-            Q_EMIT this->elapsedChanged();
-        });
-    }
-
-    if (start) {
-        m_timer->start(250);
-    } else {
-        m_timer->stop();
-    }
-}
+#endif // KIRIGAMICLOCK_UTILMODEL_H
