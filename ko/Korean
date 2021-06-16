@@ -1,5 +1,6 @@
 /*
- * Copyright 2019  Nick Reitemeyer <nick.reitemeyer@web.de>
+ * Copyright 2020 Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,51 +19,95 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef TIMEZONESELECTORMODEL_H
-#define TIMEZONESELECTORMODEL_H
-
-#include <QAbstractListModel>
-#include <QSortFilterProxyModel>
-#include <QTimeZone>
+#include "stopwatchtimer.h"
+#include <QDebug>
 #include <QTimer>
 
-class TimeZoneSelectorModel : public QAbstractListModel
+StopwatchTimer::StopwatchTimer(QObject *parent)
+    : QObject(parent)
 {
-    Q_OBJECT
+    m_timer = new QTimer(this);
+    connect(m_timer, &QTimer::timeout, this, &StopwatchTimer::updateTime);
+}
 
-public:
-    explicit TimeZoneSelectorModel(QObject *parent = nullptr);
-
-    enum Roles { NameRole = Qt::DisplayRole, ShownRole = Qt::UserRole + 0, OffsetRole = Qt::UserRole + 1, ShortNameRole = Qt::UserRole + 2, TimeStringRole, RelativeTimeRole, IDRole };
-
-    int rowCount(const QModelIndex &parent) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
-    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
-    Qt::ItemFlags flags(const QModelIndex &index) const override;
-    QHash<int, QByteArray> roleNames() const override;
-
-public Q_SLOTS:
-    void update();
-
-private:
-    QList<std::tuple<QTimeZone, bool>> m_list;
-    QTimer m_timer;
-};
-
-class TimeZoneFilterModel : public QSortFilterProxyModel
+void StopwatchTimer::updateTime()
 {
-    Q_OBJECT
+    emit timeChanged();
+}
 
-public:
-    explicit TimeZoneFilterModel(TimeZoneSelectorModel *model, QObject *parent = nullptr);
-};
-
-class TimeZoneViewModel : public QSortFilterProxyModel
+void StopwatchTimer::toggle()
 {
-    Q_OBJECT
+    if (stopped) { // start (from zero)
+        stopped = false;
+        paused = false;
 
-public:
-    explicit TimeZoneViewModel(TimeZoneSelectorModel *model, QObject *parent = nullptr);
-};
+        timerStartStamp = QDateTime::currentMSecsSinceEpoch();
+        pausedElapsed = 0;
 
-#endif
+        m_timer->start(m_interval);
+    } else if (paused) { // unpause
+        paused = false;
+
+        pausedElapsed += QDateTime::currentMSecsSinceEpoch() - pausedStamp;
+
+        m_timer->start(m_interval);
+    } else { // pause
+        paused = true;
+        pausedStamp = QDateTime::currentMSecsSinceEpoch();
+        m_timer->stop();
+    }
+}
+
+void StopwatchTimer::reset()
+{
+    m_timer->stop();
+    pausedElapsed = 0;
+    stopped = true;
+    paused = false;
+    emit timeChanged();
+}
+
+long long StopwatchTimer::elapsedTime()
+{
+    long long cur = QDateTime::currentMSecsSinceEpoch();
+    if (stopped) {
+        return 0;
+    } else if (paused) {
+        return cur - timerStartStamp - pausedElapsed - (cur - pausedStamp);
+    } else {
+        return cur - timerStartStamp - pausedElapsed;
+    }
+}
+
+long long StopwatchTimer::minutes()
+{
+    return elapsedTime() / 1000 / 60;
+}
+
+long long StopwatchTimer::seconds()
+{
+    return elapsedTime() / 1000 - 60 * minutes();
+}
+
+long long StopwatchTimer::small()
+{
+    return elapsedTime() / 10 - 100 * seconds() - 100 * 60 * minutes();
+}
+
+QString StopwatchTimer::minutesDisplay()
+{
+    long long amount = minutes();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
+
+QString StopwatchTimer::secondsDisplay()
+{
+    long long amount = seconds();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
+
+QString StopwatchTimer::smallDisplay()
+{
+    long long amount = small();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
