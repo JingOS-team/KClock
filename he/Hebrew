@@ -1,5 +1,5 @@
 /*
- * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,103 +17,62 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "kclockformat.h"
-#include "utilmodel.h"
-#include <QLocale>
-#include <QTime>
-#include <QTimer>
-KclockFormat::KclockFormat(QObject *parent)
-    : QObject(parent)
-    , m_timer(new QTimer(this))
-{
-    connect(UtilModel::instance(), &UtilModel::applicationLoadedChanged, this, [this] {
-        if (UtilModel::instance()->applicationLoaded()) {
-            this->startTimer();
-        } else {
-            this->m_timer->stop();
+import QtQuick 2.0
+import QtGraphicalEffects 1.0
+
+Item {
+
+    property int mouseX
+    property int mouseY
+    property var sourceView
+    property string coverColor: "#aa000000"
+    property real coverRadius: 40 * appwindow.officalScale
+
+    ShaderEffectSource {
+        id: eff
+        sourceItem: sourceView
+        anchors.centerIn: fastBlur
+        width: fastBlur.width
+        visible: false
+        height: fastBlur.height
+        sourceRect: Qt.rect(mouseX, mouseY, width, height)
+
+        function getItemX(width, height) {
+            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
+                                        width, height)
+            return mapItem.x
         }
-    });
-    connect(m_timer, &QTimer::timeout, this, &KclockFormat::updateTime);
-}
-
-void KclockFormat::updateTime()
-{
-    if (m_minutesCounter == 60) {
-        m_currentTime = QLocale::system().toString(QTime::currentTime(), QLocale::ShortFormat);
-        Q_EMIT timeChanged();
-        m_minutesCounter = 0;
-        m_hoursCounter++;
+        function getItemY(width, height) {
+            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
+                                        width, height)
+            return mapItem.y
+        }
     }
-    if (m_hoursCounter == 60) {
-        m_hoursCounter = 0;
-        m_hours = QTime::currentTime().hour() >= 12 ? QTime::currentTime().hour() - 12 : QTime::currentTime().hour();
-        Q_EMIT hourChanged();
+    FastBlur {
+        id: fastBlur
+        anchors.fill: parent
+        source: eff
+        radius: 70
+        cached: true
+        visible: false
     }
-    m_minutesCounter++;
-//    Q_EMIT secondChanged();
-     Q_EMIT timeChanged();
-}
-
-QString KclockFormat::formatTimeString(int hours, int minutes)
-{
-    return QLocale::system().toString(QTime(hours, minutes), QStringLiteral("hh:mm"));
-}
-
-bool KclockFormat::isChecked(int dayIndex, int daysOfWeek)
-{
-    // convert start day to standard start day of week, Monday
-    dayIndex += QLocale::system().firstDayOfWeek() - 1;
-    while (dayIndex > 6)
-        dayIndex -= 7;
-
-    int day = 1;
-    day <<= dayIndex;
-    return daysOfWeek & day;
-}
-
-void KclockFormat::startTimer()
-{
-    m_currentTime = QLocale::system().toString(QTime::currentTime(), QStringLiteral("hh:mm"));
-//    m_hours = QTime::currentTime().hour() >= 12 ? QTime::currentTime().hour() - 12 : QTime::currentTime().hour();
-    m_hours = QTime::currentTime().hour();
-    m_minutesCounter = (QTime::currentTime().msecsSinceStartOfDay() / 1000) % 60; // seconds to next minute
-    m_hoursCounter = QTime::currentTime().minute();
-    m_timer->start(1000);
-}
-
-WeekModel::WeekModel(QObject *parent)
-    : QAbstractListModel(parent)
-{
-    // init week and flag value
-    int dayFlag[] = {1, 2, 4, 8, 16, 32, 64}, i = 0;
-    for (int j = QLocale::system().firstDayOfWeek(); j <= 7; j++) {
-        m_listItem[i++] = std::tuple<QString, int>(QLocale::system().dayName(j, QLocale::LongFormat), dayFlag[j - 1]);
+    Rectangle {
+        id: maskRect
+        anchors.fill: fastBlur
+        visible: false
+        clip: true
+        radius: coverRadius
     }
-
-    for (int j = 1; j < QLocale::system().firstDayOfWeek(); j++) {
-        m_listItem[i++] = std::tuple<QString, int>(QLocale::system().dayName(j, QLocale::LongFormat), dayFlag[j - 1]);
+    OpacityMask {
+        id: mask
+        anchors.fill: maskRect
+        visible: true
+        source: fastBlur
+        maskSource: maskRect
     }
-}
-
-int WeekModel::rowCount(const QModelIndex &parent) const
-{
-    return 7;
-}
-
-QVariant WeekModel::data(const QModelIndex &index, int role) const
-{
-    if (!index.isValid() || index.row() >= 7) {
-        return QVariant();
+    Rectangle {
+        anchors.fill: parent
+        color: coverColor
+        radius: coverRadius
     }
-    if (role == NameRole)
-        return std::get<0>(m_listItem[index.row()]);
-    else if (role == FlagRole)
-        return std::get<1>(m_listItem[index.row()]);
-    else
-        return QVariant();
-}
-
-QHash<int, QByteArray> WeekModel::roleNames() const
-{
-    return {{NameRole, "name"}, {FlagRole, "flag"}};
 }
