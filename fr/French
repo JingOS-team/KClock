@@ -1,5 +1,6 @@
 /*
- * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
+ *                Han Young <hanyoung@protonmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,84 +18,71 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include <QTimer>
 
-#include "timer.h"
-/* ~ Timer ~ */
-Timer::Timer()
+#include <QDateTime>
+
+#include <KLocalizedString>
+
+#include "alarmmodel.h"
+#include "alarms.h"
+#include "utilmodel.h"
+
+Alarm::Alarm() {};
+Alarm::Alarm(QString uuid)
 {
-}
-Timer::Timer(QString uuid, bool justCreated)
-    : m_interface(new OrgKdeKclockTimerInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers/") + uuid, QDBusConnection::sessionBus(), this))
-    , m_justCreated(justCreated)
-{
+    m_interface = new org::kde::kclock::Alarm(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms/") + uuid, QDBusConnection::sessionBus(), this);
+
     if (m_interface->isValid()) {
+        connect(m_interface, &OrgKdeKclockAlarmInterface::propertyChanged, this, &Alarm::updateProperty);
+        connect(m_interface, &OrgKdeKclockAlarmInterface::alarmChanged, [this] { m_nextRingTime = m_interface->nextRingTime(); });
+
         m_uuid = QUuid(m_interface->getUUID());
-        m_label = m_interface->label();
-        m_length = m_interface->length();
-        m_running = m_interface->running();
-        m_elapsed = m_interface->elapsed();
-        connect(m_interface, &OrgKdeKclockTimerInterface::lengthChanged, this, &Timer::updateLength);
-        connect(m_interface, &OrgKdeKclockTimerInterface::labelChanged, this, &Timer::updateLabel);
-        connect(m_interface, &OrgKdeKclockTimerInterface::runningChanged, this, &Timer::updateRunning);
-
-        updateRunning(); // start animation
-    }
-}
-
-void Timer::toggleRunning()
-{
-    m_interface->toggleRunning();
-}
-
-//void Timer::updateTrigger()
-//{
-//    m_interface->elapsed();
-//}
-
-void Timer::reset()
-{
-    m_interface->reset();
-
-    m_elapsed = m_interface->elapsed();
-    Q_EMIT elapsedChanged();
-};
-
-void Timer::updateLength()
-{
-    m_length = m_interface->length();
-    Q_EMIT propertyChanged();
-}
-
-void Timer::updateLabel()
-{
-    m_label = m_interface->label();
-    Q_EMIT propertyChanged();
-}
-void Timer::updateRunning()
-{
-    m_running = m_interface->running();
-    Q_EMIT propertyChanged();
-
-    this->animation(m_running);
-
-    m_elapsed = m_interface->elapsed();
-    Q_EMIT elapsedChanged();
-}
-
-void Timer::animation(bool start)
-{
-    if (!m_timer) {
-        m_timer = new QTimer(this);
-        connect(m_timer, &QTimer::timeout, [this] {
-            m_elapsed = m_interface->elapsed();
-            Q_EMIT this->elapsedChanged();
-        });
-    }
-
-    if (start) {
-        m_timer->start(250);
+        m_name = m_interface->name();
+        m_enabled = m_interface->enabled();
+        m_hours = m_interface->hours();
+        m_minutes = m_interface->minutes();
+        m_daysOfWeek = m_interface->daysOfWeek();
+        m_snooze = m_interface->snoozedMinutes() * 60;
+        m_snoozeMinutes = m_interface->snoozeMinutes();
+        m_ringtonePath = m_interface->ringtonePath();
+        m_nextRingTime = m_interface->nextRingTime();
     } else {
-        m_timer->stop();
+        m_isValid = false;
     }
+}
+
+QString Alarm::timeToRingFormated()
+{
+    this->calculateNextRingTime();
+
+    return UtilModel::instance()->timeToRingFormatted(this->nextRingTime());
+}
+
+void Alarm::updateProperty(QString property)
+{
+    if (property == QStringLiteral("name"))
+        this->m_name = m_interface->property("name").toString();
+    else if (property == QStringLiteral("enabled"))
+        this->m_enabled = m_interface->property("enabled").toBool();
+    else if (property == QStringLiteral("hours"))
+        this->m_hours = m_interface->property("hours").toInt();
+    else if (property == QStringLiteral("minutes"))
+        this->m_minutes = m_interface->property("minutes").toInt();
+    else if (property == QStringLiteral("daysOfWeek"))
+        this->m_daysOfWeek = m_interface->property("daysOfWeek").toInt();
+    else if (property == QStringLiteral("snoozedMinutes"))
+        this->m_snooze = m_interface->property("snoozedMinutes").toInt() * 60;
+    else if (property == QStringLiteral("ringtonePath"))
+        this->m_ringtonePath = m_interface->property("ringtonePath").toBool();
+    Q_EMIT propertyChanged();
+}
+
+void Alarm::calculateNextRingTime()
+{
+    if (!this->m_enabled) { // if not enabled, means this would never ring
+        m_nextRingTime = -1;
+        return;
+    }
+    
+    m_nextRingTime = UtilModel::instance()->calculateNextRingTime(this->m_hours, this->m_minutes, this->m_daysOfWeek, this->m_snooze);
 }
