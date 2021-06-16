@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,91 +17,119 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.0
-import "../CommonSize.js" as CS
-PathView {
-    id: root
+#include <QDebug>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QtGlobal>
 
-    property bool bgShow
-    property variant value
-    property int displayFontSize: width/4
-    property real displayStep: 0.6 // displayStep > 0
-    signal viewMove(var index)
+#include <KLocalizedString>
 
-    width: 100; height: 300
-    clip: true
-    pathItemCount: 7
-    preferredHighlightBegin: 0.5
-    preferredHighlightEnd: 0.5
-    dragMargin: root.width/2
-    Component.onCompleted: findCurrentIndex()
+#include "timer.h"
+#include "timermodel.h"
 
-    onMovementEnded: {
-        viewMove(model[currentIndex].value)
+/* ~ TimerModel ~ */
+TimerModel::TimerModel(QObject *parent)
+    : m_interface(new OrgKdeKclockTimerModelInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers"), QDBusConnection::sessionBus(), this))
+{
+    if (m_interface->isValid()) {
+        connect(m_interface, SIGNAL(timerAdded(QString)), this, SLOT(addTimer(QString)));
+        connect(m_interface, SIGNAL(timerRemoved(QString)), this, SLOT(removeTimer(QString)));
     }
-    onValueChanged: {
-        findCurrentIndex()
-    }
-
-
-    Keys.onUpPressed: {
-        root.incrementCurrentIndex()
-        value = (model[currentIndex].value)
-    }
-
-    Keys.onDownPressed: {
-        root.decrementCurrentIndex()
-        value = (model[currentIndex].value)
-    }
-    Rectangle{
-        id:backgroud
-        visible: bgShow
-        width: parent.width
-        height: 80
-        color: "blue"
-        anchors.centerIn: parent
-        radius: 14
-
-        MouseArea {
-            anchors.fill: parent
-           onClicked: {
-               console.log("WheelvIEW .....ONCLICK")
-               mouse.accepted = true
-           }
+    QDBusInterface *interface = new QDBusInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers"), QStringLiteral("org.freedesktop.DBus.Introspectable"), QDBusConnection::sessionBus(), this);
+    QDBusReply<QString> reply = interface->call(QStringLiteral("Introspect"));
+    if (reply.isValid()) {
+        auto xmlMsg = reply.value();
+        QXmlStreamReader xml(xmlMsg);
+        while (!xml.atEnd()) {
+            xml.readNext();
+            if (xml.name() == QStringLiteral("node") && xml.attributes().hasAttribute(QStringLiteral("name"))) {
+                if (xml.attributes().value(QStringLiteral("name")).toString().indexOf(QStringLiteral("org")) == -1) {
+                    // already existed on kclock launch, not justCreated
+                    this->addTimer(xml.attributes().value(QStringLiteral("name")).toString(), false);
+                }
+            }
         }
     }
-
-    delegate: Item {
-        id:delegate
-        width: root.width
-        height: root.height/pathItemCount
-        Text {
-            anchors.centerIn: parent
-            font.pixelSize: displayFontSize*Number(delegate.PathView.textFontPercent);
-            text: modelData.display
-            color: appwindow.isDarkTheme ? "white" :"black"
-            opacity:  currentIndex == index ? 1 : 0.3
-        }
-    }
-
-    path: Path {
-        startX: root.width/2; startY: 0
-
-        PathAttribute { name: "textFontPercent"; value: displayStep }
-
-        PathLine { x: root.width/2; y: root.height/2 }
-
-        PathAttribute { name: "textFontPercent"; value: 1}
-
-        PathLine { x: root.width/2; y: root.height }
-
-        PathAttribute { name: "textFontPercent"; value: displayStep }
-    }
-
-    function findCurrentIndex() {
-        for (var i = 0; i < count; i++)
-            if (model[i].value === value)
-                currentIndex = i;
-    }
+    interface->deleteLater();
 }
 
+int TimerModel::rowCount(const QModelIndex &parent) const
+{
+    Q_UNUSED(parent);
+    return m_timersList.size();
+}
+
+int TimerModel::count()
+{
+    return m_timersList.size();
+}
+
+QVariant TimerModel::data(const QModelIndex &index, int role) const
+{
+    return QVariant();
+}
+
+void TimerModel::addTimer(int length, QString label, bool running)
+{
+    // modified by steven
+//    if (m_timersList.size() >= TIMER_MAX) {
+//        //EXIST,  REMOVE FIRST
+//        remove(0);
+//    }
+    
+    m_interface->addTimer(length, label, running);
+}
+
+bool TimerModel::hasTimer() {
+    return !m_timersList.isEmpty();
+}
+
+void TimerModel::remove(int index)
+{
+    if (index < 0 || index >= m_timersList.size())
+        return;
+
+    m_interface->removeTimer(m_timersList.at(index)->uuid().toString());
+    m_timersList.at(index)->deleteLater();
+
+    Q_EMIT beginRemoveRows(QModelIndex(), index, index);
+    m_timersList.removeAt(index);
+    Q_EMIT endRemoveRows();
+}
+
+Timer *TimerModel::get(int index)
+{
+    if ((index < 0) || (index >= m_timersList.count()))
+        return {};
+
+    return m_timersList.at(index);
+}
+
+void TimerModel::addTimer(QString uuid)
+{
+    this->addTimer(uuid, true);
+}
+
+void TimerModel::addTimer(QString uuid, bool justCreated)
+{
+    auto *timer = new Timer(uuid.remove(QRegularExpression(QStringLiteral("[{}-]"))), justCreated);
+
+    Q_EMIT beginInsertRows(QModelIndex(), 0, 0);
+    m_timersList.insert(0, timer);
+    Q_EMIT endInsertRows();
+}
+
+void TimerModel::removeTimer(QString uuid)
+{
+    auto index = 0;
+    for (auto timer : m_timersList) {
+        if (timer->uuid().toString() == uuid) {
+            break;
+        }
+        ++index;
+    }
+
+    // don't need to check index out of bound, remove(index) takes care of that
+    remove(index);
+}
