@@ -1,119 +1,122 @@
-/*
- *   SPDX-FileCopyrightText: 2019 Dimitris Kardarakos <dimkard@posteo.net>
- *
- *   SPDX-License-Identifier: LGPL-2.0-or-later
- */
 import QtQuick 2.12
-import QtQuick.Controls 2.5 as Controls2
-import org.kde.kirigami 2.0 as Kirigami
-import QtQuick.Layouts 1.11
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.2
+import org.kde.kirigami 2.11 as Kirigami
 
 Item {
     id: root
 
-    property int hours
-    property int minutes
-    property bool pm
+    property int default_visible: 3
+    property real widget_w
+    property real widget_h
+    property int visibleItemCountValue: default_visible
+    property int modelValue: 3
+    property real textSize: 34
+    property string textColor: "white"
+    property real btn_w
+    property real btn_h
+    property alias currentIndex: tumbler.currentIndex
+    property real myScale: appwindow.officalScale * 1.3
+
+    width: widget_w
+    height: widget_h
+
+    Rectangle {
+        anchors.fill: parent
+        color: "transparent"
+        // color: "green"
+
+    }
 
     ColumnLayout {
         anchors.fill: parent
-        Item {
-            id: clock
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+        spacing: 0
 
-            //Hours clock
-            PathView {
-                id: hoursClock
+        Rectangle {
+            id: tumbler_up
+            width: parent.width
+            height: btn_h
+            color: "transparent"
 
-                anchors.fill: parent
-                interactive: false
-                model: 12
-                delegate: JClockElement {
-                    type: "hours"
-                    selectedValue: root.hours
-                    onClicked: root.hours = index
-                }
-                
-                path: Path {
-                    PathAngleArc {
-                        centerX: clock.width / 2
-                        centerY: clock.height / 2
-                        radiusX: (Math.min(
-                                      clock.width,
-                                      clock.height) - Kirigami.Units.gridUnit) / 4
-                        radiusY: radiusX
-                        startAngle: -90
-                        sweepAngle: 360
-                    }
-                }
+            Image {
+                source: appwindow.isDarkTheme ? "qrc:/image/big_up.png" :"qrc:/image/big_up_l.png"
+                width: 44
+                height: 44
+                anchors.centerIn:parent
+
             }
 
-            //Minutes clock
-            PathView {
-                id: minutesClock
-
+            MouseArea{
                 anchors.fill: parent
-                interactive: false
-                model: 60
-
-                delegate: JClockElement {
-                    type: "minutes"
-                    selectedValue: root.minutes
-                    onClicked: root.minutes = index
-                }
-
-                path: Path {
-                    PathAngleArc {
-                        centerX: clock.width / 2
-                        centerY: clock.height / 2
-                        radiusX: (Math.min(
-                                      clock.width,
-                                      clock.height) - Kirigami.Units.gridUnit) / 2
-                        radiusY: radiusX
-                        startAngle: -90
-                        sweepAngle: 360
+                onClicked: {
+                    console.log("remove")
+                    if(tumbler.currentIndex == 0){
+                        tumbler.currentIndex = tumbler.model -1
+                    }else {
+                        tumbler.currentIndex -= 1
                     }
                 }
             }
         }
 
-        RowLayout {
-            Layout.alignment: Qt.AlignHCenter
+        Tumbler {
+            id: tumbler
+            width: parent.width
+            anchors.horizontalCenter: parent.horizontalCenter
+            Layout.fillHeight: true
+            model: modelValue
+            visibleItemCount: visibleItemCountValue
+            wheelEnabled: true
 
-            Controls2.Label {
-                text: ((root.hours < 10) ? "0" : "") + root.hours + ":"
-                      + ((root.minutes < 10) ? "0" : "") + root.minutes
-                color: "white"
-                font.pixelSize: 24
-            }
-
-            Rectangle {
-                width: 60
-                height: parent.height
-            }
-
-            Controls2.ToolButton {
-                id: pm
-
-                checked: root.pm
-                checkable: true
-                implicitWidth: 100
-                implicitHeight: 42
-
-                contentItem: Controls2.Label {
-                    text: parent.checked ? "PM" : "AM"
-                    font.pixelSize: 24
-                    color: "white"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
+            MouseArea {
+                anchors.fill: parent
+                onWheel: {
+                        if(wheel.angleDelta.y > 0 ){
+                            tumbler.currentIndex --
+                        }else {
+                            tumbler.currentIndex ++
+                        }
                 }
+            }
 
-                onClicked: root.pm = checked
-                background: Rectangle {
-                    border.width: 2
-                    border.color: "black"
-                    color: "#4a4a4a"
+            delegate: Label {
+                opacity: 1.0 - (Math.abs(
+                             Tumbler.displacement)+0.2 )/ (Tumbler.tumbler.visibleItemCount / 2)
+                color: textColor
+                text: modelData < 10 ? "0" + modelData : modelData
+                font.pixelSize: textSize
+
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+
+                function displacementItemOpacity(displacement, visibleItemCount) {
+                    return 1.0 - Math.abs(displacement) / (visibleItemCount / 2)
+                }
+            }
+        }
+
+        Rectangle {
+            id: tumbler_down
+            width: parent.width
+            height:btn_h
+            color: "transparent"
+
+            Image {
+                source: appwindow.isDarkTheme ? "qrc:/image/big_dow.png" : "qrc:/image/big_dow_l.png"
+                width: 44
+                height: 44
+                anchors.centerIn:parent
+            }
+
+            MouseArea{
+                anchors.fill: parent
+                onClicked: {
+                    console.log("add")
+                    if(tumbler.currentIndex === tumbler.model-1){
+                        tumbler.currentIndex = 0
+                    }else {
+                        tumbler.currentIndex += 1
+                    }
                 }
             }
         }
