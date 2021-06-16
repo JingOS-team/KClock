@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="44px" height="44px" viewBox="0 0 44 44" version="1.1">
-  <title>Interface, Essential/Clock, Time, Arrow</title>
+  <title>Interface, Essential/Clock, Time, Arrow备份 2</title>
   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
     <g id="Group" transform="translate(-0.000000, -0.000000)">
-      <g stroke-linecap="round" stroke-linejoin="round" transform="translate(2.833333, 5.500000)" id="Path" stroke="#3C3F48" stroke-width="2.75">
+      <g stroke-linecap="round" stroke-linejoin="round" transform="translate(2.833333, 5.500000)" id="Path" stroke="#39C17B" stroke-width="2.75">
         <polyline points="8.85416671 16.5000001 4.72916669 20.6250001 0.604166673 16.5000001"/>
         <path d="M4.72916669,16.5000001 C4.72916669,17.7723334 4.88683336,19.0043334 5.16000003,20.1941668"/>
         <path d="M37.7291667,16.5 C37.7291667,7.38650003 30.3426668,0 21.2291667,0 C12.1156667,0 4.72916669,7.38650003 4.72916669,16.5"/>
