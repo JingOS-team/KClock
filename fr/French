@@ -1,42 +1,151 @@
 /*
- *   SPDX-FileCopyrightText: 2019 Dimitris Kardarakos <dimkard@posteo.net>
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
  *
- *   SPDX-License-Identifier: LGPL-2.0-or-later
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License or (at your option) version 3 or any later version
+ * accepted by the membership of KDE e.V. (or its successor approved
+ * by the membership of KDE e.V.), which shall act as a proxy
+ * defined in Section 14 of version 3 of the license.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 import QtQuick 2.12
-import QtQuick.Controls 2.5 as Controls2
-import org.kde.kirigami 2.0 as Kirigami
-import QtQuick.Layouts 1.11
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.2
+import QtQuick.Shapes 1.12
+import org.kde.kirigami 2.11 as Kirigami
+import QtGraphicalEffects 1.0
 
+Rectangle {
+    id: root
 
-Controls2.ToolButton {
-    id: hoursButton
+    property int timerDuration
+    property int timerElapsed
+    property bool timerRunning
+    property int fontSize: 34
 
-    property int selectedValue
-    property string type
+    width: 320  
+    height: 80   
+    color: "transparent"
+    anchors.centerIn: parent
 
-    checkable: true
-    checked: index == selectedValue
-    autoExclusive: true
-    text: index == selectedValue ? ( (type == "hours" && index == 0) ? 12 : index )
-                                 : ( (type == "hours") ? ( index == 0 ? 12 : ( (index % 3 == 0) ? index : ".") ) : (index % 15 == 0) ? index : ".")
-
-    contentItem: Controls2.Label {
-        text: hoursButton.text
-        font.pixelSize: 14 * appwindow.officalScale
-        color: index <= parent.selectedValue ? "white" : "black"
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
+    function getTimeLeft() {
+        return timerDuration - timerElapsed
+    }
+    function getHours() {
+        return ("0" + parseInt(getTimeLeft() / 60 / 60).toFixed(0)).slice(-2)
+    }
+    function getMinutes() {
+        return ("0" + parseInt(getTimeLeft() / 60 - 60 * getHours())).slice(-2)
+    }
+    function getSeconds() {
+        return ("0" + parseInt(getTimeLeft() - 60 * getMinutes())).slice(-2)
     }
 
-    background: Rectangle {
-        implicitHeight: Kirigami.Units.gridUnit
-        implicitWidth: height
-        radius: width*0.5
-        border.width: 2
-        border.color: "black"
-         color: parent.checked ? "green" : "transparent"
+    Slider {
+        id: sliderArea
+
+        width: parent.width
+        height: parent.height
+        leftPadding: 0
+        rightPadding: 0
+
+        from: timerDuration
+        to: 0
+
+        handle: Item {
+            visible: true
+            width: 1
+            height: 1
+            x: 0
+            y: 0
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: 1
+                height: 1
+                visible: false
+            }
+        }
+
+        //    #ff43BDF4
+        background: Rectangle {
+            id: progressBarBackground
+            color: appwindow.isDarkTheme ? "#d8000000" : "white"
+            radius: 10  
+
+            layer.enabled: true
+            layer.effect: OpacityMask {
+                maskSource: Rectangle {
+                    width: progressBarBackground.width
+                    height: progressBarBackground.height
+                    radius: progressBarBackground.radius
+                }
+            }
+
+            Rectangle {
+                width: (1 - timerElapsed / timerDuration) * parent.width
+                height: parent.height
+                color: {
+                    if(appwindow.isDarkTheme){
+                        timerRunning ? "#39c17b" : "#555555"
+                    }else {
+                        timerRunning ? "#39c17b" : "#333C3F48"
+                    }
+
+                }
+            }
+        }
+    }
+
+    Rectangle {
+        width: 240  
+        height: 42  
+        anchors.centerIn: parent
+        color: "transparent"
+
+        RowLayout {
+            anchors.centerIn: parent
+
+            Label {
+                text: getHours()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: ":"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: getMinutes()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: ":"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: getSeconds()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+        }
     }
 }
-
