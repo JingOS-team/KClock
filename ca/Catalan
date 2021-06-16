@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Han Young <hanyoung@protonmail.com>
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -18,50 +19,95 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef KIRIGAMICLOCK_TIMERMODEL_H
-#define KIRIGAMICLOCK_TIMERMODEL_H
+#include "stopwatchtimer.h"
+#include <QDebug>
+#include <QTimer>
 
-#include <KLocalizedString>
-#include <QAbstractListModel>
-#include <QObject>
-
-#include "timermodelinterface.h"
-class Timer;
-class TimerModel : public QAbstractListModel
+StopwatchTimer::StopwatchTimer(QObject *parent)
+    : QObject(parent)
 {
-    Q_OBJECT
+    m_timer = new QTimer(this);
+    connect(m_timer, &QTimer::timeout, this, &StopwatchTimer::updateTime);
+}
 
-public:
-    int rowCount(const QModelIndex &parent) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
+void StopwatchTimer::updateTime()
+{
+    emit timeChanged();
+}
 
-    static TimerModel *instance()
-    {
-        static TimerModel *singleton = new TimerModel();
-        return singleton;
+void StopwatchTimer::toggle()
+{
+    if (stopped) { // start (from zero)
+        stopped = false;
+        paused = false;
+
+        timerStartStamp = QDateTime::currentMSecsSinceEpoch();
+        pausedElapsed = 0;
+
+        m_timer->start(m_interval);
+    } else if (paused) { // unpause
+        paused = false;
+
+        pausedElapsed += QDateTime::currentMSecsSinceEpoch() - pausedStamp;
+
+        m_timer->start(m_interval);
+    } else { // pause
+        paused = true;
+        pausedStamp = QDateTime::currentMSecsSinceEpoch();
+        m_timer->stop();
     }
+}
 
-    Q_INVOKABLE void addNew()
-    {
-        this->addTimer();
-    };
-    Q_INVOKABLE void remove(int index);
-    Q_INVOKABLE int count();
-    Q_INVOKABLE Timer *get(int index);
-    Q_INVOKABLE bool hasTimer();
+void StopwatchTimer::reset()
+{
+    m_timer->stop();
+    pausedElapsed = 0;
+    stopped = true;
+    paused = false;
+    emit timeChanged();
+}
 
-private Q_SLOTS:
-    void addTimer(QString uuid); // remote add, always justCreated
-    void removeTimer(QString uuid);
+long long StopwatchTimer::elapsedTime()
+{
+    long long cur = QDateTime::currentMSecsSinceEpoch();
+    if (stopped) {
+        return 0;
+    } else if (paused) {
+        return cur - timerStartStamp - pausedElapsed - (cur - pausedStamp);
+    } else {
+        return cur - timerStartStamp - pausedElapsed;
+    }
+}
 
-private:
-    const int TIMER_MAX = 1;
-    void addTimer(int length = 300, QString label = i18n("New timer"), bool running = false);
-    void addTimer(QString uuid, bool justCreated);
+long long StopwatchTimer::minutes()
+{
+    return elapsedTime() / 1000 / 60;
+}
 
-    explicit TimerModel(QObject *parent = nullptr);
-    QList<Timer *> m_timersList;
-    OrgKdeKclockTimerModelInterface *m_interface;
-};
+long long StopwatchTimer::seconds()
+{
+    return elapsedTime() / 1000 - 60 * minutes();
+}
 
-#endif // KIRIGAMICLOCK_TIMERMODEL_H
+long long StopwatchTimer::small()
+{
+    return elapsedTime() / 10 - 100 * seconds() - 100 * 60 * minutes();
+}
+
+QString StopwatchTimer::minutesDisplay()
+{
+    long long amount = minutes();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
+
+QString StopwatchTimer::secondsDisplay()
+{
+    long long amount = seconds();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
+
+QString StopwatchTimer::smallDisplay()
+{
+    long long amount = small();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
