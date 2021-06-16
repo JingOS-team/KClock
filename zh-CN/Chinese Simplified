@@ -17,130 +17,135 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.0
-import QtQuick.Layouts 1.2
-import QtQuick.Controls 2.12
-import "StringUtils.js" as StringUtils
 
-Item {
+import QtQuick 2.12
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.2
+import QtQuick.Shapes 1.12
+import org.kde.kirigami 2.11 as Kirigami
+import QtGraphicalEffects 1.0
+
+Rectangle {
     id: root
 
-    // property int digitalFontSize: appwindow.fontSize + 118
-    // property int amFontSize: appwindow.fontSize + 6
-    property int digitalFontSize: 90
-    property int amFontSize: 22
-    // 12 / 24
-    property bool is12HoursType: utilModel.is24HourFormat()
+    property int timerDuration
+    property int timerElapsed
+    property bool timerRunning
+    property int fontSize: 34
 
-    implicitHeight: parent.height
-    implicitWidth: parent.width
+    width: 320  
+    height: 80   
+    color: "transparent"
+    anchors.centerIn: parent
 
-    Component.onCompleted: {
-        console.log("111是不是24 小时....." , is12HoursType)
-        getAmPm()
+    function getTimeLeft() {
+        return timerDuration - timerElapsed
+    }
+    function getHours() {
+        return ("0" + parseInt(getTimeLeft() / 60 / 60).toFixed(0)).slice(-2)
+    }
+    function getMinutes() {
+        return ("0" + parseInt(getTimeLeft() / 60 - 60 * getHours())).slice(-2)
+    }
+    function getSeconds() {
+        return ("0" + parseInt(getTimeLeft() - 60 * getMinutes())).slice(-2)
     }
 
-    onVisibleChanged: {
-        is12HoursType = utilModel.is24HourFormat()
-         console.log("222是不是24 小时....." , is12HoursType)
-    }
+    Slider {
+        id: sliderArea
 
-    function getHoursValue(hours) {
-        if (!is12HoursType) {
-            if (hours == 0) {
-                return 12
-            } else if (hours <= 12 && hours > 0) {
-                return hours < 10 ? "0" + hours : hours
-            } else {
-                return hours - 12
+        width: parent.width
+        height: parent.height
+        leftPadding: 0
+        rightPadding: 0
+
+        from: timerDuration
+        to: 0
+
+        handle: Item {
+            visible: true
+            width: 1
+            height: 1
+            x: 0
+            y: 0
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: 1
+                height: 1
+                visible: false
             }
-        } else {
-            return hours < 10 ? "0" + hours : hours
         }
-    }
 
-    function getAmPm(){
-        // Qt.formatDateTime(new Date(), "hh-mm-ss")
-        var dateValue = new Date() 
-        var hours = dateValue.getHours()
-        // var timeValue =  Qt.formatDateTime(new Date(), "hh:mm ddd")
-        console.log(" --- 当前的小时::: " , hours)
-        // console.log(" 当前的ooo::: " , timeValue)
-        if(hours > 12){
-            return true  
-        }else {
-            return false 
+        //    #ff43BDF4
+        background: Rectangle {
+            id: progressBarBackground
+            color: appwindow.isDarkTheme ? "#d8000000" : "white"
+            radius: 10  
+
+            layer.enabled: true
+            layer.effect: OpacityMask {
+                maskSource: Rectangle {
+                    width: progressBarBackground.width
+                    height: progressBarBackground.height
+                    radius: progressBarBackground.radius
+                }
+            }
+
+            Rectangle {
+                width: (1 - timerElapsed / timerDuration) * parent.width
+                height: parent.height
+                color: {
+                    if(appwindow.isDarkTheme){
+                        timerRunning ? "#39c17b" : "#555555"
+                    }else {
+                        timerRunning ? "#39c17b" : "#333C3F48"
+                    }
+
+                }
+            }
         }
     }
 
     Rectangle {
-        width: parent.width
-        height: parent.height
+        width: 240  
+        height: 42  
+        anchors.centerIn: parent
         color: "transparent"
-        Rectangle {
-            width: parent.width
-            height : digitalFontSize
-            color: "transparent"
-            anchors.verticalCenter : parent.verticalCenter
 
-            RowLayout {
-                anchors.centerIn: parent
-                anchors.horizontalCenter: parent.horizontalCenter
-                Layout.alignment: Qt.AlignCenter
-                height:digitalFontSize
-                spacing: 0
+        RowLayout {
+            anchors.centerIn: parent
 
-                Text {
-                    font.pixelSize: digitalFontSize
-                    font.family: "Gilroy Thin"
-                    font.weight: Font.Light
-                    text: getHoursValue(kclockFormat.hours)
-                    color: appwindow.isDarkTheme ? "white":"black"
-                    Layout.alignment: Qt.AlignCenter
-                    height:digitalFontSize
-                }
-
-                Text {
-                    font.pixelSize: digitalFontSize
-                    text: ":"
-                    font.family: "Gilroy Thin"
-                    color: appwindow.isDarkTheme ? "white":"black"
-                    font.weight: Font.Light
-                    Layout.alignment: Qt.AlignCenter
-                    height:digitalFontSize
-                }
-
-                Text {
-                    id: txt_minutes
-                    font.weight: Font.Light
-                    font.pixelSize: digitalFontSize
-                    font.family: "Gilroy Thin"
-                    text: kclockFormat.minutes < 10 ? "0" + kclockFormat.minutes : kclockFormat.minutes
-                    color: appwindow.isDarkTheme ? "white":"black"
-                    Layout.alignment: Qt.AlignCenter
-                    height:digitalFontSize
-                }
-
-                Text {
-                    id: am_txt
-                    font.pixelSize: amFontSize
-                    text: getAmPm() ?  i18n("PM") : i18n("AM")
-                    color: appwindow.isDarkTheme ? "white":"black"
-                    anchors.top: txt_minutes.top
-                    anchors.topMargin: am_txt.height /2 
-                    visible: !is12HoursType
-                    height:amFontSize
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-
-                    onClicked: {
-                        is12HoursType = !is12HoursType
-                    }
-                }
+            Label {
+                text: getHours()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: ":"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: getMinutes()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: ":"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: getSeconds()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
             }
         }
-        
     }
 }
