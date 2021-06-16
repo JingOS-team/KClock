@@ -1,5 +1,6 @@
 /*
- * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
+ *                Han Young <hanyoung@protonmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,39 +18,54 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef ALARMPLAYER_H
-#define ALARMPLAYER_H
 
-#include <QMediaPlayer>
+#pragma once
+
+#include <QAbstractListModel>
 #include <QObject>
-class AlarmPlayer : public QObject
+
+#include "alarmmodelinterface.h"
+class Alarm;
+class AlarmModel : public QAbstractListModel
 {
     Q_OBJECT
-    Q_PROPERTY(int volume READ volume WRITE setVolume NOTIFY volumeChanged)
 public:
-    static AlarmPlayer &instance();
-    int volume()
+    static AlarmModel *instance()
     {
-        return m_player->volume();
+        static AlarmModel *singleton = new AlarmModel();
+        return singleton;
+    }
+
+    enum {
+        NameRole = Qt::DisplayRole,
+        EnabledRole = Qt::UserRole + 1,
+        HoursRole,
+        MinutesRole,
+        DaysOfWeekRole,
+        AlarmRole,
+        SnoozeRole,
     };
-    Q_INVOKABLE void setVolume(int volume);
-    Q_INVOKABLE void setSource(QUrl path);
-    Q_INVOKABLE void play();
-    Q_INVOKABLE void stop();
 
-Q_SIGNALS:
-    void volumeChanged();
+    int rowCount(const QModelIndex &parent) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
+    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
+    QHash<int, QByteArray> roleNames() const override;
 
-protected:
-    explicit AlarmPlayer(QObject *parent = nullptr);
+    Q_INVOKABLE void updateUi();
+
+    Q_INVOKABLE void remove(int index);
+
+    Q_INVOKABLE void addAlarm(int hours, int minutes, int daysOfWeek, QString name, QString ringtonePath = 0, int snoozeMinutes = 0); // in 24 hours units, ringTone could be chosen from a list
+
+    Q_INVOKABLE QString timeToRingFormated(int hours, int minutes, int daysOfWeek); // for new alarm use
+private Q_SLOTS:
+    void addAlarm(QString uuid);
+    void removeAlarm(QString uuid);
 
 private:
-    QMediaPlayer *m_player;
-    quint64 startPlayingTime = 0;
+    org::kde::kclock::AlarmModel *m_interface;
 
-    bool userStop = false; // indicate if user asks to stop
-private slots:
-    void loopAudio(QMediaPlayer::State state);
+    explicit AlarmModel(QObject *parent = nullptr);
+    QList<Alarm *> alarmsList;
 };
-
-#endif // ALARMPLAYER_H
