@@ -1,16 +1,313 @@
-import QtQuick 2.0
+/*
+ * Copyright 2020 Han Young <hanyoung@protonmail.com>
+ *           2020 Devin Lin <espidev@gmail.com>
+ *           2021 Rui Wang <wangrui@jingos.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License or (at your option) version 3 or any later version
+ * accepted by the membership of KDE e.V. (or its successor approved
+ * by the membership of KDE e.V.), which shall act as a proxy
+ * defined in Section 14 of version 3 of the license.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+import QtQuick 2.12
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.2
 import QtGraphicalEffects 1.12
+import org.kde.kirigami 2.11 as Kirigami
+import kclock 1.0
 
+Kirigami.Page {
+    id: timerPage
 
-Rectangle {
-    id: root
-    anchors.fill: parent
-    color : appwindow.isDarkTheme ? "#00000000":"#E8EFFF"
-    // color: "#80000000"
-    Image {
-        visible:appwindow.isDarkTheme
-        anchors.fill:parent
-        source: "qrc:/image/background.png"
+    property Timer timer: timerModel.get(0)
+    property int timerIndex
+    property bool justCreated: timer == null
+    property bool showFullscreen: false
+    property int elapsed: timer == null ? 0 : timer.elapsed
+    property int duration: timer == null ? 0 : timer.length
+    property bool running: timer == null ? 0 : timer.running
+    property real mScale: appwindow.officalScale
+
+    leftPadding: 0
+    rightPadding: 0
+    topPadding: 0
+    bottomPadding: 0
+    globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
+
+    // background: Item {}
+    background:JBackground{}
+
+    // topbar action
+    Rectangle {
+        anchors.fill: parent
+        color: "#00000000"
+
+        JLogo {}
+
+        Rectangle {
+            width: parent.width
+            height: parent.height - toolbarHeight
+            color: "transparent"
+
+            Rectangle {
+                id: controlLayout
+                width: parent.width
+                height: 80  
+                anchors.verticalCenter: parent.verticalCenter
+                color: "transparent"
+
+                Rectangle {
+                    id: stopwatchArea
+                    width: parent.width / 3
+                    height: parent.height - 20  
+                    anchors.centerIn: parent
+                    visible: justCreated
+                    color: "transparent"
+                    // color:"red"
+
+                    Rectangle {
+                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
+                        width: 80  
+                        height: width
+                        anchors {
+                            left: parent.left
+                            verticalCenter: parent.verticalCenter
+                        }
+                        radius:  10  
+                    }
+                    Rectangle {
+                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
+                        width: 80  
+                        height: width
+                        anchors {
+                            centerIn: parent
+                        }
+                        radius:  10  
+                    }
+                    Rectangle {
+                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
+                        width: 80  
+                        height: width
+                        anchors {
+                            right: parent.right
+                            verticalCenter: parent.verticalCenter
+                        }
+                        radius:  10  
+                    }
+                }
+
+                JButton {
+                    visible: justCreated
+                    btn_width: 80  
+                    btn_height: btn_width
+                    btn_icon: appwindow.isDarkTheme ? "qrc:/image/sw_reset.png" : "qrc:/image/sw_reset_l.png"
+                    btn_content: "Reset"
+                    anchors {
+                        verticalCenter: parent.verticalCenter
+                        right: stopwatchArea.left
+                        rightMargin: 68  
+                    }
+
+                    onJbtnClick: {
+                        hoursTumber.currentIndex = 0
+                        minutesTumber.currentIndex = 5
+                        secondsTumber.currentIndex = 0
+                    }
+                }
+
+                JButton {
+                    visible: !justCreated
+                    btn_width: 80  
+                    btn_height: btn_width
+                    btn_icon:  appwindow.isDarkTheme ? "qrc:/image/timer_done.png" :  "qrc:/image/timer_done_l.png"
+                    btn_content: "Done"
+                    anchors {
+                        verticalCenter: parent.verticalCenter
+                        right: stopwatchArea.left
+                        rightMargin: 68  
+                    }
+
+                    onJbtnClick: {
+                        timer.reset()
+                        timerModel.remove(0)
+                        justCreated = true
+                    }
+                }
+
+                JButton {
+                    visible: justCreated
+                    btn_width: 80  
+                    btn_height: btn_width
+                    btn_icon: "qrc:/image/timer_new.png"
+                    btn_content: "New"
+                    statusPress: "#39c17b"
+                    anchors {
+                        verticalCenter: parent.verticalCenter
+                        left: stopwatchArea.right
+                        leftMargin: 68  
+                    }
+
+                    onJbtnClick: {
+                        timerModel.addNew()
+                        timer = timerModel.get(0)
+                        console.log("first timer is : ", timerModel.get(0))
+                        var length = hoursTumber.currentIndex * 60 * 60
+                                + minutesTumber.currentIndex * 60 + secondsTumber.currentIndex
+                        if (length <= 0) {
+                            showPassiveNotification(i18n("倒计时时长不合法"))
+                            return
+                        }
+                        timer.length = length
+                        justCreated = false
+                    }
+                }
+
+                JButton {
+                    visible: !justCreated
+                    btn_width: 80  
+                    btn_height: btn_width
+                    btn_icon: timer.running ? "qrc:/image/sw_pause.png" : "qrc:/image/sw_start.png"
+                    btn_content: timer.running ? "Pause" : "Start"
+                    statusPress: timer.running ? "#e95b4e" : "#39c17b"
+                    anchors {
+                        verticalCenter: parent.verticalCenter
+                        left: stopwatchArea.right
+                        leftMargin: 68  
+                    }
+
+                    onJbtnClick: {
+                        timer.toggleRunning()
+                    }
+                }
+            }
+
+            Rectangle {
+                id: timerLayoutHolder
+                width: parent.width / 3
+                height: parent.height - 20  
+                anchors.centerIn: parent
+                color: "transparent"
+                // color: "yellow"
+            }
+
+            JTimerProgressComponent {
+                visible: !justCreated
+                timerDuration: duration
+                timerElapsed: elapsed
+                timerRunning: running
+            }
+
+            Kirigami.FormLayout {
+                id: form
+                
+                property int fontSize: 34  
+                anchors.centerIn: parent
+                implicitWidth: timerLayoutHolder.width + 2 
+                // implicitHeight: (370 + 88 + 2 + 120)  
+                implicitHeight: 300
+                visible: justCreated
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: "transparent"
+
+                    Row {
+                        id: row
+                        width: form.width
+                        height: form.height
+
+                        JTumbler {
+                            id: hoursTumber
+                            widget_h: parent.height
+                            widget_w: 80 
+                            modelValue: 24
+                            textSize: form.fontSize
+                            textColor:  appwindow.isDarkTheme ? "white" :"black"
+                            anchors.left: parent.left
+                            visibleItemCountValue: 3
+                            btn_w: 50 
+                            btn_h: btn_w
+                        }
+
+                        JTumbler {
+                            id: minutesTumber
+                            widget_h: parent.height
+                            widget_w: 80  
+                            modelValue: 60
+                            textSize: form.fontSize
+                            textColor:  appwindow.isDarkTheme ? "white" :"black"
+                            visibleItemCountValue: 3
+                            btn_w: 50  
+                            btn_h: btn_w
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            currentIndex: 5
+                        }
+
+                        JTumbler {
+                            id: secondsTumber
+                            widget_h: parent.height
+                            widget_w: 80
+                            modelValue: 60
+                            textSize: form.fontSize
+                            textColor:  appwindow.isDarkTheme ? "white" :"black"
+                            anchors.right: parent.right
+                            visibleItemCountValue: 3
+                            btn_w: 50  
+                            btn_h: btn_w
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                id: special_view
+                width: parent.width / 3
+                height: controlLayout.height
+                anchors.centerIn: parent
+                visible: justCreated
+                color: "transparent"
+
+                JDoubleGradientView {
+                    text: i18n("Hours")
+                    height: parent.height
+                    width: height
+                    anchors {
+                        left: parent.left
+                        verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                JDoubleGradientView {
+                    text: i18n("Minutes")
+                    height: parent.height
+                    width: height
+                    anchors {
+                        centerIn: parent
+                    }
+                }
+
+                JDoubleGradientView {
+                    text: i18n("Seconds")
+                    height: parent.height
+                    width: height
+
+                    anchors {
+                        right: parent.right
+                        verticalCenter: parent.verticalCenter
+                    }
+                }
+            }
+        }
     }
 }
-
