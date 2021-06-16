@@ -1,7 +1,5 @@
 /*
- * Copyright 2020 Han Young <hanyoung@protonmail.com>
- *           2020 Devin Lin <espidev@gmail.com>
- *           2021 Rui Wang <wangrui@jingos.com>
+ * Copyright 2019  Nick Reitemeyer <nick.reitemeyer@web.de>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -19,128 +17,52 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.11
-import QtQuick.Controls 2.4
-import QtQuick.Layouts 1.2
-import org.kde.kirigami 2.15 as Kirigami
 
-Kirigami.ApplicationWindow {
-    id: appwindow
+#ifndef TIMEZONESELECTORMODEL_H
+#define TIMEZONESELECTORMODEL_H
 
-    // property int officalWidth: 1920
-    // property int officalHeight: 1200
-    // property int deviceWidth: screen.width
-    // property int deviceHeight: screen.height
-    // property int fontSize: theme.defaultFont.pixelSize
-    // property real officalScale: deviceWidth / officalWidth
+#include <QAbstractListModel>
+#include <QSortFilterProxyModel>
+#include <QTimeZone>
+#include <QTimer>
 
-    property int deviceWidth: 888
-    property int deviceHeight: 648
-    property alias toolbarHeight: bottombar.height
-    property bool isDarkTheme: false
+class TimeZoneSelectorModel : public QAbstractListModel
+{
+    Q_OBJECT
 
-    width: deviceWidth
-    height: deviceHeight
+public:
+    explicit TimeZoneSelectorModel(QObject *parent = nullptr);
 
-    // fastBlurMode: true
-    // fastBlurColor: "#B2000000"
+    enum Roles { NameRole = Qt::DisplayRole, ShownRole = Qt::UserRole + 0, OffsetRole = Qt::UserRole + 1, ShortNameRole = Qt::UserRole + 2, TimeStringRole, RelativeTimeRole, IDRole };
 
-    onVisibleChanged: {
-        appwindow.globalToolBarStyle = ApplicationHeaderStyle.None
-    }
+    int rowCount(const QModelIndex &parent) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
+    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
+    QHash<int, QByteArray> roleNames() const override;
 
-    pageStack.initialPage: alarmPage
+public Q_SLOTS:
+    void update();
 
-    function switchToPage(page, depth) {
-        while (pageStack.depth > depth)
-            pageStack.pop()
-        pageStack.push(page)
-    }
+private:
+    QList<std::tuple<QTimeZone, bool>> m_list;
+    QTimer m_timer;
+};
 
-    Component.onCompleted: {
-        changeNav(!isWidescreen)
-        console.log("device width: ", applicationWindow().screen.width)
-        console.log("device height: ", applicationWindow().screen.height)
-    }
+class TimeZoneFilterModel : public QSortFilterProxyModel
+{
+    Q_OBJECT
 
-    function getPage(name) {
-        switch (name) {
-        case "Time":
-            return timePage
-        case "Timer":
-            return timerListPage
-        case "Stopwatch":
-            return stopwatchPage
-        case "Alarm":
-            return alarmPage
-        case "Settings":
-            return settingsPage
-        }
-    }
+public:
+    explicit TimeZoneFilterModel(TimeZoneSelectorModel *model, QObject *parent = nullptr);
+};
 
-    property bool isWidescreen: appwindow.width >= appwindow.height
-    onIsWidescreenChanged: changeNav(!isWidescreen)
+class TimeZoneViewModel : public QSortFilterProxyModel
+{
+    Q_OBJECT
 
-    function changeNav(toNarrow) {//        sidebarLoader.active = false;
-    }
+public:
+    explicit TimeZoneViewModel(TimeZoneSelectorModel *model, QObject *parent = nullptr);
+};
 
-    // clock fonts
-    FontLoader {
-        id: clockFont
-        source: "qrc:/assets/Gilroy-Thin.otf"
-    }
-
-    JTimerPage {
-        id: timerListPage
-        objectName: "timer"
-        visible: false
-    }
-
-    JStopwatchPage {
-        id: stopwatchPage
-        objectName: "stopwatch"
-        visible: false
-    }
-    JAlarmPage {
-        id: alarmPage
-        objectName: "alarm"
-    }
-
-    BottomToolbar {
-        id: bottombar
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-    }
-
-    Kirigami.AboutPage {
-        id: aboutPage
-        visible: false
-        aboutData: {
-            "displayName": "Clock",
-            "productName": "kirigami/clock",
-            "componentName": "kclock",
-            "shortDescription": "A mobile friendly clock app built with Kirigami.",
-            "homepage": "",
-            "bugAddress": "",
-            "version": "0.2",
-            "otherText": "",
-            "copyrightStatement": "© 2020 Plasma Development Team",
-            "desktopFileName": "org.kde.kclock",
-            "authors": [{
-                            "name": "Devin Lin",
-                            "emailAddress": "espidev@gmail.com",
-                            "webAddress": "https://espi.dev"
-                        }, {
-                            "name": "Han Young",
-                            "emailAddress": "hanyoung@protonmail.com",
-                            "webAddress": "https://han-y.gitlab.io"
-                        }],
-            "licenses": [{
-                             "name": "GPL v2",
-                             "text": "long, boring, license text",
-                             "spdx": "GPL-2.0"
-                         }]
-        }
-    }
-}
+#endif
