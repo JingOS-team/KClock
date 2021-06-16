@@ -1,61 +1,78 @@
-function func() {
+/*
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License or (at your option) version 3 or any later version
+ * accepted by the membership of KDE e.V. (or its successor approved
+ * by the membership of KDE e.V.), which shall act as a proxy
+ * defined in Section 14 of version 3 of the license.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+import QtQuick 2.0
+import QtGraphicalEffects 1.0
+
+Item {
+
+    property int mouseX
+    property int mouseY
+    property var sourceView
+    property string coverColor: "#aa000000"
+    property real coverRadius: 40 * appwindow.officalScale
+
+    ShaderEffectSource {
+        id: eff
+        sourceItem: sourceView
+        anchors.centerIn: fastBlur
+        width: fastBlur.width
+        visible: false
+        height: fastBlur.height
+        sourceRect: Qt.rect(mouseX, mouseY, width, height)
+
+        function getItemX(width, height) {
+            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
+                                        width, height)
+            return mapItem.x
+        }
+        function getItemY(width, height) {
+            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
+                                        width, height)
+            return mapItem.y
+        }
+    }
+    FastBlur {
+        id: fastBlur
+        anchors.fill: parent
+        source: eff
+        radius: 70
+        cached: true
+        visible: false
+    }
+    Rectangle {
+        id: maskRect
+        anchors.fill: fastBlur
+        visible: false
+        clip: true
+        radius: coverRadius
+    }
+    OpacityMask {
+        id: mask
+        anchors.fill: maskRect
+        visible: true
+        source: fastBlur
+        maskSource: maskRect
+    }
+    Rectangle {
+        anchors.fill: parent
+        color: coverColor
+        radius: coverRadius
+    }
 }
-function setScreenDisplay(x, y) {
-    console.log('-------------- setScreenDisplay ' + x + ':' + y);
-    screenWidth = x;
-    screenHeight = y;
-}
-var screenWidth = 1920;
-var screenHeight = 1200;
-//var screenWidth = 1368
-//var screenHeight = 912
-var testHeight = 1080;
-var defaultBkgColor = '#D8D8D8';
-var monthView = {
-    'width': 1340,
-    'header_commonMargin': 50,
-    'header_leftMargin': 50,
-    //    "header_topMargin":80,
-    'header_topMargin': 50,
-    'header_rightMargin': 50,
-    'header_bottomMargin': 50,
-    'dayRectWidth': 180
-};
-var dayDelegate = {
-    'width': 180,
-    'event_circle': 14,
-    'rect_radius': 24,
-    'today_rect_color': '#E95B4E'
-};
-var calendarScheduleView = {
-    'width': 560,
-    //    "common_margin":50,
-    'common_margin': 40,
-    'content_margin': 18,
-    'listView_topMargin': 40,
-    'section_listView_height': 80,
-    'lable_color_height': 6
-};
-var popEventEditor = {
-    'common_margin': 20,
-    'icon_margin': 30,
-    'column_spacing': 15,
-    'icon_text_margin': 10
-};
-//var popEventEditor = {
-//     "common_margin":40,
-//     "icon_margin":60,
-//     "column_spacing":30,
-//     "icon_text_margin":20
-//}
-var timeSelectWheelView = { 'bg_color': '#EFEFF0' };
-var dateSelectWheelView = { 'bg_color': '#EFEFF0' };
-var fontSize = {
-    'f1_5': Kirigami.Units.fontMetrics.font.pixelSize * '1.5',
-    'f1_6': Kirigami.Units.fontMetrics.font.pixelSize * '1.6',
-    'f1_8': Kirigami.Units.fontMetrics.font.pixelSize * '1.8',
-    'f2': Kirigami.Units.fontMetrics.font.pixelSize * 2,
-    'f2_5': Kirigami.Units.fontMetrics.font.pixelSize * '2.5',
-    'f3': Kirigami.Units.fontMetrics.font.pixelSize * 3,
-    'f4': Kirigami.Units.fontMetrics.font.pixelSize * 4
-};
