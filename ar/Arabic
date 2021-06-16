@@ -17,88 +17,84 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "kclocksettings.h"
-#include "alarmplayer.h"
-#include <KLocalizedString>
-#include <QDebug>
-KClockSettings::KClockSettings()
-    : m_interface(new LocalKClockSettingsInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Settings"), QDBusConnection::sessionBus()))
+#include <QTimer>
+
+#include "timer.h"
+/* ~ Timer ~ */
+Timer::Timer()
 {
-    m_volume = m_interface->alarmVolume();
-    AlarmPlayer::instance().setVolume(m_volume);
+}
+Timer::Timer(QString uuid, bool justCreated)
+    : m_interface(new OrgKdeKclockTimerInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers/") + uuid, QDBusConnection::sessionBus(), this))
+    , m_justCreated(justCreated)
+{
+    if (m_interface->isValid()) {
+        m_uuid = QUuid(m_interface->getUUID());
+        m_label = m_interface->label();
+        m_length = m_interface->length();
+        m_running = m_interface->running();
+        m_elapsed = m_interface->elapsed();
+        connect(m_interface, &OrgKdeKclockTimerInterface::lengthChanged, this, &Timer::updateLength);
+        connect(m_interface, &OrgKdeKclockTimerInterface::labelChanged, this, &Timer::updateLabel);
+        connect(m_interface, &OrgKdeKclockTimerInterface::runningChanged, this, &Timer::updateRunning);
 
-    m_alarmSilenceAfter = m_interface->alarmSilenceAfter();
-    m_alarmSnoozeLength = m_interface->alarmSnoozeLength();
+        updateRunning(); // start animation
+    }
+}
 
-    connect(m_interface, &LocalKClockSettingsInterface::alarmVolumeChanged, this, &KClockSettings::updateVolume);
-    connect(m_interface, &LocalKClockSettingsInterface::alarmSilenceAfterChanged, this, &KClockSettings::updateAlarmSilenceAfter);
-    connect(m_interface, &LocalKClockSettingsInterface::alarmSnoozeLengthChanged, this, &KClockSettings::updateAlarmSnoozeLength);
+void Timer::toggleRunning()
+{
+    m_interface->toggleRunning();
+}
 
-    // init display
-    switch (m_alarmSilenceAfter) {
-    case 30:
-        m_alarmSilenceAfterDisplay = i18n("30 seconds");
-        break;
-    case 60:
-        m_alarmSilenceAfterDisplay = i18n("1 minute");
-        break;
-    case 300:
-        m_alarmSilenceAfterDisplay = i18n("5 minutes");
-        break;
-    case 600:
-        m_alarmSilenceAfterDisplay = i18n("10 minutes");
-        break;
-    case 900:
-        m_alarmSilenceAfterDisplay = i18n("15 minutes");
-        break;
-    case -1:
-        m_alarmSilenceAfterDisplay = i18n("Never");
-        break;
+//void Timer::updateTrigger()
+//{
+//    m_interface->elapsed();
+//}
+
+void Timer::reset()
+{
+    m_interface->reset();
+
+    m_elapsed = m_interface->elapsed();
+    Q_EMIT elapsedChanged();
+};
+
+void Timer::updateLength()
+{
+    m_length = m_interface->length();
+    Q_EMIT propertyChanged();
+}
+
+void Timer::updateLabel()
+{
+    m_label = m_interface->label();
+    Q_EMIT propertyChanged();
+}
+void Timer::updateRunning()
+{
+    m_running = m_interface->running();
+    Q_EMIT propertyChanged();
+
+    this->animation(m_running);
+
+    m_elapsed = m_interface->elapsed();
+    Q_EMIT elapsedChanged();
+}
+
+void Timer::animation(bool start)
+{
+    if (!m_timer) {
+        m_timer = new QTimer(this);
+        connect(m_timer, &QTimer::timeout, [this] {
+            m_elapsed = m_interface->elapsed();
+            Q_EMIT this->elapsedChanged();
+        });
     }
 
-    switch (m_alarmSnoozeLength) {
-    case 1:
-        m_alarmSnoozeLengthDisplay = i18n("1 minute");
-        break;
-    case 2:
-        m_alarmSnoozeLengthDisplay = i18n("2 minutes");
-        break;
-    case 3:
-        m_alarmSnoozeLengthDisplay = i18n("3 minutes");
-        break;
-    case 4:
-        m_alarmSnoozeLengthDisplay = i18n("4 minutes");
-        break;
-    case 5:
-        m_alarmSnoozeLengthDisplay = i18n("5 minutes");
-        break;
-    case 10:
-        m_alarmSnoozeLengthDisplay = i18n("10 minutes");
-        break;
-    case 30:
-        m_alarmSnoozeLengthDisplay = i18n("30 minutes");
-        break;
-    case 60:
-        m_alarmSnoozeLengthDisplay = i18n("1 hour");
-        break;
+    if (start) {
+        m_timer->start(250);
+    } else {
+        m_timer->stop();
     }
-    qDebug() << m_alarmSnoozeLengthDisplay;
-}
-
-void KClockSettings::updateVolume()
-{
-    m_volume = m_interface->alarmVolume();
-    Q_EMIT volumeChanged();
-}
-
-void KClockSettings::updateAlarmSilenceAfter()
-{
-    m_alarmSilenceAfter = m_interface->alarmSilenceAfter();
-    Q_EMIT alarmSilenceChanged();
-}
-
-void KClockSettings::updateAlarmSnoozeLength()
-{
-    m_alarmSnoozeLength = m_interface->alarmSnoozeLength();
-    Q_EMIT alarmSnoozedChanged();
 }
