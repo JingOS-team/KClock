@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ * Copyright 2019  Nick Reitemeyer <nick.reitemeyer@web.de>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,91 +17,155 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.0
-import "../CommonSize.js" as CS
-PathView {
-    id: root
 
-    property bool bgShow
-    property variant value
-    property int displayFontSize: width/4
-    property real displayStep: 0.6 // displayStep > 0
-    signal viewMove(var index)
+#include <KConfigGroup>
+#include <KLocalizedString>
+#include <KSharedConfig>
+#include <QDebug>
+#include <QSettings>
+#include <QTimeZone>
 
-    width: 100; height: 300
-    clip: true
-    pathItemCount: 7
-    preferredHighlightBegin: 0.5
-    preferredHighlightEnd: 0.5
-    dragMargin: root.width/2
-    Component.onCompleted: findCurrentIndex()
+#include "timezoneselectormodel.h"
+#include "utilmodel.h"
 
-    onMovementEnded: {
-        viewMove(model[currentIndex].value)
+const QString TZ_CFG_GROUP = "Timezones";
+
+TimeZoneSelectorModel::TimeZoneSelectorModel(QObject *parent)
+    : QAbstractListModel(parent)
+{
+    auto config = KSharedConfig::openConfig();
+    KConfigGroup timezoneGroup = config->group(TZ_CFG_GROUP);
+
+    // add other configured time zones
+    for (QByteArray id : QTimeZone::availableTimeZoneIds()) {
+        bool show = timezoneGroup.readEntry(id.data(), false);
+        m_list.append(std::make_tuple(QTimeZone(id), show));
     }
-    onValueChanged: {
-        findCurrentIndex()
-    }
+    m_timer.setInterval(1000);
+    connect(&m_timer, &QTimer::timeout, this, &TimeZoneSelectorModel::update);
 
-
-    Keys.onUpPressed: {
-        root.incrementCurrentIndex()
-        value = (model[currentIndex].value)
-    }
-
-    Keys.onDownPressed: {
-        root.decrementCurrentIndex()
-        value = (model[currentIndex].value)
-    }
-    Rectangle{
-        id:backgroud
-        visible: bgShow
-        width: parent.width
-        height: 80
-        color: "blue"
-        anchors.centerIn: parent
-        radius: 14
-
-        MouseArea {
-            anchors.fill: parent
-           onClicked: {
-               console.log("WheelvIEW .....ONCLICK")
-               mouse.accepted = true
-           }
+    // turn off timer when the application is not loaded to save on cpu cycles
+    connect(UtilModel::instance(), &UtilModel::applicationLoadedChanged, this, [this] {
+        if (UtilModel::instance()->applicationLoaded()) {
+            m_timer.start(1000);
+        } else {
+            m_timer.stop();
         }
-    }
-
-    delegate: Item {
-        id:delegate
-        width: root.width
-        height: root.height/pathItemCount
-        Text {
-            anchors.centerIn: parent
-            font.pixelSize: displayFontSize*Number(delegate.PathView.textFontPercent);
-            text: modelData.display
-            color: appwindow.isDarkTheme ? "white" :"black"
-            opacity:  currentIndex == index ? 1 : 0.3
-        }
-    }
-
-    path: Path {
-        startX: root.width/2; startY: 0
-
-        PathAttribute { name: "textFontPercent"; value: displayStep }
-
-        PathLine { x: root.width/2; y: root.height/2 }
-
-        PathAttribute { name: "textFontPercent"; value: 1}
-
-        PathLine { x: root.width/2; y: root.height }
-
-        PathAttribute { name: "textFontPercent"; value: displayStep }
-    }
-
-    function findCurrentIndex() {
-        for (var i = 0; i < count; i++)
-            if (model[i].value === value)
-                currentIndex = i;
-    }
+    });
 }
 
+int TimeZoneSelectorModel::rowCount(const QModelIndex &parent) const
+{
+    Q_UNUSED(parent);
+    return m_list.count();
+}
+
+QVariant TimeZoneSelectorModel::data(const QModelIndex &index, int role) const
+{
+    if (!index.isValid())
+        return QVariant();
+    auto tuple = m_list[index.row()];
+
+    QSettings settings;
+
+    switch (role) {
+    case NameRole:
+        return std::get<0>(tuple).displayName(QDateTime::currentDateTime());
+    case ShownRole:
+        return std::get<1>(tuple);
+    case IDRole:
+        return std::get<0>(tuple).id();
+    case ShortNameRole:
+        return std::get<0>(tuple).displayName(QDateTime::currentDateTime(), QTimeZone::ShortName);
+    case RelativeTimeRole: {
+        int offset = std::get<0>(tuple).offsetFromUtc(QDateTime::currentDateTime()) - QTimeZone::systemTimeZone().offsetFromUtc(QDateTime::currentDateTime());
+        offset /= 60; // convert to minutes
+
+        QString hour = abs(offset) / 60 == 1 ? i18n("hour") : i18n("hours");
+
+        if (offset > 0) {
+            if (offset % 60) { // half an hour ahead
+                return QVariant(i18n("%1 and a half hours ahead", offset / 60));
+            } else { // full hours ahead
+                return QVariant(i18n("%1 %2 ahead", offset / 60, hour));
+            }
+        } else if (offset < 0) {
+            offset = abs(offset);
+            if (offset % 60) { // half an hour behind
+                return QVariant(i18n("%1 and a half hours behind", offset / 60));
+            } else { // full hours behind
+                return QVariant(i18n("%1 %2 behind", offset / 60, hour));
+            }
+        } else {
+            return QVariant(i18n("Local time"));
+        }
+    }
+    case TimeStringRole: {
+        QDateTime time = QDateTime::currentDateTime();
+        time = time.toTimeZone(std::get<0>(tuple));
+
+        // apply 12 hour or 24 hour settings
+        if (settings.value(QStringLiteral("Global/use24HourTime")).toBool()) {
+            return time.time().toString("hh:mm");
+        } else {
+            return time.time().toString("h:mm ap");
+        }
+    }
+    }
+    return QVariant();
+}
+
+QHash<int, QByteArray> TimeZoneSelectorModel::roleNames() const
+{
+    QHash<int, QByteArray> roles;
+    roles[NameRole] = "name";
+    roles[ShownRole] = "shown";
+    roles[OffsetRole] = "offset";
+    roles[ShortNameRole] = "shortName";
+    roles[TimeStringRole] = "timeString";
+    roles[RelativeTimeRole] = "relativeTime";
+    roles[IDRole] = "id";
+    return roles;
+}
+
+void TimeZoneSelectorModel::update()
+{
+    QVector<int> roles = {TimeStringRole};
+    Q_EMIT dataChanged(index(0), index(m_list.size() - 1), roles);
+}
+
+Qt::ItemFlags TimeZoneSelectorModel::flags(const QModelIndex &index) const
+{
+    Q_UNUSED(index)
+    return Qt::ItemIsEditable;
+}
+
+bool TimeZoneSelectorModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    if (index.isValid() && role == ShownRole && value.type() == QVariant::Bool) {
+        std::get<1>(m_list[index.row()]) = value.toBool();
+
+        auto config = KSharedConfig::openConfig();
+        KConfigGroup timezoneGroup = config->group(TZ_CFG_GROUP);
+        timezoneGroup.writeEntry(std::get<0>(m_list[index.row()]).id().data(), value);
+        Q_EMIT dataChanged(index, index, QVector<int> {ShownRole});
+        return true;
+    }
+    return false;
+}
+
+TimeZoneFilterModel::TimeZoneFilterModel(TimeZoneSelectorModel *model, QObject *parent)
+    : QSortFilterProxyModel(parent)
+{
+    setFilterCaseSensitivity(Qt::CaseInsensitive);
+    setSourceModel(model);
+    setFilterRole(TimeZoneSelectorModel::IDRole);
+}
+
+TimeZoneViewModel::TimeZoneViewModel(TimeZoneSelectorModel *model, QObject *parent)
+    : QSortFilterProxyModel(parent)
+{
+    setSourceModel(model);
+    setFilterRole(TimeZoneSelectorModel::ShownRole);
+    setFilterFixedString(QStringLiteral("true"));
+}
