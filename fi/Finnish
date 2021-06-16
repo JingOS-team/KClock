@@ -1,5 +1,5 @@
 /*
- * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,74 +17,156 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef KCLOCKFORMAT_H
-#define KCLOCKFORMAT_H
+import QtQuick 2.12
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.2
+import QtQuick.Shapes 1.12
+import org.kde.kirigami 2.11 as Kirigami
 
-#include <QAbstractListModel>
-#include <QObject>
-#include <array>
-#include <tuple>
-class QTimer;
-class WeekModel;
-class KclockFormat : public QObject
-{
-    Q_OBJECT
-    Q_PROPERTY(QString currentTime READ currentTime NOTIFY timeChanged)
-    Q_PROPERTY(int seconds READ seconds NOTIFY secondChanged)
-    Q_PROPERTY(int minutes READ minutes NOTIFY timeChanged)
-    Q_PROPERTY(int hours READ hours NOTIFY hourChanged)
-public:
-    explicit KclockFormat(QObject *parent = nullptr);
-    Q_INVOKABLE QString formatTimeString(int hours, int minutes);
-    Q_INVOKABLE bool isChecked(int dayIndex, int daysOfWeek);
-    QString currentTime()
-    {
-        return m_currentTime;
-    };
-    int seconds()
-    {
-        return m_minutesCounter;
+Rectangle {
+
+    id: root
+    anchors.centerIn: parent
+
+    property int timerDuration
+    property int timerElapsed
+    property bool timerRunning
+    property int fontSize: 80
+
+    color: "transparent"
+
+    function getTimeLeft() {
+        return timerDuration - timerElapsed
     }
-    int minutes()
-    {
-        return m_hoursCounter;
+    function getHours() {
+        return ("0" + parseInt(getTimeLeft() / 60 / 60).toFixed(0)).slice(-2)
     }
-    int hours()
-    {
-        return m_hours;
+    function getMinutes() {
+        return ("0" + parseInt(getTimeLeft() / 60 - 60 * getHours())).slice(-2)
+    }
+    function getSeconds() {
+        return ("0" + parseInt(getTimeLeft() - 60 * getMinutes())).slice(-2)
     }
 
-private Q_SLOTS:
-    void updateTime();
-Q_SIGNALS:
-    void timeChanged();
-    void startDayChanged();
-    void secondChanged();
-    void hourChanged();
+    // clock display
+    RowLayout {
+        id: timeLabels
+        anchors.centerIn: parent
 
-private:
-    void startTimer(); // basic settings for updating time display
+        Label {
+            id: hoursText
+            text: getHours()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+            visible: true
+        }
+        Label {
+            text: ":"
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+            visible: true
+        }
+        Label {
+            id: minutesText
+            text: getMinutes()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+        Label {
+            text: ":"
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+        Label {
+            text: getSeconds()
+            color: "white"
+            font.pixelSize: root.fontSize
+            font.family: clockFont.name
+        }
+    }
 
-    QTimer *m_timer;
-    WeekModel *m_weekModel;
-    QString m_currentTime;
+    Rectangle {
+        width: timeLabels.width
+        height: 2
+        color: "#aaffffff"
+        anchors.left: timeLabels.left
+        anchors.right: timeLabels.right
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: -60
+    }
 
-    int m_hours, m_hoursCounter = 0, m_minutesCounter = 0;
-};
+    Rectangle {
+        width: timeLabels.width
+        height: 2
+        color: "#aaffffff"
+        anchors.left: timeLabels.left
+        anchors.right: timeLabels.right
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: 60
+    }
 
-using weekListItem = std::array<std::tuple<QString, int>, 7>;
-class WeekModel : public QAbstractListModel
-{
-    Q_OBJECT
-public:
-    enum { NameRole = Qt::DisplayRole, FlagRole = Qt::UserRole + 1 };
-    explicit WeekModel(QObject *parent = nullptr);
-    int rowCount(const QModelIndex &parent) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
-    QHash<int, QByteArray> roleNames() const override;
+    Rectangle {
+        width: 500
+        height: 94
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: timeLabels.bottom
+        anchors.topMargin: 33
+        visible: false
+        color: "black"
 
-private:
-    weekListItem m_listItem;
-};
+        RowLayout {
+            anchors.fill: parent
 
-#endif // KCLOCKFORMAT_H
+            Image {
+                id: reset
+                source: "qrc:/image/reset.png"
+                width: 28
+                height: 28
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.reset()
+                    }
+                }
+            }
+
+            Image {
+                id: ppBtn
+                source: timerPage.timer.running ? "qrc:/image/pause.png" : "qrc:/image/play.png"
+                anchors.centerIn: parent
+                Layout.alignment: Qt.AlignCenter
+                width: 94
+                height: 94
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.toggleRunning()
+                    }
+                }
+            }
+
+            Image {
+                id: delBtn
+                source: "qrc:/image/delete.png"
+                width: 28
+                height: 28
+                Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: {
+                        timerPage.timer.reset()
+                        timerModel.remove(0)
+                        timerPage.justCreated = true
+                    }
+                }
+            }
+        }
+    }
+}
