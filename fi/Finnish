@@ -1,5 +1,6 @@
 /*
- * Copyright 2019  Nick Reitemeyer <nick.reitemeyer@web.de>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
+ *                Han Young <hanyoung@protonmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,51 +19,70 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef TIMEZONESELECTORMODEL_H
-#define TIMEZONESELECTORMODEL_H
+#include <QDateTime>
 
-#include <QAbstractListModel>
-#include <QSortFilterProxyModel>
-#include <QTimeZone>
-#include <QTimer>
+#include <KLocalizedString>
 
-class TimeZoneSelectorModel : public QAbstractListModel
+#include "alarmmodel.h"
+#include "alarms.h"
+#include "utilmodel.h"
+
+Alarm::Alarm() {};
+Alarm::Alarm(QString uuid)
 {
-    Q_OBJECT
+    m_interface = new org::kde::kclock::Alarm(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms/") + uuid, QDBusConnection::sessionBus(), this);
 
-public:
-    explicit TimeZoneSelectorModel(QObject *parent = nullptr);
+    if (m_interface->isValid()) {
+        connect(m_interface, &OrgKdeKclockAlarmInterface::propertyChanged, this, &Alarm::updateProperty);
+        connect(m_interface, &OrgKdeKclockAlarmInterface::alarmChanged, [this] { m_nextRingTime = m_interface->nextRingTime(); });
 
-    enum Roles { NameRole = Qt::DisplayRole, ShownRole = Qt::UserRole + 0, OffsetRole = Qt::UserRole + 1, ShortNameRole = Qt::UserRole + 2, TimeStringRole, RelativeTimeRole, IDRole };
+        m_uuid = QUuid(m_interface->getUUID());
+        m_name = m_interface->name();
+        m_enabled = m_interface->enabled();
+        m_hours = m_interface->hours();
+        m_minutes = m_interface->minutes();
+        m_daysOfWeek = m_interface->daysOfWeek();
+        m_snooze = m_interface->snoozedMinutes() * 60;
+        m_snoozeMinutes = m_interface->snoozeMinutes();
+        m_ringtonePath = m_interface->ringtonePath();
+        m_nextRingTime = m_interface->nextRingTime();
+    } else {
+        m_isValid = false;
+    }
+}
 
-    int rowCount(const QModelIndex &parent) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
-    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
-    Qt::ItemFlags flags(const QModelIndex &index) const override;
-    QHash<int, QByteArray> roleNames() const override;
-
-public Q_SLOTS:
-    void update();
-
-private:
-    QList<std::tuple<QTimeZone, bool>> m_list;
-    QTimer m_timer;
-};
-
-class TimeZoneFilterModel : public QSortFilterProxyModel
+QString Alarm::timeToRingFormated()
 {
-    Q_OBJECT
+    this->calculateNextRingTime();
 
-public:
-    explicit TimeZoneFilterModel(TimeZoneSelectorModel *model, QObject *parent = nullptr);
-};
+    return UtilModel::instance()->timeToRingFormatted(this->nextRingTime());
+}
 
-class TimeZoneViewModel : public QSortFilterProxyModel
+void Alarm::updateProperty(QString property)
 {
-    Q_OBJECT
+    if (property == QStringLiteral("name"))
+        this->m_name = m_interface->property("name").toString();
+    else if (property == QStringLiteral("enabled"))
+        this->m_enabled = m_interface->property("enabled").toBool();
+    else if (property == QStringLiteral("hours"))
+        this->m_hours = m_interface->property("hours").toInt();
+    else if (property == QStringLiteral("minutes"))
+        this->m_minutes = m_interface->property("minutes").toInt();
+    else if (property == QStringLiteral("daysOfWeek"))
+        this->m_daysOfWeek = m_interface->property("daysOfWeek").toInt();
+    else if (property == QStringLiteral("snoozedMinutes"))
+        this->m_snooze = m_interface->property("snoozedMinutes").toInt() * 60;
+    else if (property == QStringLiteral("ringtonePath"))
+        this->m_ringtonePath = m_interface->property("ringtonePath").toBool();
+    Q_EMIT propertyChanged();
+}
 
-public:
-    explicit TimeZoneViewModel(TimeZoneSelectorModel *model, QObject *parent = nullptr);
-};
-
-#endif
+void Alarm::calculateNextRingTime()
+{
+    if (!this->m_enabled) { // if not enabled, means this would never ring
+        m_nextRingTime = -1;
+        return;
+    }
+    
+    m_nextRingTime = UtilModel::instance()->calculateNextRingTime(this->m_hours, this->m_minutes, this->m_daysOfWeek, this->m_snooze);
+}
