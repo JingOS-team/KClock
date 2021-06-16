@@ -1,43 +1,78 @@
 /*
-    SPDX-FileCopyrightText: 2020 HanY <hanyoung@protonmail.com>
-    SPDX-License-Identifier: LGPL-2.1-or-later
-*/
-#pragma once
-#include <Plasma/Applet>
-#include <QLocale>
-class QProcess;
-class QTimer;
-class KClock_1x2 : public Plasma::Applet
-{
-    Q_OBJECT
-    Q_PROPERTY(QString time READ time NOTIFY timeChanged)
-    Q_PROPERTY(QString alarmTime READ alarmTime NOTIFY propertyChanged)
-    Q_PROPERTY(bool hasAlarm READ hasAlarm NOTIFY propertyChanged)
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License or (at your option) version 3 or any later version
+ * accepted by the membership of KDE e.V. (or its successor approved
+ * by the membership of KDE e.V.), which shall act as a proxy
+ * defined in Section 14 of version 3 of the license.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+import QtQuick 2.0
+import QtGraphicalEffects 1.0
 
-public:
-    KClock_1x2(QObject *parent, const QVariantList &args);
-    ~KClock_1x2();
-    QString time();
-    QString alarmTime()
-    {
-        return m_string;
-    };
-    bool hasAlarm()
-    {
-        return m_hasAlarm;
+Item {
+
+    property int mouseX
+    property int mouseY
+    property var sourceView
+    property string coverColor: "#aa000000"
+    property real coverRadius: 40 * appwindow.officalScale
+
+    ShaderEffectSource {
+        id: eff
+        sourceItem: sourceView
+        anchors.centerIn: fastBlur
+        width: fastBlur.width
+        visible: false
+        height: fastBlur.height
+        sourceRect: Qt.rect(mouseX, mouseY, width, height)
+
+        function getItemX(width, height) {
+            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
+                                        width, height)
+            return mapItem.x
+        }
+        function getItemY(width, height) {
+            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
+                                        width, height)
+            return mapItem.y
+        }
     }
-    Q_INVOKABLE void openKClock();
-signals:
-    void propertyChanged();
-    void timeChanged();
-private slots:
-    void updateAlarm(qulonglong time);
-    void initialTimeUpdate(); // making sure time is update when minute changes
-
-private:
-    QLocale m_local = QLocale::system();
-    bool m_hasAlarm = false;
-    QString m_string;
-    QTimer *m_timer;
-    QProcess *m_process;
-};
+    FastBlur {
+        id: fastBlur
+        anchors.fill: parent
+        source: eff
+        radius: 70
+        cached: true
+        visible: false
+    }
+    Rectangle {
+        id: maskRect
+        anchors.fill: fastBlur
+        visible: false
+        clip: true
+        radius: coverRadius
+    }
+    OpacityMask {
+        id: mask
+        anchors.fill: maskRect
+        visible: true
+        source: fastBlur
+        maskSource: maskRect
+    }
+    Rectangle {
+        anchors.fill: parent
+        color: coverColor
+        radius: coverRadius
+    }
+}
