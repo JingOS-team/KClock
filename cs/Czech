@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,62 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.0
-import QtGraphicalEffects 1.0
 
-Item {
+#ifndef KIRIGAMICLOCK_UTILMODEL_H
+#define KIRIGAMICLOCK_UTILMODEL_H
 
-    property int mouseX
-    property int mouseY
-    property var sourceView
-    property string coverColor: "#aa000000"
-    property real coverRadius: 40 * appwindow.officalScale
+#include <QObject>
+#include <QString>
 
-    ShaderEffectSource {
-        id: eff
-        sourceItem: sourceView
-        anchors.centerIn: fastBlur
-        width: fastBlur.width
-        visible: false
-        height: fastBlur.height
-        sourceRect: Qt.rect(mouseX, mouseY, width, height)
+class UtilModel;
+class UtilModel : public QObject
+{
+    Q_OBJECT
 
-        function getItemX(width, height) {
-            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
-                                        width, height)
-            return mapItem.x
-        }
-        function getItemY(width, height) {
-            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
-                                        width, height)
-            return mapItem.y
-        }
+    Q_PROPERTY(QString tzName READ getCurrentTimeZoneName NOTIFY propertyChanged)
+
+public:
+    static UtilModel *instance()
+    {
+        static UtilModel * singleton = new UtilModel;
+        return singleton;
     }
-    FastBlur {
-        id: fastBlur
-        anchors.fill: parent
-        source: eff
-        radius: 70
-        cached: true
-        visible: false
-    }
-    Rectangle {
-        id: maskRect
-        anchors.fill: fastBlur
-        visible: false
-        clip: true
-        radius: coverRadius
-    }
-    OpacityMask {
-        id: mask
-        anchors.fill: maskRect
-        visible: true
-        source: fastBlur
-        maskSource: maskRect
-    }
-    Rectangle {
-        anchors.fill: parent
-        color: coverColor
-        radius: coverRadius
-    }
-}
+    
+    QString getCurrentTimeZoneName();
+    bool applicationLoaded();
+    void setApplicationLoaded(bool applicationLoaded);
+    
+    long long calculateNextRingTime(int hours, int minutes, int daysOfWeek, int snooze = 0);
+    QString timeToRingFormatted(const long long &timestamp);
+    Q_INVOKABLE bool is24HourFormat();
+    
+private:
+    UtilModel(){}; // explicitly declare it private
+    bool m_applicationLoaded = false;
+    
+Q_SIGNALS:
+    void propertyChanged();
+    void applicationLoadedChanged();
+};
+
+#endif // KIRIGAMICLOCK_UTILMODEL_H
