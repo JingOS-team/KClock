@@ -1,68 +1,105 @@
-[Desktop Entry]
-Name=KClock_1x2
-Name[ca]=KClock_1x2
-Name[ca@valencia]=KClock_1x2
-Name[el]=KClock_1x2
-Name[en_GB]=KClock_1x2
-Name[es]=KClock_1x2
-Name[et]=KClock_1x2
-Name[eu]=KClock_1x2
-Name[fr]=KClock_1x2
-Name[it]=KClock_1x2
-Name[ko]=KClock_1x2
-Name[nl]=KClock_1x2
-Name[nn]=Klokke (1 × 2)
-Name[pt]=KClock_1x2
-Name[pt_BR]=KClock_1x2
-Name[ro]=KClock_1x2
-Name[sk]=KClock_1x2
-Name[sl]=KClock 1x2
-Name[sv]=KClock_1x2
-Name[uk]=KClock_1x2
-Name[x-test]=xxKClock_1x2xx
-Comment=KClock widget (1x2)
-Comment[ca]=Estri del KClock (1x2)
-Comment[ca@valencia]=Estri del KClock (1x2)
-Comment[el]=Γραφικό συστατικό KClock (1x2)
-Comment[en_GB]=KClock widget (1x2)
-Comment[es]=Widget de KClock (1x2)
-Comment[et]=KClocki vidin (1x2)
-Comment[eu]=KClock trepeta (1x2)
-Comment[fr]=Composant graphique « KClock » (1x2)
-Comment[it]=Oggetto KClock (1x2)
-Comment[ko]=KClock 위젯(1x2)
-Comment[nl]=KClock-widget (1x2)
-Comment[nn]=Klokke-element (1 × 2)
-Comment[pt]=Elemento gráfico do KClock (1x2)
-Comment[pt_BR]=Widget do KClock (1x2)
-Comment[ro]=Control grafic KClock (1x2)
-Comment[sk]=KClock widget (1x2)
-Comment[sl]=Gradnik KClock (1x2)
-Comment[sv]=KClock grafisk komponent (1 x 2)
-Comment[uk]=Віджет KClock (1x2)
-Comment[x-test]=xxKClock widget (1x2)xx
+/*
+ * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License or (at your option) version 3 or any later version
+ * accepted by the membership of KDE e.V. (or its successor approved
+ * by the membership of KDE e.V.), which shall act as a proxy
+ * defined in Section 14 of version 3 of the license.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+#ifndef TIMER_H
+#define TIMER_H
 
+#include <QObject>
+#include <QUuid>
 
-Icon=kclock
-Type=Service
-X-KDE-ServiceTypes=Plasma/Applet
-X-KDE-Library=plasma_applet_kclock_1x2
+#include "timerinterface.h"
+class QTimer;
+class Timer : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(int length READ length WRITE setLength NOTIFY propertyChanged)
+    Q_PROPERTY(int elapsed READ elapsed NOTIFY elapsedChanged)
+    Q_PROPERTY(QString lengthPretty READ lengthPretty NOTIFY propertyChanged)
+    Q_PROPERTY(QString elapsedPretty READ elapsedPretty NOTIFY elapsedChanged)
+    Q_PROPERTY(QString label READ label WRITE setLabel NOTIFY propertyChanged)
+    Q_PROPERTY(bool running READ running NOTIFY propertyChanged)
+    Q_PROPERTY(bool justCreated MEMBER m_justCreated NOTIFY propertyChanged)
 
-X-Plasma-Provides=org.kde.plasma.time
-X-Plasma-DBusActivationService=org.kde.kclock.*
+public:
+    Timer();
+    explicit Timer(QString uuid, bool justCreated = true);
+    const QUuid &uuid()
+    {
+        return m_uuid;
+    };
+    Q_INVOKABLE void toggleRunning();
+    Q_INVOKABLE void reset();
 
-X-Plasma-NotificationArea=true
-X-Plasma-NotificationAreaCategory=ApplicationStatus
+    QString lengthPretty() const
+    {
+        qint64 len = m_length, hours = len / 60 / 60, minutes = len / 60 - hours * 60, seconds = len - hours * 60 * 60 - minutes * 60;
+        return QString::number(hours) + ":" + QString::number(minutes).rightJustified(2, '0') + ":" + QString::number(seconds).rightJustified(2, '0');
+    }
+    QString elapsedPretty() const
+    {
+        qint64 len = m_elapsed, hours = len / 60 / 60, minutes = len / 60 - hours * 60, seconds = len - hours * 60 * 60 - minutes * 60;
+        return QString::number(hours) + ":" + QString::number(minutes).rightJustified(2, '0') + ":" + QString::number(seconds).rightJustified(2, '0');
+    }
+    int length() const
+    {
+        return m_length;
+    }
+    void setLength(int length)
+    {
+        m_interface->setLength(length);
+    }
+    const int &elapsed() const
+    {
+        return m_elapsed;
+    }
+    const QString &label() const
+    {
+        return m_label;
+    }
+    void setLabel(QString label)
+    {
+        m_interface->setLabel(label);
+    }
+    const bool &running() const
+    {
+        return m_running;
+    }
 
-X-KDE-PluginInfo-Author=HanY
-X-KDE-PluginInfo-Email=hanyoung@protonmail.com
-X-KDE-PluginInfo-Name=org.kde.plasma.kclock_1x2
-X-KDE-PluginInfo-Version=1.0
-X-KDE-PluginInfo-Website=https://plasma.kde.org/
-X-KDE-PluginInfo-Category=Utilities
-X-KDE-PluginInfo-License=LGPL-2.1+
-X-KDE-PluginInfo-EnabledByDefault=true
+signals:
+    void propertyChanged();
+    void elapsedChanged();
+private slots:
+    void updateLength();
+    void updateLabel();
+    void updateRunning();
 
-X-Plasma-API=declarativeappletscript
-X-Plasma-MainScript=ui/main.qml
+private:
+    void animation(bool start);
 
+    int m_length, m_elapsed; // seconds
+    QString m_label;
+    bool m_running;
+    bool m_justCreated;
+
+    QUuid m_uuid;
+    org::kde::kclock::Timer *m_interface;
+    QTimer *m_timer = nullptr;
+};
+
+#endif // TIMER_H
