@@ -1,6 +1,5 @@
 /*
- * Copyright 2020 Han Young <hanyoung@protonmail.com>
- * Copyright 2020 Devin Lin <espidev@gmail.com>
+ * Copyright 2020   Han Young <hanyoung@protonmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,96 +17,103 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-#include "stopwatchtimer.h"
-#include <QDebug>
+#include "kclockformat.h"
+#include "utilmodel.h"
+#include <QLocale>
+#include <QTime>
 #include <QTimer>
-
-StopwatchTimer::StopwatchTimer(QObject *parent)
+KclockFormat::KclockFormat(QObject *parent)
     : QObject(parent)
+    , m_timer(new QTimer(this))
 {
-    m_timer = new QTimer(this);
-    connect(m_timer, &QTimer::timeout, this, &StopwatchTimer::updateTime);
+    connect(UtilModel::instance(), &UtilModel::applicationLoadedChanged, this, [this] {
+        if (UtilModel::instance()->applicationLoaded()) {
+            this->startTimer();
+        } else {
+            this->m_timer->stop();
+        }
+    });
+    connect(m_timer, &QTimer::timeout, this, &KclockFormat::updateTime);
 }
 
-void StopwatchTimer::updateTime()
+void KclockFormat::updateTime()
 {
-    emit timeChanged();
+    if (m_minutesCounter == 60) {
+        m_currentTime = QLocale::system().toString(QTime::currentTime(), QLocale::ShortFormat);
+        Q_EMIT timeChanged();
+        m_minutesCounter = 0;
+        m_hoursCounter++;
+    }
+    if (m_hoursCounter == 60) {
+        m_hoursCounter = 0;
+        m_hours = QTime::currentTime().hour() >= 12 ? QTime::currentTime().hour() - 12 : QTime::currentTime().hour();
+        Q_EMIT hourChanged();
+    }
+    m_minutesCounter++;
+//    Q_EMIT secondChanged();
+     Q_EMIT timeChanged();
 }
 
-void StopwatchTimer::toggle()
+QString KclockFormat::formatTimeString(int hours, int minutes)
 {
-    if (stopped) { // start (from zero)
-        stopped = false;
-        paused = false;
+    return QLocale::system().toString(QTime(hours, minutes), QStringLiteral("hh:mm"));
+}
 
-        timerStartStamp = QDateTime::currentMSecsSinceEpoch();
-        pausedElapsed = 0;
+bool KclockFormat::isChecked(int dayIndex, int daysOfWeek)
+{
+    // convert start day to standard start day of week, Monday
+    dayIndex += QLocale::system().firstDayOfWeek() - 1;
+    while (dayIndex > 6)
+        dayIndex -= 7;
 
-        m_timer->start(m_interval);
-    } else if (paused) { // unpause
-        paused = false;
+    int day = 1;
+    day <<= dayIndex;
+    return daysOfWeek & day;
+}
 
-        pausedElapsed += QDateTime::currentMSecsSinceEpoch() - pausedStamp;
+void KclockFormat::startTimer()
+{
+    m_currentTime = QLocale::system().toString(QTime::currentTime(), QStringLiteral("hh:mm"));
+//    m_hours = QTime::currentTime().hour() >= 12 ? QTime::currentTime().hour() - 12 : QTime::currentTime().hour();
+    m_hours = QTime::currentTime().hour();
+    m_minutesCounter = (QTime::currentTime().msecsSinceStartOfDay() / 1000) % 60; // seconds to next minute
+    m_hoursCounter = QTime::currentTime().minute();
+    m_timer->start(1000);
+}
 
-        m_timer->start(m_interval);
-    } else { // pause
-        paused = true;
-        pausedStamp = QDateTime::currentMSecsSinceEpoch();
-        m_timer->stop();
+WeekModel::WeekModel(QObject *parent)
+    : QAbstractListModel(parent)
+{
+    // init week and flag value
+    int dayFlag[] = {1, 2, 4, 8, 16, 32, 64}, i = 0;
+    for (int j = QLocale::system().firstDayOfWeek(); j <= 7; j++) {
+        m_listItem[i++] = std::tuple<QString, int>(QLocale::system().dayName(j, QLocale::LongFormat), dayFlag[j - 1]);
+    }
+
+    for (int j = 1; j < QLocale::system().firstDayOfWeek(); j++) {
+        m_listItem[i++] = std::tuple<QString, int>(QLocale::system().dayName(j, QLocale::LongFormat), dayFlag[j - 1]);
     }
 }
 
-void StopwatchTimer::reset()
+int WeekModel::rowCount(const QModelIndex &parent) const
 {
-    m_timer->stop();
-    pausedElapsed = 0;
-    stopped = true;
-    paused = false;
-    emit timeChanged();
+    return 7;
 }
 
-long long StopwatchTimer::elapsedTime()
+QVariant WeekModel::data(const QModelIndex &index, int role) const
 {
-    long long cur = QDateTime::currentMSecsSinceEpoch();
-    if (stopped) {
-        return 0;
-    } else if (paused) {
-        return cur - timerStartStamp - pausedElapsed - (cur - pausedStamp);
-    } else {
-        return cur - timerStartStamp - pausedElapsed;
+    if (!index.isValid() || index.row() >= 7) {
+        return QVariant();
     }
+    if (role == NameRole)
+        return std::get<0>(m_listItem[index.row()]);
+    else if (role == FlagRole)
+        return std::get<1>(m_listItem[index.row()]);
+    else
+        return QVariant();
 }
 
-long long StopwatchTimer::minutes()
+QHash<int, QByteArray> WeekModel::roleNames() const
 {
-    return elapsedTime() / 1000 / 60;
-}
-
-long long StopwatchTimer::seconds()
-{
-    return elapsedTime() / 1000 - 60 * minutes();
-}
-
-long long StopwatchTimer::small()
-{
-    return elapsedTime() / 10 - 100 * seconds() - 100 * 60 * minutes();
-}
-
-QString StopwatchTimer::minutesDisplay()
-{
-    long long amount = minutes();
-    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
-}
-
-QString StopwatchTimer::secondsDisplay()
-{
-    long long amount = seconds();
-    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
-}
-
-QString StopwatchTimer::smallDisplay()
-{
-    long long amount = small();
-    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+    return {{NameRole, "name"}, {FlagRole, "flag"}};
 }
