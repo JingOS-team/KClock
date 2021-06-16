@@ -1,6 +1,5 @@
 /*
- * Copyright 2020 Devin Lin <espidev@gmail.com>
- *                Han Young <hanyoung@protonmail.com>
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -19,53 +18,134 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
+import QtQuick 2.12
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.2
+import QtQuick.Shapes 1.12
+import org.kde.kirigami 2.11 as Kirigami
+import QtGraphicalEffects 1.0
 
-#include <QAbstractListModel>
-#include <QObject>
+Rectangle {
+    id: root
 
-#include "alarmmodelinterface.h"
-class Alarm;
-class AlarmModel : public QAbstractListModel
-{
-    Q_OBJECT
-public:
-    static AlarmModel *instance()
-    {
-        static AlarmModel *singleton = new AlarmModel();
-        return singleton;
+    property int timerDuration
+    property int timerElapsed
+    property bool timerRunning
+    property int fontSize: 34
+
+    width: 320  
+    height: 80   
+    color: "transparent"
+    anchors.centerIn: parent
+
+    function getTimeLeft() {
+        return timerDuration - timerElapsed
+    }
+    function getHours() {
+        return ("0" + parseInt(getTimeLeft() / 60 / 60).toFixed(0)).slice(-2)
+    }
+    function getMinutes() {
+        return ("0" + parseInt(getTimeLeft() / 60 - 60 * getHours())).slice(-2)
+    }
+    function getSeconds() {
+        return ("0" + parseInt(getTimeLeft() - 60 * getMinutes())).slice(-2)
     }
 
-    enum {
-        NameRole = Qt::DisplayRole,
-        EnabledRole = Qt::UserRole + 1,
-        HoursRole,
-        MinutesRole,
-        DaysOfWeekRole,
-        AlarmRole,
-        SnoozeRole,
-    };
+    Slider {
+        id: sliderArea
 
-    int rowCount(const QModelIndex &parent) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
-    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
-    Qt::ItemFlags flags(const QModelIndex &index) const override;
-    QHash<int, QByteArray> roleNames() const override;
+        width: parent.width
+        height: parent.height
+        leftPadding: 0
+        rightPadding: 0
 
-    Q_INVOKABLE void updateUi();
+        from: timerDuration
+        to: 0
 
-    Q_INVOKABLE void remove(int index);
+        handle: Item {
+            visible: true
+            width: 1
+            height: 1
+            x: 0
+            y: 0
 
-    Q_INVOKABLE void addAlarm(int hours, int minutes, int daysOfWeek, QString name, QString ringtonePath = 0, int snoozeMinutes = 0); // in 24 hours units, ringTone could be chosen from a list
+            Rectangle {
+                anchors.centerIn: parent
+                width: 1
+                height: 1
+                visible: false
+            }
+        }
 
-    Q_INVOKABLE QString timeToRingFormated(int hours, int minutes, int daysOfWeek); // for new alarm use
-private Q_SLOTS:
-    void addAlarm(QString uuid);
-    void removeAlarm(QString uuid);
+        //    #ff43BDF4
+        background: Rectangle {
+            id: progressBarBackground
+            color: appwindow.isDarkTheme ? "#d8000000" : "white"
+            radius: 10  
 
-private:
-    org::kde::kclock::AlarmModel *m_interface;
+            layer.enabled: true
+            layer.effect: OpacityMask {
+                maskSource: Rectangle {
+                    width: progressBarBackground.width
+                    height: progressBarBackground.height
+                    radius: progressBarBackground.radius
+                }
+            }
 
-    explicit AlarmModel(QObject *parent = nullptr);
-    QList<Alarm *> alarmsList;
-};
+            Rectangle {
+                width: (1 - timerElapsed / timerDuration) * parent.width
+                height: parent.height
+                color: {
+                    if(appwindow.isDarkTheme){
+                        timerRunning ? "#39c17b" : "#555555"
+                    }else {
+                        timerRunning ? "#39c17b" : "#333C3F48"
+                    }
+
+                }
+            }
+        }
+    }
+
+    Rectangle {
+        width: 240  
+        height: 42  
+        anchors.centerIn: parent
+        color: "transparent"
+
+        RowLayout {
+            anchors.centerIn: parent
+
+            Label {
+                text: getHours()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: ":"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: getMinutes()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: ":"
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+            Label {
+                text: getSeconds()
+                font.pixelSize: fontSize 
+                font.family: "Gilroy SemiBold"
+                color: appwindow.isDarkTheme ? "white" :"black"
+            }
+        }
+    }
+}
