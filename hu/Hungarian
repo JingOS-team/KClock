@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ * Copyright 2020   Han Young <hanyoung@protonmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,91 +17,88 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.0
-import "../CommonSize.js" as CS
-PathView {
-    id: root
+#include "kclocksettings.h"
+#include "alarmplayer.h"
+#include <KLocalizedString>
+#include <QDebug>
+KClockSettings::KClockSettings()
+    : m_interface(new LocalKClockSettingsInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Settings"), QDBusConnection::sessionBus()))
+{
+    m_volume = m_interface->alarmVolume();
+    AlarmPlayer::instance().setVolume(m_volume);
 
-    property bool bgShow
-    property variant value
-    property int displayFontSize: width/4
-    property real displayStep: 0.6 // displayStep > 0
-    signal viewMove(var index)
+    m_alarmSilenceAfter = m_interface->alarmSilenceAfter();
+    m_alarmSnoozeLength = m_interface->alarmSnoozeLength();
 
-    width: 100; height: 300
-    clip: true
-    pathItemCount: 7
-    preferredHighlightBegin: 0.5
-    preferredHighlightEnd: 0.5
-    dragMargin: root.width/2
-    Component.onCompleted: findCurrentIndex()
+    connect(m_interface, &LocalKClockSettingsInterface::alarmVolumeChanged, this, &KClockSettings::updateVolume);
+    connect(m_interface, &LocalKClockSettingsInterface::alarmSilenceAfterChanged, this, &KClockSettings::updateAlarmSilenceAfter);
+    connect(m_interface, &LocalKClockSettingsInterface::alarmSnoozeLengthChanged, this, &KClockSettings::updateAlarmSnoozeLength);
 
-    onMovementEnded: {
-        viewMove(model[currentIndex].value)
-    }
-    onValueChanged: {
-        findCurrentIndex()
-    }
-
-
-    Keys.onUpPressed: {
-        root.incrementCurrentIndex()
-        value = (model[currentIndex].value)
-    }
-
-    Keys.onDownPressed: {
-        root.decrementCurrentIndex()
-        value = (model[currentIndex].value)
-    }
-    Rectangle{
-        id:backgroud
-        visible: bgShow
-        width: parent.width
-        height: 80
-        color: "blue"
-        anchors.centerIn: parent
-        radius: 14
-
-        MouseArea {
-            anchors.fill: parent
-           onClicked: {
-               console.log("WheelvIEW .....ONCLICK")
-               mouse.accepted = true
-           }
-        }
+    // init display
+    switch (m_alarmSilenceAfter) {
+    case 30:
+        m_alarmSilenceAfterDisplay = i18n("30 seconds");
+        break;
+    case 60:
+        m_alarmSilenceAfterDisplay = i18n("1 minute");
+        break;
+    case 300:
+        m_alarmSilenceAfterDisplay = i18n("5 minutes");
+        break;
+    case 600:
+        m_alarmSilenceAfterDisplay = i18n("10 minutes");
+        break;
+    case 900:
+        m_alarmSilenceAfterDisplay = i18n("15 minutes");
+        break;
+    case -1:
+        m_alarmSilenceAfterDisplay = i18n("Never");
+        break;
     }
 
-    delegate: Item {
-        id:delegate
-        width: root.width
-        height: root.height/pathItemCount
-        Text {
-            anchors.centerIn: parent
-            font.pixelSize: displayFontSize*Number(delegate.PathView.textFontPercent);
-            text: modelData.display
-            color: appwindow.isDarkTheme ? "white" :"black"
-            opacity:  currentIndex == index ? 1 : 0.3
-        }
+    switch (m_alarmSnoozeLength) {
+    case 1:
+        m_alarmSnoozeLengthDisplay = i18n("1 minute");
+        break;
+    case 2:
+        m_alarmSnoozeLengthDisplay = i18n("2 minutes");
+        break;
+    case 3:
+        m_alarmSnoozeLengthDisplay = i18n("3 minutes");
+        break;
+    case 4:
+        m_alarmSnoozeLengthDisplay = i18n("4 minutes");
+        break;
+    case 5:
+        m_alarmSnoozeLengthDisplay = i18n("5 minutes");
+        break;
+    case 10:
+        m_alarmSnoozeLengthDisplay = i18n("10 minutes");
+        break;
+    case 30:
+        m_alarmSnoozeLengthDisplay = i18n("30 minutes");
+        break;
+    case 60:
+        m_alarmSnoozeLengthDisplay = i18n("1 hour");
+        break;
     }
-
-    path: Path {
-        startX: root.width/2; startY: 0
-
-        PathAttribute { name: "textFontPercent"; value: displayStep }
-
-        PathLine { x: root.width/2; y: root.height/2 }
-
-        PathAttribute { name: "textFontPercent"; value: 1}
-
-        PathLine { x: root.width/2; y: root.height }
-
-        PathAttribute { name: "textFontPercent"; value: displayStep }
-    }
-
-    function findCurrentIndex() {
-        for (var i = 0; i < count; i++)
-            if (model[i].value === value)
-                currentIndex = i;
-    }
+    qDebug() << m_alarmSnoozeLengthDisplay;
 }
 
+void KClockSettings::updateVolume()
+{
+    m_volume = m_interface->alarmVolume();
+    Q_EMIT volumeChanged();
+}
+
+void KClockSettings::updateAlarmSilenceAfter()
+{
+    m_alarmSilenceAfter = m_interface->alarmSilenceAfter();
+    Q_EMIT alarmSilenceChanged();
+}
+
+void KClockSettings::updateAlarmSnoozeLength()
+{
+    m_alarmSnoozeLength = m_interface->alarmSnoozeLength();
+    Q_EMIT alarmSnoozedChanged();
+}
