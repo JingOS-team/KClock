@@ -3,72 +3,119 @@
     SPDX-License-Identifier: LGPL-2.1-or-later
 */
 
-#include "kclock_1x2.h"
-#include <QDBusConnection>
-#include <QDBusInterface>
-#include <QDBusReply>
-#include <QProcess>
-#include <QTimer>
-#include <klocalizedstring.h>
+import QtQuick 2.1
+import QtQuick.Layouts 1.1
+import org.kde.plasma.core 2.0 as PlasmaCore
+import org.kde.plasma.plasmoid 2.0
+import org.kde.plasma.components 2.0 as PlasmaComponents
+import org.kde.kirigami 2.11 as Kirigami
 
-KClock_1x2::KClock_1x2(QObject *parent, const QVariantList &args)
-    : Plasma::Applet(parent, args)
-{
-    m_timer = new QTimer(this);
-    connect(m_timer, &QTimer::timeout, this, &KClock_1x2::initialTimeUpdate);
-    m_timer->setSingleShot(true);
-    // initial interval is milliseconds to next minute
-    m_timer->start((60 - (QTime::currentTime().msecsSinceStartOfDay() / 1000) % 60) * 1000); // seconds to next minute
-
-    if (!QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms"), QStringLiteral("org.kde.kclock.AlarmModel"), QStringLiteral("nextAlarm"), this, SLOT(updateAlarm(qulonglong))))
-        m_string = QStringLiteral("connect failed");
-
-    QDBusInterface *interface = new QDBusInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms"), QStringLiteral("org.kde.kclock.AlarmModel"), QDBusConnection::sessionBus(), this);
-    QDBusReply<quint64> reply = interface->call(QStringLiteral("getNextAlarm"));
-    if (reply.isValid()) {
-        auto alarmTime = reply.value();
-        if (alarmTime > 0) {
-            auto dateTime = QDateTime::fromSecsSinceEpoch(alarmTime).toLocalTime();
-            m_string = m_local.standaloneDayName(dateTime.date().dayOfWeek(), QLocale::ShortFormat) + QStringLiteral(", ") + m_local.toString(dateTime.time(), QStringLiteral("hh:mm"));
-            m_hasAlarm = true;
-        } else
-            m_hasAlarm = false;
+Item {
+    Plasmoid.backgroundHints: "ShadowBackground";
+    Plasmoid.fullRepresentation: Item {
+        property int fontSize: mainItem.height / 4
+        id: mainItem
+        Layout.preferredHeight: Kirigami.Units.gridUnit * 12
+        Layout.preferredWidth: fontSize * 24
+        ColumnLayout {
+            id: mainLayout
+            Layout.fillWidth: true
+            spacing: 0
+            PlasmaComponents.Label {
+                text: plasmoid.nativeInterface.time
+                font.pixelSize: fontSize
+                color: "white"
+                font.bold: true
+                Layout.alignment: Qt.AlignHCenter
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignHCenter
+                PlasmaComponents.Label {
+                    text: plasmoid.nativeInterface.date
+                    font.pixelSize: fontSize / 3
+                    color: "white"
+                    Layout.rightMargin: Kirigami.Units.gridUnit
+                }
+                RowLayout {
+                    id: alarmLabel
+                    Layout.fillWidth: true
+                    visible: plasmoid.nativeInterface.hasAlarm
+                    Kirigami.Icon {
+                        source: "notifications"
+                        Layout.preferredHeight: alarmTime.height
+                        Layout.preferredWidth: alarmTime.height
+                    }
+                    PlasmaComponents.Label {
+                        id: alarmTime
+                        Layout.alignment: Qt.AlignCenter
+                        text: plasmoid.nativeInterface.alarmTime
+                        color: "white"
+                        font.pixelSize: fontSize / 3
+                    }
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: plasmoid.nativeInterface.openKClock()
+                }
+            }
+            RowLayout {
+                id: weatherLayout
+                Layout.fillWidth: true
+                // left city name and weather description
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    PlasmaComponents.Label {
+                        id: cityName
+                        text: plasmoid.nativeInterface.cityName
+                        font.pixelSize: fontSize / 2
+                        font.bold: true
+                        color: "white"
+                    }
+                    PlasmaComponents.Label {
+                        text: plasmoid.nativeInterface.description
+                        font.pixelSize: fontSize / 3
+                        color: "white"
+                    }
+                }
+                // center weather icon
+                Kirigami.Icon {
+                    source: plasmoid.nativeInterface.weatherIcon
+                    Layout.preferredHeight: fontSize
+                    Layout.preferredWidth: fontSize
+                }
+                // right temperature
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    PlasmaComponents.Label {
+                        id: tempNow
+                        text: plasmoid.nativeInterface.tempNow
+                        font.pixelSize: fontSize / 2
+                        font.bold: true
+                        color: "white"
+                    }
+                    RowLayout {
+                        PlasmaComponents.Label {
+                            text: plasmoid.nativeInterface.maxTemp
+                            font.pixelSize: fontSize / 3
+                            font.bold: true
+                            color: "white"
+                        }
+                        PlasmaComponents.Label {
+                            Layout.alignment: Qt.AlignBottom
+                            text: plasmoid.nativeInterface.minTemp
+                            font.pixelSize: fontSize / 4
+                            font.bold: true
+                            color: "white"
+                        }
+                    }
+                }
+            }
+        }
     }
-    emit propertyChanged();
+//    Plasmoid.compactRepresentation: Kirigami.Icon {
+//        source: "notifications"
+//        height: Kirigami.Units.gridUnit
+//        width: Kirigami.Units.gridUnit
+//    }
 }
-
-void KClock_1x2::updateAlarm(qulonglong time)
-{
-    auto dateTime = QDateTime::fromSecsSinceEpoch(time).toLocalTime();
-    if (time > 0) {
-        m_string = m_local.standaloneDayName(dateTime.date().dayOfWeek(), QLocale::ShortFormat) + QStringLiteral(", ") + m_local.toString(dateTime.time(), QStringLiteral("hh:mm"));
-        m_hasAlarm = true;
-    } else {
-        m_hasAlarm = false;
-    }
-    emit propertyChanged();
-}
-void KClock_1x2::openKClock()
-{
-    m_process = new QProcess(this);
-    m_process->start(QStringLiteral("kclock"), QStringList());
-}
-void KClock_1x2::initialTimeUpdate()
-{
-    emit timeChanged();
-    disconnect(m_timer, &QTimer::timeout, this, &KClock_1x2::initialTimeUpdate); // disconnect
-    m_timer->setSingleShot(false);
-    connect(m_timer, &QTimer::timeout, this, &KClock_1x2::timeChanged);
-    m_timer->start(60000); // update every minute
-}
-QString KClock_1x2::time()
-{
-    return m_local.toString(QTime::currentTime(), QStringLiteral("hh:mm"));
-}
-KClock_1x2::~KClock_1x2()
-{
-}
-
-K_EXPORT_PLASMA_APPLET_WITH_JSON(kclock_1x2, KClock_1x2, "metadata.json")
-
-#include "kclock_1x2.moc"
