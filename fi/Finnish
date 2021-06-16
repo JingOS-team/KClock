@@ -1,53 +1,16 @@
-/*
-    SPDX-FileCopyrightText: 2020 HanY <hanyoung@protonmail.com>
-    SPDX-License-Identifier: LGPL-2.1-or-later
-*/
+#pragma once
 
-import QtQuick 2.1
-import QtQuick.Layouts 1.1
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.plasmoid 2.0
-import org.kde.plasma.components 2.0 as PlasmaComponents
-import org.kde.kirigami 2.11 as Kirigami
-
-Item {
-    Plasmoid.backgroundHints: "ShadowBackground";
-    Plasmoid.fullRepresentation: Item {
-        property int fontSize: mainItem.height / 4
-        id: mainItem
-        Layout.preferredHeight: plasmoid.nativeInterface.hasAlarm ? Kirigami.Theme.defaultFont.pixelSize * 8 : Kirigami.Theme.defaultFont.pixelSize * 16
-        Layout.preferredWidth: Kirigami.Units.gridUnit * 20
-        Layout.alignment: Qt.AlignHCenter
-        MouseArea {
-            anchors.fill: parent
-            onClicked: plasmoid.nativeInterface.openKClock()
+namespace KClock
+{
+template<class C> int insert_index(const typename C::value_type &obj, const C &container, bool (*less_than)(const typename C::value_type &left, const typename C::value_type &right))
+{
+    int index = 0;
+    for (auto element : container) {
+        if (less_than(obj, element)) {
+            return index;
         }
-        ColumnLayout {
-            id: mainDisplay
-            spacing:0
-            PlasmaComponents.Label {
-                text: plasmoid.nativeInterface.time
-                font.pixelSize: fontSize
-                color: "white"
-                Layout.alignment: Qt.AlignHCenter
-            }
-            RowLayout {
-                visible: plasmoid.nativeInterface.hasAlarm
-                Layout.alignment: Qt.AlignHCenter
-                Kirigami.Icon {
-                    source: "notifications"
-                    Layout.preferredHeight: alarmTime.height
-                    Layout.preferredWidth: alarmTime.height
-                }
-                PlasmaComponents.Label {
-                    id: alarmTime
-                    Layout.alignment: Qt.AlignCenter
-                    text: plasmoid.nativeInterface.alarmTime
-                    color: "white"
-                    font.pixelSize: fontSize / 2
-                }
-            }
-        }
+        ++index;
     }
-    Plasmoid.status : plasmoid.nativeInterface.hasAlarm ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.Hidden
+    return index;
+};
 }
