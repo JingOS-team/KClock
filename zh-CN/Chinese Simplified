@@ -1,6 +1,7 @@
 /*
  * Copyright 2020 Han Young <hanyoung@protonmail.com>
  *           2020 Devin Lin <espidev@gmail.com>
+ *           2021 Rui Wang <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,186 +23,291 @@
 import QtQuick 2.12
 import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.2
-import org.kde.kirigami 2.12 as Kirigami
+import QtGraphicalEffects 1.12
+import org.kde.kirigami 2.11 as Kirigami
+import kclock 1.0
 
-ToolBar {
-    id: toolbarRoot
+Kirigami.Page {
+    id: timerPage
 
-    width: 888
-    height: 55  
-    property double iconSize: 22  
-    property double shrinkIconSize: 20  
-    property double fontSize: 14
-    property double shrinkFontSize:  12
+    property Timer timer: timerModel.get(0)
+    property int timerIndex
+    property bool justCreated: timer == null
+    property bool showFullscreen: false
+    property int elapsed: timer == null ? 0 : timer.elapsed
+    property int duration: timer == null ? 0 : timer.length
+    property bool running: timer == null ? 0 : timer.running
+    property real mScale: appwindow.officalScale
 
-    // propert string alarmIcon : /* appwindow.isDarkTheme ? "qrc:/image/footer_alarm_w.png" : */ "qrc:/image/footer_alarm_grey_l.png"
-    // propert string swIcon: /* appwindow.isDarkTheme ? "qrc:/image/footer_sw_w.png": */ "qrc:/image/footer_sw_grey_l.png"
-    // propert string timerIcon: /* appwindow.isDarkTheme ? "qrc:/image/footer_timer_w.png" : */ "qrc:/image/footer_timer_grey_l.png"
+    leftPadding: 0
+    rightPadding: 0
+    topPadding: 0
+    bottomPadding: 0
+    globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
 
-    
-    function getPage(name) {
-        switch (name) {
-            case "Time": return timePage;
-            case "Timer": return timerListPage;
-            case "Stopwatch": return stopwatchPage;
-            case "Alarm": return alarmPage;
-            case "Settings": return settingsPage;
-        }
-    }
+    // background: Item {}
+    background:JBackground{}
 
-    background: Rectangle {
-        color: appwindow.isDarkTheme ? "#a6000000": "#ffffffff"
+    // topbar action
+    Rectangle {
         anchors.fill: parent
+        color: "#00000000"
 
-    }
-    
-    RowLayout {
-        anchors.fill: parent
-        spacing: 0
+        JLogo {}
 
-        Repeater {
-            model: ListModel {
+        Rectangle {
+            width: parent.width
+            height: parent.height - toolbarHeight
+            color: "transparent"
 
-                ListElement {
-                    name: "Alarm"
-                    icon_highlight:"qrc:/image/footer_alarm_grey_l.svg"
-                    icon: "qrc:/image/footer_alarm_grey.svg"
-                }
-                ListElement {
-                    name: "Stopwatch"
-                    icon_highlight: "qrc:/image/footer_sw_grey_l.svg"
-                    icon: "qrc:/image/footer_sw_grey.svg"
-                }
-                ListElement {
-                    name: "Timer"
-                    icon_highlight: "qrc:/image/footer_timer_grey_l.svg"
-                    icon: "qrc:/image/footer_timer_grey.svg"
-                }
-            }
-            
             Rectangle {
-                Layout.minimumWidth: parent.width / 3
-                Layout.maximumWidth: parent.width / 3
-                Layout.preferredHeight: parent.height
-                Layout.alignment: Qt.AlignCenter
+                id: controlLayout
+                width: parent.width
+                height: 80  
+                anchors.verticalCenter: parent.verticalCenter
                 color: "transparent"
 
-                Behavior on color {
-                    ColorAnimation { 
-                        duration: 100 
-                        easing.type: Easing.InOutQuad
-                    }
-                }
-                
-                MouseArea {
-                    id: mouseArea
-                    anchors.fill: parent
-                    onClicked: {
-                        appwindow.switchToPage(getPage(model.name), 0)
-                    }
-                    // onPressed: {
-                    //     widthAnim.to = toolbarRoot.shrinkIconSize;
-                    //     heightAnim.to = toolbarRoot.shrinkIconSize;
-                    //     fontAnim.to = toolbarRoot.shrinkFontSize;
-                    //     widthAnim.restart();
-                    //     heightAnim.restart();
-                    //     fontAnim.restart();
-                    // }
-                    // onReleased: {
-                    //     if (!widthAnim.running) {
-                    //         widthAnim.to = toolbarRoot.iconSize;
-                    //         widthAnim.restart();
-                    //     }
-                    //     if (!heightAnim.running) {
-                    //         heightAnim.to = toolbarRoot.iconSize;
-                    //         heightAnim.restart();
-                    //     }
-                    //     if (!fontAnim.running) {
-                    //         fontAnim.to = toolbarRoot.fontSize;
-                    //         fontAnim.restart();
-                    //     }
-                    // }
-                }
-                
-                RowLayout {
-                    id: itemColumn
+                Rectangle {
+                    id: stopwatchArea
+                    width: parent.width / 3
+                    height: parent.height - 20  
                     anchors.centerIn: parent
-                    spacing: 5  
+                    visible: justCreated
+                    color: "transparent"
+                    // color:"red"
 
-                    
-                    Kirigami.Icon {
-                        color: {
-                            if(appwindow.isDarkTheme){
-                                getPage(model.name).visible ? "#ffffff" : "#5e5e5e"
-                            } else {
-                                getPage(model.name).visible ? "#3C4BE8" : "#3C3F48"
-                            }
-                        } 
-                        
-                        source: getPage(model.name).visible ? model.icon_highlight:  model.icon
-                        Layout.alignment: Qt.AlignCenter
-                        Layout.preferredHeight: toolbarRoot.iconSize
-                        Layout.preferredWidth: toolbarRoot.iconSize
-                        
-                        ColorAnimation on color {
-                            easing.type: Easing.Linear
+                    Rectangle {
+                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
+                        width: 80  
+                        height: width
+                        anchors {
+                            left: parent.left
+                            verticalCenter: parent.verticalCenter
                         }
-                        NumberAnimation on Layout.preferredWidth {
-                            id: widthAnim
-                            easing.type: Easing.Linear
-                            duration: 130
-                            onFinished: {
-                                if (widthAnim.to !== toolbarRoot.iconSize && !mouseArea.pressed) {
-                                    widthAnim.to = toolbarRoot.iconSize;
-                                    widthAnim.start();
-                                }
-                            }
+                        radius:  10  
+                    }
+                    Rectangle {
+                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
+                        width: 80  
+                        height: width
+                        anchors {
+                            centerIn: parent
                         }
-                        NumberAnimation on Layout.preferredHeight {
-                            id: heightAnim
-                            easing.type: Easing.Linear
-                            duration: 130
-                            onFinished: {
-                                if (heightAnim.to !== toolbarRoot.iconSize && !mouseArea.pressed) {
-                                    heightAnim.to = toolbarRoot.iconSize;
-                                    heightAnim.start();
-                                }
-                            }
+                        radius:  10  
+                    }
+                    Rectangle {
+                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
+                        width: 80  
+                        height: width
+                        anchors {
+                            right: parent.right
+                            verticalCenter: parent.verticalCenter
+                        }
+                        radius:  10  
+                    }
+                }
+
+                JButton {
+                    visible: justCreated
+                    btn_width: 80  
+                    btn_height: btn_width
+                    btn_icon: appwindow.isDarkTheme ? "qrc:/image/sw_reset.png" : "qrc:/image/sw_reset_l.png"
+                    btn_content: "Reset"
+                    anchors {
+                        verticalCenter: parent.verticalCenter
+                        right: stopwatchArea.left
+                        rightMargin: 68  
+                    }
+
+                    onJbtnClick: {
+                        hoursTumber.currentIndex = 0
+                        minutesTumber.currentIndex = 5
+                        secondsTumber.currentIndex = 0
+                    }
+                }
+
+                JButton {
+                    visible: !justCreated
+                    btn_width: 80  
+                    btn_height: btn_width
+                    btn_icon:  appwindow.isDarkTheme ? "qrc:/image/timer_done.png" :  "qrc:/image/timer_done_l.png"
+                    btn_content: "Done"
+                    anchors {
+                        verticalCenter: parent.verticalCenter
+                        right: stopwatchArea.left
+                        rightMargin: 68  
+                    }
+
+                    onJbtnClick: {
+                        timer.reset()
+                        timerModel.remove(0)
+                        justCreated = true
+                    }
+                }
+
+                JButton {
+                    visible: justCreated
+                    btn_width: 80  
+                    btn_height: btn_width
+                    btn_icon: "qrc:/image/timer_new.png"
+                    btn_content: "New"
+                    statusPress: "#39c17b"
+                    anchors {
+                        verticalCenter: parent.verticalCenter
+                        left: stopwatchArea.right
+                        leftMargin: 68  
+                    }
+
+                    onJbtnClick: {
+                        timerModel.addNew()
+                        timer = timerModel.get(0)
+                        console.log("first timer is : ", timerModel.get(0))
+                        var length = hoursTumber.currentIndex * 60 * 60
+                                + minutesTumber.currentIndex * 60 + secondsTumber.currentIndex
+                        if (length <= 0) {
+                            showPassiveNotification(i18n("倒计时时长不合法"))
+                            return
+                        }
+                        timer.length = length
+                        justCreated = false
+                    }
+                }
+
+                JButton {
+                    visible: !justCreated
+                    btn_width: 80  
+                    btn_height: btn_width
+                    btn_icon: timer.running ? "qrc:/image/sw_pause.png" : "qrc:/image/sw_start.png"
+                    btn_content: timer.running ? "Pause" : "Start"
+                    statusPress: timer.running ? "#e95b4e" : "#39c17b"
+                    anchors {
+                        verticalCenter: parent.verticalCenter
+                        left: stopwatchArea.right
+                        leftMargin: 68  
+                    }
+
+                    onJbtnClick: {
+                        timer.toggleRunning()
+                    }
+                }
+            }
+
+            Rectangle {
+                id: timerLayoutHolder
+                width: parent.width / 3
+                height: parent.height - 20  
+                anchors.centerIn: parent
+                color: "transparent"
+                // color: "yellow"
+            }
+
+            JTimerProgressComponent {
+                visible: !justCreated
+                timerDuration: duration
+                timerElapsed: elapsed
+                timerRunning: running
+            }
+
+            Kirigami.FormLayout {
+                id: form
+                
+                property int fontSize: 34  
+                anchors.centerIn: parent
+                implicitWidth: timerLayoutHolder.width + 2 
+                // implicitHeight: (370 + 88 + 2 + 120)  
+                implicitHeight: 300
+                visible: justCreated
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: "transparent"
+
+                    Row {
+                        id: row
+                        width: form.width
+                        height: form.height
+
+                        JTumbler {
+                            id: hoursTumber
+                            widget_h: parent.height
+                            widget_w: 80 
+                            modelValue: 24
+                            textSize: form.fontSize
+                            textColor:  appwindow.isDarkTheme ? "white" :"black"
+                            anchors.left: parent.left
+                            visibleItemCountValue: 3
+                            btn_w: 50 
+                            btn_h: btn_w
+                        }
+
+                        JTumbler {
+                            id: minutesTumber
+                            widget_h: parent.height
+                            widget_w: 80  
+                            modelValue: 60
+                            textSize: form.fontSize
+                            textColor:  appwindow.isDarkTheme ? "white" :"black"
+                            visibleItemCountValue: 3
+                            btn_w: 50  
+                            btn_h: btn_w
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            currentIndex: 5
+                        }
+
+                        JTumbler {
+                            id: secondsTumber
+                            widget_h: parent.height
+                            widget_w: 80
+                            modelValue: 60
+                            textSize: form.fontSize
+                            textColor:  appwindow.isDarkTheme ? "white" :"black"
+                            anchors.right: parent.right
+                            visibleItemCountValue: 3
+                            btn_w: 50  
+                            btn_h: btn_w
                         }
                     }
-                    
-                    Label {
-                        // color: getPage(model.name).visible ? "#ffffff" : "#5e5e5e"
-                        color: {
-                            if(appwindow.isDarkTheme){
-                                getPage(model.name).visible ? "#ffffff" : "#5e5e5e"
-                            } else {
-                                getPage(model.name).visible ? "#FF39C17B" : "#3C3F48"
-                            }
-                        } 
-                        text: i18n(model.name)
-                        Layout.alignment: Qt.AlignCenter
-                        horizontalAlignment: Text.AlignVCenter
-                        elide: Text.ElideLeft
-                        font.pixelSize: toolbarRoot.fontSize
-                        
-                        ColorAnimation on color {
-                            easing.type: Easing.Linear
-                        }
-                        NumberAnimation on font.pixelSize {
-                            id: fontAnim
-                            easing.type: Easing.Linear
-                            duration: 130
-                            onFinished: {
-                                if (fontAnim.to !== toolbarRoot.fontSize && !mouseArea.pressed) {
-                                    fontAnim.to = toolbarRoot.fontSize;
-                                    fontAnim.start();
-                                }
-                            }
-                        }
+                }
+            }
+
+            Rectangle {
+                id: special_view
+                width: parent.width / 3
+                height: controlLayout.height
+                anchors.centerIn: parent
+                visible: justCreated
+                color: "transparent"
+
+                JDoubleGradientView {
+                    text: i18n("Hours")
+                    height: parent.height
+                    width: height
+                    anchors {
+                        left: parent.left
+                        verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                JDoubleGradientView {
+                    text: i18n("Minutes")
+                    height: parent.height
+                    width: height
+                    anchors {
+                        centerIn: parent
+                    }
+                }
+
+                JDoubleGradientView {
+                    text: i18n("Seconds")
+                    height: parent.height
+                    width: height
+
+                    anchors {
+                        right: parent.right
+                        verticalCenter: parent.verticalCenter
                     }
                 }
             }
         }
     }
-} 
+}
