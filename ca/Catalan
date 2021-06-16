@@ -17,56 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "alarmplayer.h"
-#include <QDateTime>
-#include <QStandardPaths>
-AlarmPlayer &AlarmPlayer::instance()
-{
-    static AlarmPlayer singleton;
-    return singleton;
-}
-AlarmPlayer::AlarmPlayer(QObject *parent)
-    : QObject(parent)
-    , m_player(new QMediaPlayer(this, QMediaPlayer::LowLatency))
-{
-    // m_player->setVolume(settings.alarmVolume());
-    connect(m_player, &QMediaPlayer::stateChanged, this, &AlarmPlayer::loopAudio);
-}
+#ifndef ALARMPLAYER_H
+#define ALARMPLAYER_H
 
-void AlarmPlayer::loopAudio(QMediaPlayer::State state)
+#include <QMediaPlayer>
+#include <QObject>
+class AlarmPlayer : public QObject
 {
-    if (!userStop && state == QMediaPlayer::StoppedState /* && static_cast<int>(QDateTime::currentSecsSinceEpoch() - startPlayingTime) < settings.alarmSilenceAfter()*/) {
-        m_player->play();
-    }
-}
+    Q_OBJECT
+    Q_PROPERTY(int volume READ volume WRITE setVolume NOTIFY volumeChanged)
+public:
+    static AlarmPlayer &instance();
+    int volume()
+    {
+        return m_player->volume();
+    };
+    Q_INVOKABLE void setVolume(int volume);
+    Q_INVOKABLE void setSource(QUrl path);
+    Q_INVOKABLE void play();
+    Q_INVOKABLE void stop();
 
-void AlarmPlayer::play()
-{
-    if (m_player->state() == QMediaPlayer::PlayingState)
-        return;
+Q_SIGNALS:
+    void volumeChanged();
 
-    startPlayingTime = QDateTime::currentSecsSinceEpoch();
-    userStop = false;
-    m_player->play();
-}
+protected:
+    explicit AlarmPlayer(QObject *parent = nullptr);
 
-void AlarmPlayer::stop()
-{
-    userStop = true;
-    m_player->stop();
-}
+private:
+    QMediaPlayer *m_player;
+    quint64 startPlayingTime = 0;
 
-void AlarmPlayer::setVolume(int volume)
-{
-    // settings.setAlarmVolume(volume);
-    m_player->setVolume(volume);
-    Q_EMIT volumeChanged();
-}
+    bool userStop = false; // indicate if user asks to stop
+private slots:
+    void loopAudio(QMediaPlayer::State state);
+};
 
-void AlarmPlayer::setSource(QUrl path)
-{
-    // if user set a invalid audio path or doesn't even specified a path, resort to default
-    if (!path.isLocalFile())
-        m_player->setMedia(QUrl::fromLocalFile(QStandardPaths::locate(QStandardPaths::GenericDataLocation, QStringLiteral("sounds/freedesktop/stereo/alarm-clock-elapsed.oga"))));
-    m_player->setMedia(path);
-}
+#endif // ALARMPLAYER_H
