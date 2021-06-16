@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Devin Lin <espidev@gmail.com>
+ * Copyright 2019  Nick Reitemeyer <nick.reitemeyer@web.de>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,41 +18,51 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef KIRIGAMICLOCK_UTILMODEL_H
-#define KIRIGAMICLOCK_UTILMODEL_H
+#ifndef TIMEZONESELECTORMODEL_H
+#define TIMEZONESELECTORMODEL_H
 
-#include <QObject>
-#include <QString>
+#include <QAbstractListModel>
+#include <QSortFilterProxyModel>
+#include <QTimeZone>
+#include <QTimer>
 
-class UtilModel;
-class UtilModel : public QObject
+class TimeZoneSelectorModel : public QAbstractListModel
 {
     Q_OBJECT
 
-    Q_PROPERTY(QString tzName READ getCurrentTimeZoneName NOTIFY propertyChanged)
-
 public:
-    static UtilModel *instance()
-    {
-        static UtilModel * singleton = new UtilModel;
-        return singleton;
-    }
-    
-    QString getCurrentTimeZoneName();
-    bool applicationLoaded();
-    void setApplicationLoaded(bool applicationLoaded);
-    
-    long long calculateNextRingTime(int hours, int minutes, int daysOfWeek, int snooze = 0);
-    QString timeToRingFormatted(const long long &timestamp);
-    Q_INVOKABLE bool is24HourFormat();
-    
+    explicit TimeZoneSelectorModel(QObject *parent = nullptr);
+
+    enum Roles { NameRole = Qt::DisplayRole, ShownRole = Qt::UserRole + 0, OffsetRole = Qt::UserRole + 1, ShortNameRole = Qt::UserRole + 2, TimeStringRole, RelativeTimeRole, IDRole };
+
+    int rowCount(const QModelIndex &parent) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
+    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
+    QHash<int, QByteArray> roleNames() const override;
+
+public Q_SLOTS:
+    void update();
+
 private:
-    UtilModel(){}; // explicitly declare it private
-    bool m_applicationLoaded = false;
-    
-Q_SIGNALS:
-    void propertyChanged();
-    void applicationLoadedChanged();
+    QList<std::tuple<QTimeZone, bool>> m_list;
+    QTimer m_timer;
 };
 
-#endif // KIRIGAMICLOCK_UTILMODEL_H
+class TimeZoneFilterModel : public QSortFilterProxyModel
+{
+    Q_OBJECT
+
+public:
+    explicit TimeZoneFilterModel(TimeZoneSelectorModel *model, QObject *parent = nullptr);
+};
+
+class TimeZoneViewModel : public QSortFilterProxyModel
+{
+    Q_OBJECT
+
+public:
+    explicit TimeZoneViewModel(TimeZoneSelectorModel *model, QObject *parent = nullptr);
+};
+
+#endif
