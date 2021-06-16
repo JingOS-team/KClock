@@ -1,20 +1,43 @@
-# TODO: adapt "org.kde.plasma" here & elsewhere if needed (see README)
-add_definitions(-DTRANSLATION_DOMAIN=\"plasma_applet_org.kde.plasma.kclock_1x2\")
+/*
+    SPDX-FileCopyrightText: 2020 HanY <hanyoung@protonmail.com>
+    SPDX-License-Identifier: LGPL-2.1-or-later
+*/
+#pragma once
+#include <Plasma/Applet>
+#include <QLocale>
+class QProcess;
+class QTimer;
+class KClock_1x2 : public Plasma::Applet
+{
+    Q_OBJECT
+    Q_PROPERTY(QString time READ time NOTIFY timeChanged)
+    Q_PROPERTY(QString alarmTime READ alarmTime NOTIFY propertyChanged)
+    Q_PROPERTY(bool hasAlarm READ hasAlarm NOTIFY propertyChanged)
 
-set(kclock_1x2_SRCS
-    kclock_1x2.cpp
-)
-add_library(plasma_applet_kclock_1x2 MODULE ${kclock_1x2_SRCS})
+public:
+    KClock_1x2(QObject *parent, const QVariantList &args);
+    ~KClock_1x2();
+    QString time();
+    QString alarmTime()
+    {
+        return m_string;
+    };
+    bool hasAlarm()
+    {
+        return m_hasAlarm;
+    }
+    Q_INVOKABLE void openKClock();
+signals:
+    void propertyChanged();
+    void timeChanged();
+private slots:
+    void updateAlarm(qulonglong time);
+    void initialTimeUpdate(); // making sure time is update when minute changes
 
-kcoreaddons_desktop_to_json(plasma_applet_kclock_1x2 package/metadata.desktop SERVICE_TYPES plasma-applet.desktop)
-
-target_link_libraries(plasma_applet_kclock_1x2
-                      Qt5::Gui
-                      Qt5::DBus
-                      KF5::Plasma
-                      KF5::I18n)
-
-
-install(TARGETS plasma_applet_kclock_1x2 DESTINATION ${KDE_INSTALL_PLUGINDIR}/plasma/applets)
-
-plasma_install_package(package org.kde.plasma.kclock_1x2)
+private:
+    QLocale m_local = QLocale::system();
+    bool m_hasAlarm = false;
+    QString m_string;
+    QTimer *m_timer;
+    QProcess *m_process;
+};
