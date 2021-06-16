@@ -1,67 +1,53 @@
 /*
- * Copyright 2020 Devin Lin <espidev@gmail.com>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
+    SPDX-FileCopyrightText: 2020 HanY <hanyoung@protonmail.com>
+    SPDX-License-Identifier: LGPL-2.1-or-later
+*/
 
-#ifndef KIRIGAMICLOCK_TIMERMODEL_H
-#define KIRIGAMICLOCK_TIMERMODEL_H
+import QtQuick 2.1
+import QtQuick.Layouts 1.1
+import org.kde.plasma.core 2.0 as PlasmaCore
+import org.kde.plasma.plasmoid 2.0
+import org.kde.plasma.components 2.0 as PlasmaComponents
+import org.kde.kirigami 2.11 as Kirigami
 
-#include <KLocalizedString>
-#include <QAbstractListModel>
-#include <QObject>
-
-#include "timermodelinterface.h"
-class Timer;
-class TimerModel : public QAbstractListModel
-{
-    Q_OBJECT
-
-public:
-    int rowCount(const QModelIndex &parent) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
-
-    static TimerModel *instance()
-    {
-        static TimerModel *singleton = new TimerModel();
-        return singleton;
+Item {
+    Plasmoid.backgroundHints: "ShadowBackground";
+    Plasmoid.fullRepresentation: Item {
+        property int fontSize: mainItem.height / 4
+        id: mainItem
+        Layout.preferredHeight: plasmoid.nativeInterface.hasAlarm ? Kirigami.Theme.defaultFont.pixelSize * 8 : Kirigami.Theme.defaultFont.pixelSize * 16
+        Layout.preferredWidth: Kirigami.Units.gridUnit * 20
+        Layout.alignment: Qt.AlignHCenter
+        MouseArea {
+            anchors.fill: parent
+            onClicked: plasmoid.nativeInterface.openKClock()
+        }
+        ColumnLayout {
+            id: mainDisplay
+            spacing:0
+            PlasmaComponents.Label {
+                text: plasmoid.nativeInterface.time
+                font.pixelSize: fontSize
+                color: "white"
+                Layout.alignment: Qt.AlignHCenter
+            }
+            RowLayout {
+                visible: plasmoid.nativeInterface.hasAlarm
+                Layout.alignment: Qt.AlignHCenter
+                Kirigami.Icon {
+                    source: "notifications"
+                    Layout.preferredHeight: alarmTime.height
+                    Layout.preferredWidth: alarmTime.height
+                }
+                PlasmaComponents.Label {
+                    id: alarmTime
+                    Layout.alignment: Qt.AlignCenter
+                    text: plasmoid.nativeInterface.alarmTime
+                    color: "white"
+                    font.pixelSize: fontSize / 2
+                }
+            }
+        }
     }
-
-    Q_INVOKABLE void addNew()
-    {
-        this->addTimer();
-    };
-    Q_INVOKABLE void remove(int index);
-    Q_INVOKABLE int count();
-    Q_INVOKABLE Timer *get(int index);
-    Q_INVOKABLE bool hasTimer();
-
-private Q_SLOTS:
-    void addTimer(QString uuid); // remote add, always justCreated
-    void removeTimer(QString uuid);
-
-private:
-    const int TIMER_MAX = 1;
-    void addTimer(int length = 300, QString label = i18n("New timer"), bool running = false);
-    void addTimer(QString uuid, bool justCreated);
-
-    explicit TimerModel(QObject *parent = nullptr);
-    QList<Timer *> m_timersList;
-    OrgKdeKclockTimerModelInterface *m_interface;
-};
-
-#endif // KIRIGAMICLOCK_TIMERMODEL_H
+    Plasmoid.status : plasmoid.nativeInterface.hasAlarm ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.Hidden
+}
