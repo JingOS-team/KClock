@@ -1,74 +1,69 @@
 /*
-    SPDX-FileCopyrightText: 2020 HanY <hanyoung@protonmail.com>
-    SPDX-License-Identifier: LGPL-2.1-or-later
-*/
+ * Copyright 2020 Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License or (at your option) version 3 or any later version
+ * accepted by the membership of KDE e.V. (or its successor approved
+ * by the membership of KDE e.V.), which shall act as a proxy
+ * defined in Section 14 of version 3 of the license.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
-#include "kclock_1x2.h"
-#include <QDBusConnection>
-#include <QDBusInterface>
-#include <QDBusReply>
-#include <QProcess>
-#include <QTimer>
-#include <klocalizedstring.h>
+#ifndef STOPWATCHTIMER_H
+#define STOPWATCHTIMER_H
 
-KClock_1x2::KClock_1x2(QObject *parent, const QVariantList &args)
-    : Plasma::Applet(parent, args)
+#include <QDateTime>
+#include <QObject>
+
+class QTimer;
+class StopwatchTimer : public QObject
 {
-    m_timer = new QTimer(this);
-    connect(m_timer, &QTimer::timeout, this, &KClock_1x2::initialTimeUpdate);
-    m_timer->setSingleShot(true);
-    // initial interval is milliseconds to next minute
-    m_timer->start((60 - (QTime::currentTime().msecsSinceStartOfDay() / 1000) % 60) * 1000); // seconds to next minute
+    Q_OBJECT
+    Q_PROPERTY(int elapsedTime READ elapsedTime NOTIFY timeChanged)
+    Q_PROPERTY(QString minutes READ minutesDisplay NOTIFY timeChanged)
+    Q_PROPERTY(QString seconds READ secondsDisplay NOTIFY timeChanged)
+    Q_PROPERTY(QString small READ smallDisplay NOTIFY timeChanged)
 
-    if (!QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms"), QStringLiteral("org.kde.kclock.AlarmModel"), QStringLiteral("nextAlarm"), this, SLOT(updateAlarm(qulonglong))))
-        m_string = QStringLiteral("connect failed");
+public:
+    explicit StopwatchTimer(QObject *parent = nullptr);
 
-    QDBusInterface *interface = new QDBusInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms"), QStringLiteral("org.kde.kclock.AlarmModel"), QDBusConnection::sessionBus(), this);
-    QDBusReply<quint64> reply = interface->call(QStringLiteral("getNextAlarm"));
-    if (reply.isValid()) {
-        auto alarmTime = reply.value();
-        if (alarmTime > 0) {
-            auto dateTime = QDateTime::fromSecsSinceEpoch(alarmTime).toLocalTime();
-            m_string = m_local.standaloneDayName(dateTime.date().dayOfWeek(), QLocale::ShortFormat) + QStringLiteral(", ") + m_local.toString(dateTime.time(), QStringLiteral("hh:mm"));
-            m_hasAlarm = true;
-        } else
-            m_hasAlarm = false;
-    }
-    emit propertyChanged();
-}
+    long long minutes();
+    long long seconds();
+    long long small();
+    QString minutesDisplay();
+    QString secondsDisplay();
+    QString smallDisplay();
 
-void KClock_1x2::updateAlarm(qulonglong time)
-{
-    auto dateTime = QDateTime::fromSecsSinceEpoch(time).toLocalTime();
-    if (time > 0) {
-        m_string = m_local.standaloneDayName(dateTime.date().dayOfWeek(), QLocale::ShortFormat) + QStringLiteral(", ") + m_local.toString(dateTime.time(), QStringLiteral("hh:mm"));
-        m_hasAlarm = true;
-    } else {
-        m_hasAlarm = false;
-    }
-    emit propertyChanged();
-}
-void KClock_1x2::openKClock()
-{
-    m_process = new QProcess(this);
-    m_process->start(QStringLiteral("kclock"), QStringList());
-}
-void KClock_1x2::initialTimeUpdate()
-{
-    emit timeChanged();
-    disconnect(m_timer, &QTimer::timeout, this, &KClock_1x2::initialTimeUpdate); // disconnect
-    m_timer->setSingleShot(false);
-    connect(m_timer, &QTimer::timeout, this, &KClock_1x2::timeChanged);
-    m_timer->start(60000); // update every minute
-}
-QString KClock_1x2::time()
-{
-    return m_local.toString(QTime::currentTime(), QStringLiteral("hh:mm"));
-}
-KClock_1x2::~KClock_1x2()
-{
-}
+    long long elapsedTime();
 
-K_EXPORT_PLASMA_APPLET_WITH_JSON(kclock_1x2, KClock_1x2, "metadata.json")
+    Q_INVOKABLE void reset();
+    Q_INVOKABLE void toggle();
 
-#include "kclock_1x2.moc"
+signals:
+    void timeChanged();
+
+private slots:
+    void updateTime();
+
+private:
+    const int m_interval = 41; // 24fps
+
+    long long timerStartStamp = QDateTime::currentMSecsSinceEpoch();
+    long long pausedStamp = QDateTime::currentMSecsSinceEpoch();
+    long long pausedElapsed = 0;
+
+    bool stopped = true, paused = false;
+    QTimer *m_timer;
+};
+
+#endif // STOPWATCHTIMER_H
