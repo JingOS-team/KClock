@@ -1,43 +1,100 @@
 /*
-    SPDX-FileCopyrightText: 2020 HanY <hanyoung@protonmail.com>
-    SPDX-License-Identifier: LGPL-2.1-or-later
-*/
-#pragma once
-#include <Plasma/Applet>
-#include <QLocale>
-class QProcess;
-class QTimer;
-class KClock_1x2 : public Plasma::Applet
+ * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License or (at your option) version 3 or any later version
+ * accepted by the membership of KDE e.V. (or its successor approved
+ * by the membership of KDE e.V.), which shall act as a proxy
+ * defined in Section 14 of version 3 of the license.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+#include <QTimer>
+
+#include "timer.h"
+/* ~ Timer ~ */
+Timer::Timer()
 {
-    Q_OBJECT
-    Q_PROPERTY(QString time READ time NOTIFY timeChanged)
-    Q_PROPERTY(QString alarmTime READ alarmTime NOTIFY propertyChanged)
-    Q_PROPERTY(bool hasAlarm READ hasAlarm NOTIFY propertyChanged)
+}
+Timer::Timer(QString uuid, bool justCreated)
+    : m_interface(new OrgKdeKclockTimerInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers/") + uuid, QDBusConnection::sessionBus(), this))
+    , m_justCreated(justCreated)
+{
+    if (m_interface->isValid()) {
+        m_uuid = QUuid(m_interface->getUUID());
+        m_label = m_interface->label();
+        m_length = m_interface->length();
+        m_running = m_interface->running();
+        m_elapsed = m_interface->elapsed();
+        connect(m_interface, &OrgKdeKclockTimerInterface::lengthChanged, this, &Timer::updateLength);
+        connect(m_interface, &OrgKdeKclockTimerInterface::labelChanged, this, &Timer::updateLabel);
+        connect(m_interface, &OrgKdeKclockTimerInterface::runningChanged, this, &Timer::updateRunning);
 
-public:
-    KClock_1x2(QObject *parent, const QVariantList &args);
-    ~KClock_1x2();
-    QString time();
-    QString alarmTime()
-    {
-        return m_string;
-    };
-    bool hasAlarm()
-    {
-        return m_hasAlarm;
+        updateRunning(); // start animation
     }
-    Q_INVOKABLE void openKClock();
-signals:
-    void propertyChanged();
-    void timeChanged();
-private slots:
-    void updateAlarm(qulonglong time);
-    void initialTimeUpdate(); // making sure time is update when minute changes
+}
 
-private:
-    QLocale m_local = QLocale::system();
-    bool m_hasAlarm = false;
-    QString m_string;
-    QTimer *m_timer;
-    QProcess *m_process;
+void Timer::toggleRunning()
+{
+    m_interface->toggleRunning();
+}
+
+//void Timer::updateTrigger()
+//{
+//    m_interface->elapsed();
+//}
+
+void Timer::reset()
+{
+    m_interface->reset();
+
+    m_elapsed = m_interface->elapsed();
+    Q_EMIT elapsedChanged();
 };
+
+void Timer::updateLength()
+{
+    m_length = m_interface->length();
+    Q_EMIT propertyChanged();
+}
+
+void Timer::updateLabel()
+{
+    m_label = m_interface->label();
+    Q_EMIT propertyChanged();
+}
+void Timer::updateRunning()
+{
+    m_running = m_interface->running();
+    Q_EMIT propertyChanged();
+
+    this->animation(m_running);
+
+    m_elapsed = m_interface->elapsed();
+    Q_EMIT elapsedChanged();
+}
+
+void Timer::animation(bool start)
+{
+    if (!m_timer) {
+        m_timer = new QTimer(this);
+        connect(m_timer, &QTimer::timeout, [this] {
+            m_elapsed = m_interface->elapsed();
+            Q_EMIT this->elapsedChanged();
+        });
+    }
+
+    if (start) {
+        m_timer->start(250);
+    } else {
+        m_timer->stop();
+    }
+}
