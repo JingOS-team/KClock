@@ -17,130 +17,245 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.0
-import QtQuick.Layouts 1.2
+import QtQuick 2.12
 import QtQuick.Controls 2.12
-import "StringUtils.js" as StringUtils
+import QtQuick.Window 2.12
+import QtQuick.Layouts 1.12
+import QtGraphicalEffects 1.12
 
-Item {
-    id: root
+import org.kde.kirigami 2.15 as Kirigami
 
-    // property int digitalFontSize: appwindow.fontSize + 118
-    // property int amFontSize: appwindow.fontSize + 6
-    property int digitalFontSize: 90
-    property int amFontSize: 22
-    // 12 / 24
-    property bool is12HoursType: utilModel.is24HourFormat()
+Component {
+    id: alarmDelegate
 
-    implicitHeight: parent.height
-    implicitWidth: parent.width
-
-    Component.onCompleted: {
-        console.log("111是不是24 小时....." , is12HoursType)
-        getAmPm()
-    }
-
-    onVisibleChanged: {
-        is12HoursType = utilModel.is24HourFormat()
-         console.log("222是不是24 小时....." , is12HoursType)
-    }
-
-    function getHoursValue(hours) {
-        if (!is12HoursType) {
-            if (hours == 0) {
-                return 12
-            } else if (hours <= 12 && hours > 0) {
-                return hours < 10 ? "0" + hours : hours
-            } else {
-                return hours - 12
-            }
-        } else {
-            return hours < 10 ? "0" + hours : hours
-        }
-    }
-
-    function getAmPm(){
-        // Qt.formatDateTime(new Date(), "hh-mm-ss")
-        var dateValue = new Date() 
-        var hours = dateValue.getHours()
-        // var timeValue =  Qt.formatDateTime(new Date(), "hh:mm ddd")
-        console.log(" --- 当前的小时::: " , hours)
-        // console.log(" 当前的ooo::: " , timeValue)
-        if(hours > 12){
-            return true  
-        }else {
-            return false 
-        }
-    }
-
+    
     Rectangle {
-        width: parent.width
-        height: parent.height
+        id: root
+        width: alarmGridView.cellWidth
+        height: alarmGridView.cellHeight
         color: "transparent"
+
+        property int topSize: 30
+        property int otherSize: 11
+        // property real myScale: 1.3 * appwindow.officalScale
+
+        GridView.onRemove: SequentialAnimation {
+            PropertyAction {
+                target: root
+                property: "GridView.delayRemove"
+                value: true
+            }
+            NumberAnimation {
+                target: root
+                property: "scale"
+                to: 0
+                duration: 200
+                easing.type: Easing.InOutQuad
+            }
+            PropertyAction {
+                target: root
+                property: "GridView.delayRemove"
+                value: false
+            }
+        }
+
         Rectangle {
-            width: parent.width
-            height : digitalFontSize
-            color: "transparent"
-            anchors.verticalCenter : parent.verticalCenter
+            id: content_Rectangle
+
+            anchors {
+                fill: parent
+                leftMargin: 0
+                rightMargin: 20
+                topMargin: 20
+                bottomMargin: 0  
+            }
+
+            // color: "#3f000000"
+            color: appwindow.isDarkTheme ? "#3f000000":"white"
+            radius: 10
+
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+                onClicked: {
+
+                    console.log("----------------1111-----------------");
+
+                    if (mouse.button == Qt.LeftButton) {
+                        popupEventEditor.px = (rightLayout.width - popupEventEditor.width) / 2
+                        popupEventEditor.py = (rightLayout.height - 277) / 2 + 22+ 26
+                        popupEventEditor.popTitle = "Edit Alarm"
+
+                        var kk = rightLayout.mapToItem(
+                                    rightLayout,
+                                    popupEventEditor.px + alarmLayout.width,
+                                    popupEventEditor.py)
+
+                        popupEventEditor.blurX = kk.x
+                        popupEventEditor.blurY = kk.y
+
+                        popupEventEditor.alarmObject = model.alarm
+                        popupEventEditor.open()
+
+                    } else if (mouse.button == Qt.RightButton) {
+                        // delMenu.selectIndex = index
+                        // var xy = mapToItem(root, mouseX, mouseY)
+                        // delMenu.blurX = xy.x
+                        // delMenu.blurY = xy.y
+                        // delMenu.popup(root, xy.x, xy.y)
+                        console.log("=====RightButton=====")
+                        var xy = mapToItem(root, mouseX, mouseY)
+                        // delMenu.blurX = xy.x
+                        // delMenu.blurY = xy.y
+                        // delMenu.popup(root, xy.x, xy.y)
+                        delMenu.popup(root, xy.x, xy.y)
+                    }
+                }
+
+                onPressAndHold: {
+                    // delMenu.selectIndex = index
+                    console.log("=====onPressAndHold=====")
+                    var xy = mapToItem(root, mouseX, mouseY)
+                    // delMenu.blurX = xy.x
+                    // delMenu.blurY = xy.y
+                    // delMenu.popup(root, xy.x, xy.y)
+                    delMenu.popup(root, xy.x, xy.y)
+                }
+            }
+
+            Kirigami.JPopupMenu {
+                id: delMenu
+
+                Action { 
+                    text: "Delete"
+                    icon.source:  "qrc:/image/menu_delete.png"
+                    onTriggered: {
+                        // var x = (888 - delDialog.width) / 2
+                        // var y = (648 - delDialog.height) / 2
+                        // console.log("x : " + x + "&&&   y:" + y)
+                        // delDialog.parent = alarm_layout
+                        // delDialog.startX = x
+                        // delDialog.startY = y
+                        // delDialog.x = x
+                        // delDialog.y = y
+                        // delDialog.visible = true
+                        delDialog.open()
+                    }
+                }
+            }
+
+            Kirigami.JDialog {
+                id: delDialog
+                title: i18n("Delete")
+                text: i18n("Are you sure you want to delete this alarm?")
+                leftButtonText: i18n("Close")
+                rightButtonText: i18n("Delete")
+                parent: Overlay.overlay
+                dim: false
+                focus: true
+
+                onRightButtonClicked: {
+                    if (!root.GridView.delayRemove) {
+                        alarmModel.remove(index)
+                        alarmModel.updateUi()
+                        delMenu.close()
+                    }
+                }
+
+                onLeftButtonClicked: {
+                    delDialog.close()
+                    delDialog.visible = false
+                    delMenu.close()
+                }
+            }
 
             RowLayout {
-                anchors.centerIn: parent
-                anchors.horizontalCenter: parent.horizontalCenter
-                Layout.alignment: Qt.AlignCenter
-                height:digitalFontSize
-                spacing: 0
+                id: topRow
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.leftMargin: marginLeftAndRight
+                anchors.rightMargin: marginLeftAndRight
+                anchors.topMargin: marginLeftAndRight
 
                 Text {
-                    font.pixelSize: digitalFontSize
-                    font.family: "Gilroy Thin"
+                    id: alarmTime
+                    Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                     font.weight: Font.Light
-                    text: getHoursValue(kclockFormat.hours)
-                    color: appwindow.isDarkTheme ? "white":"black"
-                    Layout.alignment: Qt.AlignCenter
-                    height:digitalFontSize
+                    font.pixelSize: topSize
+                    color: {
+
+                        if(appwindow.isDarkTheme){
+                            model.enabled ? "white" : "#919191"
+                        } else {
+                            model.enabled ? "#E63C3F48" : "#663C3F48"
+                        }
+                        
+                    }
+                    text: kclockFormat.formatTimeString(model.hours,
+                                                        model.minutes)
                 }
 
-                Text {
-                    font.pixelSize: digitalFontSize
-                    text: ":"
-                    font.family: "Gilroy Thin"
-                    color: appwindow.isDarkTheme ? "white":"black"
-                    font.weight: Font.Light
-                    Layout.alignment: Qt.AlignCenter
-                    height:digitalFontSize
-                }
-
-                Text {
-                    id: txt_minutes
-                    font.weight: Font.Light
-                    font.pixelSize: digitalFontSize
-                    font.family: "Gilroy Thin"
-                    text: kclockFormat.minutes < 10 ? "0" + kclockFormat.minutes : kclockFormat.minutes
-                    color: appwindow.isDarkTheme ? "white":"black"
-                    Layout.alignment: Qt.AlignCenter
-                    height:digitalFontSize
-                }
-
-                Text {
-                    id: am_txt
-                    font.pixelSize: amFontSize
-                    text: getAmPm() ?  i18n("PM") : i18n("AM")
-                    color: appwindow.isDarkTheme ? "white":"black"
-                    anchors.top: txt_minutes.top
-                    anchors.topMargin: am_txt.height /2 
-                    visible: !is12HoursType
-                    height:amFontSize
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-
-                    onClicked: {
-                        is12HoursType = !is12HoursType
+                Kirigami.JSwitch {
+                    anchors.right: parent.right
+                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                    Layout.columnSpan: 1
+                    checked: model.enabled
+                    checkable: true
+                    onCheckedChanged: {
+                        alarmCheckedChange(checked)
+                         model.enabled = checked
+                        if(appwindow.isDarkTheme){
+                            alarmTime.color = checked ? "white" : "#919191"
+                            dayOfWeek.color = checked ? "white" : "#919191"
+                        }else {
+                            dayOfWeek.color = checked ? "#E63C3F48" : "#663C3F48"
+                            alarmTime.color = checked ? "#E63C3F48" : "#663C3F48"
+                        }
                     }
                 }
             }
+
+            Text {
+                anchors.top: topRow.bottom
+                font.weight: Font.Normal
+                font.pixelSize: otherSize
+                color: {
+                    if(appwindow.isDarkTheme){
+                        model.enabled ? "white" : "#919191"
+                    } else {
+                        model.enabled ? "#E63C3F48" : "#663C3F48"
+                    }
+                }
+                text: getRepeatFormat(
+                          model.daysOfWeek) // related to UI improvements, leave it for now
+                anchors.left: parent.left
+                id: dayOfWeek
+                anchors.leftMargin: marginLeftAndRight
+                anchors.rightMargin: marginLeftAndRight
+                anchors.topMargin: 8  
+            }
+
+            Text {
+                anchors.top: dayOfWeek.bottom
+                id: alarmName
+                color: "#919191"
+                font.pixelSize: otherSize
+                text: model.name
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.leftMargin: marginLeftAndRight
+                anchors.rightMargin: marginLeftAndRight
+                anchors.topMargin: 10  
+                anchors.bottomMargin: 30  
+                lineHeight: 1
+                wrapMode: Text.WrapAnywhere
+                maximumLineCount: 2
+                elide: Text.ElideRight
+            }
         }
-        
     }
 }
+
