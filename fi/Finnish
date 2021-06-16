@@ -1,5 +1,6 @@
 /*
- * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ * Copyright 2020 Han Young <hanyoung@protonmail.com>
+ *           2020 Devin Lin <espidev@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,73 +18,190 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.7
-import QtQuick.Controls 2.15
-import QtQuick.Layouts 1.3
-import org.kde.kirigami 2.3 as Kirigami
-import QtQuick.Controls.Styles 1.4
-import "../CommonSize.js" as CS
 
-Popup {
-    id:root
+import QtQuick 2.12
+import QtQuick.Controls 2.4
+import QtQuick.Layouts 1.2
+import org.kde.kirigami 2.12 as Kirigami
 
-    property string uid
-    property var description: ""
-    property int px: 0
-    property int py: 0
-    property int popWidth: 200
-    property int popHeight: 45
-    property int selectIndex
+ToolBar {
+    id: toolbarRoot
 
-    x: px
-    y: py
-    width: popWidth
-    height: popHeight
+    width: 888
+    height: 55  
+    property double iconSize: 22  
+    property double shrinkIconSize: 20  
+    property double fontSize: 14
+    property double shrinkFontSize:  12
 
-    modal: true
-    focus: true
+    // propert string alarmIcon : /* appwindow.isDarkTheme ? "qrc:/image/footer_alarm_w.png" : */ "qrc:/image/footer_alarm_grey_l.png"
+    // propert string swIcon: /* appwindow.isDarkTheme ? "qrc:/image/footer_sw_w.png": */ "qrc:/image/footer_sw_grey_l.png"
+    // propert string timerIcon: /* appwindow.isDarkTheme ? "qrc:/image/footer_timer_w.png" : */ "qrc:/image/footer_timer_grey_l.png"
 
-    background: Rectangle {
-        id: background
-        color: "transparent"
+    
+    function getPage(name) {
+        switch (name) {
+            case "Time": return timePage;
+            case "Timer": return timerListPage;
+            case "Stopwatch": return stopwatchPage;
+            case "Alarm": return alarmPage;
+            case "Settings": return settingsPage;
+        }
     }
 
-    contentItem: Rectangle {
-        id: contentItem
-        width: parent.width
-        height: parent.height
-        radius: 10
-        color: "#a2000000"
+    background: Rectangle {
+        color: appwindow.isDarkTheme ? "#a6000000": "#ffffffff"
+        anchors.fill: parent
 
-        anchors.left: parent.left
-        anchors.right: parent.right
+    }
+    
+    RowLayout {
+        anchors.fill: parent
+        spacing: 0
 
-        Label {
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.left: parent.left
-            anchors.leftMargin: 20
-            text: i18n("Delete")
-            color: "white"
-            font.pixelSize: 14
-        }
+        Repeater {
+            model: ListModel {
 
-        Image {
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.right: parent.right
-            anchors.rightMargin: 20
+                ListElement {
+                    name: "Alarm"
+                    icon_highlight:"qrc:/image/footer_alarm_grey_l.svg"
+                    icon: "qrc:/image/footer_alarm_grey.svg"
+                }
+                ListElement {
+                    name: "Stopwatch"
+                    icon_highlight: "qrc:/image/footer_sw_grey_l.svg"
+                    icon: "qrc:/image/footer_sw_grey.svg"
+                }
+                ListElement {
+                    name: "Timer"
+                    icon_highlight: "qrc:/image/footer_timer_grey_l.svg"
+                    icon: "qrc:/image/footer_timer_grey.svg"
+                }
+            }
+            
+            Rectangle {
+                Layout.minimumWidth: parent.width / 3
+                Layout.maximumWidth: parent.width / 3
+                Layout.preferredHeight: parent.height
+                Layout.alignment: Qt.AlignCenter
+                color: "transparent"
 
-            width: 16
-            height: 16
-            source: "qrc:/image/delete.png"
-        }
+                Behavior on color {
+                    ColorAnimation { 
+                        duration: 100 
+                        easing.type: Easing.InOutQuad
+                    }
+                }
+                
+                MouseArea {
+                    id: mouseArea
+                    anchors.fill: parent
+                    onClicked: {
+                        appwindow.switchToPage(getPage(model.name), 0)
+                    }
+                    // onPressed: {
+                    //     widthAnim.to = toolbarRoot.shrinkIconSize;
+                    //     heightAnim.to = toolbarRoot.shrinkIconSize;
+                    //     fontAnim.to = toolbarRoot.shrinkFontSize;
+                    //     widthAnim.restart();
+                    //     heightAnim.restart();
+                    //     fontAnim.restart();
+                    // }
+                    // onReleased: {
+                    //     if (!widthAnim.running) {
+                    //         widthAnim.to = toolbarRoot.iconSize;
+                    //         widthAnim.restart();
+                    //     }
+                    //     if (!heightAnim.running) {
+                    //         heightAnim.to = toolbarRoot.iconSize;
+                    //         heightAnim.restart();
+                    //     }
+                    //     if (!fontAnim.running) {
+                    //         fontAnim.to = toolbarRoot.fontSize;
+                    //         fontAnim.restart();
+                    //     }
+                    // }
+                }
+                
+                RowLayout {
+                    id: itemColumn
+                    anchors.centerIn: parent
+                    spacing: 5  
 
-        MouseArea {
-            anchors.fill: parent
-            onClicked: {
-                alarmModel.remove(selectIndex)
-                alarmModel.updateUi()
-                root.close()
+                    
+                    Kirigami.Icon {
+                        color: {
+                            if(appwindow.isDarkTheme){
+                                getPage(model.name).visible ? "#ffffff" : "#5e5e5e"
+                            } else {
+                                getPage(model.name).visible ? "#3C4BE8" : "#3C3F48"
+                            }
+                        } 
+                        
+                        source: getPage(model.name).visible ? model.icon_highlight:  model.icon
+                        Layout.alignment: Qt.AlignCenter
+                        Layout.preferredHeight: toolbarRoot.iconSize
+                        Layout.preferredWidth: toolbarRoot.iconSize
+                        
+                        ColorAnimation on color {
+                            easing.type: Easing.Linear
+                        }
+                        NumberAnimation on Layout.preferredWidth {
+                            id: widthAnim
+                            easing.type: Easing.Linear
+                            duration: 130
+                            onFinished: {
+                                if (widthAnim.to !== toolbarRoot.iconSize && !mouseArea.pressed) {
+                                    widthAnim.to = toolbarRoot.iconSize;
+                                    widthAnim.start();
+                                }
+                            }
+                        }
+                        NumberAnimation on Layout.preferredHeight {
+                            id: heightAnim
+                            easing.type: Easing.Linear
+                            duration: 130
+                            onFinished: {
+                                if (heightAnim.to !== toolbarRoot.iconSize && !mouseArea.pressed) {
+                                    heightAnim.to = toolbarRoot.iconSize;
+                                    heightAnim.start();
+                                }
+                            }
+                        }
+                    }
+                    
+                    Label {
+                        // color: getPage(model.name).visible ? "#ffffff" : "#5e5e5e"
+                        color: {
+                            if(appwindow.isDarkTheme){
+                                getPage(model.name).visible ? "#ffffff" : "#5e5e5e"
+                            } else {
+                                getPage(model.name).visible ? "#FF39C17B" : "#3C3F48"
+                            }
+                        } 
+                        text: i18n(model.name)
+                        Layout.alignment: Qt.AlignCenter
+                        horizontalAlignment: Text.AlignVCenter
+                        elide: Text.ElideLeft
+                        font.pixelSize: toolbarRoot.fontSize
+                        
+                        ColorAnimation on color {
+                            easing.type: Easing.Linear
+                        }
+                        NumberAnimation on font.pixelSize {
+                            id: fontAnim
+                            easing.type: Easing.Linear
+                            duration: 130
+                            onFinished: {
+                                if (fontAnim.to !== toolbarRoot.fontSize && !mouseArea.pressed) {
+                                    fontAnim.to = toolbarRoot.fontSize;
+                                    fontAnim.start();
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
-}
+} 
