@@ -1,5 +1,6 @@
 /*
- * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,89 +18,52 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifndef TIMER_H
-#define TIMER_H
 
+#ifndef STOPWATCHTIMER_H
+#define STOPWATCHTIMER_H
+
+#include <QDateTime>
 #include <QObject>
-#include <QUuid>
 
-#include "timerinterface.h"
 class QTimer;
-class Timer : public QObject
+class StopwatchTimer : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(int length READ length WRITE setLength NOTIFY propertyChanged)
-    Q_PROPERTY(int elapsed READ elapsed NOTIFY elapsedChanged)
-    Q_PROPERTY(QString lengthPretty READ lengthPretty NOTIFY propertyChanged)
-    Q_PROPERTY(QString elapsedPretty READ elapsedPretty NOTIFY elapsedChanged)
-    Q_PROPERTY(QString label READ label WRITE setLabel NOTIFY propertyChanged)
-    Q_PROPERTY(bool running READ running NOTIFY propertyChanged)
-    Q_PROPERTY(bool justCreated MEMBER m_justCreated NOTIFY propertyChanged)
+    Q_PROPERTY(int elapsedTime READ elapsedTime NOTIFY timeChanged)
+    Q_PROPERTY(QString minutes READ minutesDisplay NOTIFY timeChanged)
+    Q_PROPERTY(QString seconds READ secondsDisplay NOTIFY timeChanged)
+    Q_PROPERTY(QString small READ smallDisplay NOTIFY timeChanged)
 
 public:
-    Timer();
-    explicit Timer(QString uuid, bool justCreated = true);
-    const QUuid &uuid()
-    {
-        return m_uuid;
-    };
-    Q_INVOKABLE void toggleRunning();
-    Q_INVOKABLE void reset();
+    explicit StopwatchTimer(QObject *parent = nullptr);
 
-    QString lengthPretty() const
-    {
-        qint64 len = m_length, hours = len / 60 / 60, minutes = len / 60 - hours * 60, seconds = len - hours * 60 * 60 - minutes * 60;
-        return QString::number(hours) + ":" + QString::number(minutes).rightJustified(2, '0') + ":" + QString::number(seconds).rightJustified(2, '0');
-    }
-    QString elapsedPretty() const
-    {
-        qint64 len = m_elapsed, hours = len / 60 / 60, minutes = len / 60 - hours * 60, seconds = len - hours * 60 * 60 - minutes * 60;
-        return QString::number(hours) + ":" + QString::number(minutes).rightJustified(2, '0') + ":" + QString::number(seconds).rightJustified(2, '0');
-    }
-    int length() const
-    {
-        return m_length;
-    }
-    void setLength(int length)
-    {
-        m_interface->setLength(length);
-    }
-    const int &elapsed() const
-    {
-        return m_elapsed;
-    }
-    const QString &label() const
-    {
-        return m_label;
-    }
-    void setLabel(QString label)
-    {
-        m_interface->setLabel(label);
-    }
-    const bool &running() const
-    {
-        return m_running;
-    }
+    long long minutes();
+    long long seconds();
+    long long small();
+    QString minutesDisplay();
+    QString secondsDisplay();
+    QString smallDisplay();
+
+    long long elapsedTime();
+
+    Q_INVOKABLE void reset();
+    Q_INVOKABLE void toggle();
 
 signals:
-    void propertyChanged();
-    void elapsedChanged();
+    void timeChanged();
+
 private slots:
-    void updateLength();
-    void updateLabel();
-    void updateRunning();
+    void updateTime();
 
 private:
-    void animation(bool start);
+    const int m_interval = 41; // 24fps
 
-    int m_length, m_elapsed; // seconds
-    QString m_label;
-    bool m_running;
-    bool m_justCreated;
+    long long timerStartStamp = QDateTime::currentMSecsSinceEpoch();
+    long long pausedStamp = QDateTime::currentMSecsSinceEpoch();
+    long long pausedElapsed = 0;
 
-    QUuid m_uuid;
-    org::kde::kclock::Timer *m_interface;
-    QTimer *m_timer = nullptr;
+    bool stopped = true, paused = false;
+    QTimer *m_timer;
 };
 
-#endif // TIMER_H
+#endif // STOPWATCHTIMER_H
