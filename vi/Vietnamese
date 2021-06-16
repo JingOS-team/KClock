@@ -1,33 +1,42 @@
-import QtQuick 2.11
-import QtQuick.Controls 2.4
+/*
+ *   SPDX-FileCopyrightText: 2019 Dimitris Kardarakos <dimkard@posteo.net>
+ *
+ *   SPDX-License-Identifier: LGPL-2.0-or-later
+ */
 
-Item {
-    id: root
+import QtQuick 2.12
+import QtQuick.Controls 2.5 as Controls2
+import org.kde.kirigami 2.0 as Kirigami
+import QtQuick.Layouts 1.11
 
-    property alias value: datePicker.value
-    property alias min: datePicker.min
-    property alias max: datePicker.max
-    property string dateFormat: "dd.MM.yyyy"
 
-    signal valueUpdated(var value)
+Controls2.ToolButton {
+    id: hoursButton
 
-    implicitWidth: 90
-    implicitHeight: inputField.implicitHeight
+    property int selectedValue
+    property string type
 
-    TextField {
-        id: inputField
-        implicitWidth: root.implicitWidth
-        readOnly: true
+    checkable: true
+    checked: index == selectedValue
+    autoExclusive: true
+    text: index == selectedValue ? ( (type == "hours" && index == 0) ? 12 : index )
+                                 : ( (type == "hours") ? ( index == 0 ? 12 : ( (index % 3 == 0) ? index : ".") ) : (index % 15 == 0) ? index : ".")
+
+    contentItem: Controls2.Label {
+        text: hoursButton.text
+        font.pixelSize: 14 * appwindow.officalScale
+        color: index <= parent.selectedValue ? "white" : "black"
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
-        text: datePicker.value.toLocaleString(Qt.locale(), root.dateFormat)
-        onPressed: datePicker.open()
     }
 
-    TimerPicker {
-        id: datePicker
-        onValueUpdated: {
-            root.valueUpdated(value)
-        }
+    background: Rectangle {
+        implicitHeight: Kirigami.Units.gridUnit
+        implicitWidth: height
+        radius: width*0.5
+        border.width: 2
+        border.color: "black"
+         color: parent.checked ? "green" : "transparent"
     }
 }
+
