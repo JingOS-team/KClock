@@ -15,39 +15,107 @@ Item {
     Plasmoid.fullRepresentation: Item {
         property int fontSize: mainItem.height / 4
         id: mainItem
-        Layout.preferredHeight: plasmoid.nativeInterface.hasAlarm ? Kirigami.Theme.defaultFont.pixelSize * 8 : Kirigami.Theme.defaultFont.pixelSize * 16
-        Layout.preferredWidth: Kirigami.Units.gridUnit * 20
-        Layout.alignment: Qt.AlignHCenter
-        MouseArea {
-            anchors.fill: parent
-            onClicked: plasmoid.nativeInterface.openKClock()
-        }
+        Layout.preferredHeight: Kirigami.Units.gridUnit * 12
+        Layout.preferredWidth: fontSize * 24
         ColumnLayout {
-            id: mainDisplay
-            spacing:0
+            id: mainLayout
+            Layout.fillWidth: true
+            spacing: 0
             PlasmaComponents.Label {
                 text: plasmoid.nativeInterface.time
                 font.pixelSize: fontSize
                 color: "white"
+                font.bold: true
                 Layout.alignment: Qt.AlignHCenter
             }
             RowLayout {
-                visible: plasmoid.nativeInterface.hasAlarm
+                Layout.fillWidth: true
                 Layout.alignment: Qt.AlignHCenter
-                Kirigami.Icon {
-                    source: "notifications"
-                    Layout.preferredHeight: alarmTime.height
-                    Layout.preferredWidth: alarmTime.height
-                }
                 PlasmaComponents.Label {
-                    id: alarmTime
-                    Layout.alignment: Qt.AlignCenter
-                    text: plasmoid.nativeInterface.alarmTime
+                    text: plasmoid.nativeInterface.date
+                    font.pixelSize: fontSize / 3
                     color: "white"
-                    font.pixelSize: fontSize / 2
+                    Layout.rightMargin: Kirigami.Units.gridUnit
+                }
+                RowLayout {
+                    id: alarmLabel
+                    Layout.fillWidth: true
+                    visible: plasmoid.nativeInterface.hasAlarm
+                    Kirigami.Icon {
+                        source: "notifications"
+                        Layout.preferredHeight: alarmTime.height
+                        Layout.preferredWidth: alarmTime.height
+                    }
+                    PlasmaComponents.Label {
+                        id: alarmTime
+                        Layout.alignment: Qt.AlignCenter
+                        text: plasmoid.nativeInterface.alarmTime
+                        color: "white"
+                        font.pixelSize: fontSize / 3
+                    }
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: plasmoid.nativeInterface.openKClock()
+                }
+            }
+            RowLayout {
+                id: weatherLayout
+                Layout.fillWidth: true
+                // left city name and weather description
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    PlasmaComponents.Label {
+                        id: cityName
+                        text: plasmoid.nativeInterface.cityName
+                        font.pixelSize: fontSize / 2
+                        font.bold: true
+                        color: "white"
+                    }
+                    PlasmaComponents.Label {
+                        text: plasmoid.nativeInterface.description
+                        font.pixelSize: fontSize / 3
+                        color: "white"
+                    }
+                }
+                // center weather icon
+                Kirigami.Icon {
+                    source: plasmoid.nativeInterface.weatherIcon
+                    Layout.preferredHeight: fontSize
+                    Layout.preferredWidth: fontSize
+                }
+                // right temperature
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    PlasmaComponents.Label {
+                        id: tempNow
+                        text: plasmoid.nativeInterface.tempNow
+                        font.pixelSize: fontSize / 2
+                        font.bold: true
+                        color: "white"
+                    }
+                    RowLayout {
+                        PlasmaComponents.Label {
+                            text: plasmoid.nativeInterface.maxTemp
+                            font.pixelSize: fontSize / 3
+                            font.bold: true
+                            color: "white"
+                        }
+                        PlasmaComponents.Label {
+                            Layout.alignment: Qt.AlignBottom
+                            text: plasmoid.nativeInterface.minTemp
+                            font.pixelSize: fontSize / 4
+                            font.bold: true
+                            color: "white"
+                        }
+                    }
                 }
             }
         }
     }
-    Plasmoid.status : plasmoid.nativeInterface.hasAlarm ? PlasmaCore.Types.ActiveStatus : PlasmaCore.Types.Hidden
+//    Plasmoid.compactRepresentation: Kirigami.Icon {
+//        source: "notifications"
+//        height: Kirigami.Units.gridUnit
+//        width: Kirigami.Units.gridUnit
+//    }
 }
