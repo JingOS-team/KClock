@@ -1,90 +1,113 @@
-<RCC>
-    <qresource prefix="/">
-        <file>qml/main.qml</file>
-        <file>qml/AnalogClock.qml</file>
-        <file>qml/BottomToolbar.qml</file>
-        <file>assets/RedHatText-Regular.ttf</file>
-        <file>image/timer_pad.png</file>
-        <file>image/watch_pad.png</file>
-        <file>qml/TimerDigitalComponent.qml</file>
-        <file>image/pause.png</file>
-        <file>image/delete.png</file>
-        <file>image/play.png</file>
-        <file>image/reset.png</file>
-        <file>image/lap.png</file>
-        <file>image/create.png</file>
-        <file>qml/JTimerPicker.qml</file>
-        <file>qml/JClockElement.qml</file>
-        <file>image/error.png</file>
-        <file>qml/AlarmItemView.qml</file>
-        <file>qml/DigitalClock.qml</file>
-        <file>qml/JStopwatchPage.qml</file>
-        <file>qml/JButton.qml</file>
-        <file>qml/JLogo.qml</file>
-        <file>image/background.png</file>
-        <file>qml/JBackground.qml</file>
-        <file>qml/JTimerPage.qml</file>
-        <file>qml/JAlarmPage.qml</file>
-        <file>qml/WheelView.qml</file>
-        <file>qml/TimeSelectWheelView.qml</file>
-        <file>qml/JAlarmEditDialog.qml</file>
-        <file>CommonSize.js</file>
-        <file>qml/ClockElement.qml</file>
-        <file>image/row_time.png</file>
-        <file>image/row_snooze.png</file>
-        <file>image/row_repeat.png</file>
-        <file>image/row_label.png</file>
-        <file>image/icon_right.png</file>
-        <file>qml/JTimerProgressComponent.qml</file>
-        <file>qml/JAlarmDelDialog.qml</file>
-        <file>qml/DeleteMenu.qml</file>
-        <file>image/clock_logo.png</file>
-        <file>qml/JTumbler.qml</file>
-        <file>qml/StringUtils.js</file>
-        <file>image/footer_alarm_grey.png</file>
-        <file>image/footer_alarm_grey.svg</file>
-        <file>image/footer_alarm_grey_l.png</file>
-        <file>image/footer_alarm_grey_l.svg</file>
-        <file>image/footer_alarm_w.png</file>
-        <file>image/footer_sw_grey.png</file>
-        <file>image/footer_sw_grey.svg</file>
-        <file>image/footer_sw_grey_l.png</file>
-        <file>image/footer_sw_grey_l.svg</file>
-        <file>image/footer_sw_w.png</file>
-        <file>image/footer_timer_grey.png</file>
-        <file>image/footer_timer_grey.svg</file>
-        <file>image/footer_timer_grey_l.png</file>
-        <file>image/footer_timer_grey_l.svg</file>
-        <file>image/footer_timer_w.png</file>
-        <file>image/sw_lap.png</file>
-        <file>image/sw_lap_l.png</file>
-        <file>image/sw_pause.png</file>
-        <file>image/sw_reset.png</file>
-        <file>image/sw_reset_l.png</file>
-        <file>image/sw_start.png</file>
-        <file>image/timer_done.png</file>
-        <file>image/timer_done_l.png</file>
-        <file>image/timer_resume.png</file>
-        <file>image/alarm_add.png</file>
-        <file>image/alarm_add_l.png</file>
-        <file>image/back.png</file>
-        <file>image/back_l.png</file>
-        <file>image/dlg_ok.png</file>
-        <file>image/dlg_close.png</file>
-        <file>image/dlg_ok_l.png</file>
-        <file>image/dlg_close_l.png</file>
-        <file>image/timer_new.png</file>
-        <file>image/time_wheel_up.png</file>
-        <file>image/time_wheel_down.png</file>
-        <file>image/big_up.png</file>
-        <file>image/big_up_l.png</file>
-        <file>image/big_dow.png</file>
-        <file>image/big_dow_l.png</file>
-        <file>assets/Gilroy-Thin.otf</file>
-        <file>assets/Gidole-Regular.woff2.ttf</file>
-        <file>qml/VagueBackground.qml</file>
-        <file>qml/JDoubleGradientView.qml</file>
-        <file>image/repeat_ok.png</file>
-        <file>image/menu_delete.png</file>
-    </qresource>
-</RCC>
+/*
+ * Copyright 2020 Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License or (at your option) version 3 or any later version
+ * accepted by the membership of KDE e.V. (or its successor approved
+ * by the membership of KDE e.V.), which shall act as a proxy
+ * defined in Section 14 of version 3 of the license.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#include "stopwatchtimer.h"
+#include <QDebug>
+#include <QTimer>
+
+StopwatchTimer::StopwatchTimer(QObject *parent)
+    : QObject(parent)
+{
+    m_timer = new QTimer(this);
+    connect(m_timer, &QTimer::timeout, this, &StopwatchTimer::updateTime);
+}
+
+void StopwatchTimer::updateTime()
+{
+    emit timeChanged();
+}
+
+void StopwatchTimer::toggle()
+{
+    if (stopped) { // start (from zero)
+        stopped = false;
+        paused = false;
+
+        timerStartStamp = QDateTime::currentMSecsSinceEpoch();
+        pausedElapsed = 0;
+
+        m_timer->start(m_interval);
+    } else if (paused) { // unpause
+        paused = false;
+
+        pausedElapsed += QDateTime::currentMSecsSinceEpoch() - pausedStamp;
+
+        m_timer->start(m_interval);
+    } else { // pause
+        paused = true;
+        pausedStamp = QDateTime::currentMSecsSinceEpoch();
+        m_timer->stop();
+    }
+}
+
+void StopwatchTimer::reset()
+{
+    m_timer->stop();
+    pausedElapsed = 0;
+    stopped = true;
+    paused = false;
+    emit timeChanged();
+}
+
+long long StopwatchTimer::elapsedTime()
+{
+    long long cur = QDateTime::currentMSecsSinceEpoch();
+    if (stopped) {
+        return 0;
+    } else if (paused) {
+        return cur - timerStartStamp - pausedElapsed - (cur - pausedStamp);
+    } else {
+        return cur - timerStartStamp - pausedElapsed;
+    }
+}
+
+long long StopwatchTimer::minutes()
+{
+    return elapsedTime() / 1000 / 60;
+}
+
+long long StopwatchTimer::seconds()
+{
+    return elapsedTime() / 1000 - 60 * minutes();
+}
+
+long long StopwatchTimer::small()
+{
+    return elapsedTime() / 10 - 100 * seconds() - 100 * 60 * minutes();
+}
+
+QString StopwatchTimer::minutesDisplay()
+{
+    long long amount = minutes();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
+
+QString StopwatchTimer::secondsDisplay()
+{
+    long long amount = seconds();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
+
+QString StopwatchTimer::smallDisplay()
+{
+    long long amount = small();
+    return amount >= 10 ? QString::number(amount) : "0" + QString::number(amount);
+}
