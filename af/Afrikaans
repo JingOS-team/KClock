@@ -1,7 +1,5 @@
 /*
- * Copyright 2020 Han Young <hanyoung@protonmail.com>
- *           2020 Devin Lin <espidev@gmail.com>
- *           2021 Rui Wang <wangrui@jingos.com>
+ * Copyright 2020   Han Young <hanyoung@protonmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -19,128 +17,56 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.11
-import QtQuick.Controls 2.4
-import QtQuick.Layouts 1.2
-import org.kde.kirigami 2.15 as Kirigami
+#include "alarmplayer.h"
+#include <QDateTime>
+#include <QStandardPaths>
+AlarmPlayer &AlarmPlayer::instance()
+{
+    static AlarmPlayer singleton;
+    return singleton;
+}
+AlarmPlayer::AlarmPlayer(QObject *parent)
+    : QObject(parent)
+    , m_player(new QMediaPlayer(this, QMediaPlayer::LowLatency))
+{
+    // m_player->setVolume(settings.alarmVolume());
+    connect(m_player, &QMediaPlayer::stateChanged, this, &AlarmPlayer::loopAudio);
+}
 
-Kirigami.ApplicationWindow {
-    id: appwindow
-
-    // property int officalWidth: 1920
-    // property int officalHeight: 1200
-    // property int deviceWidth: screen.width
-    // property int deviceHeight: screen.height
-    // property int fontSize: theme.defaultFont.pixelSize
-    // property real officalScale: deviceWidth / officalWidth
-
-    property int deviceWidth: 888
-    property int deviceHeight: 648
-    property alias toolbarHeight: bottombar.height
-    property bool isDarkTheme: false
-
-    width: deviceWidth
-    height: deviceHeight
-
-    // fastBlurMode: true
-    // fastBlurColor: "#B2000000"
-
-    onVisibleChanged: {
-        appwindow.globalToolBarStyle = ApplicationHeaderStyle.None
+void AlarmPlayer::loopAudio(QMediaPlayer::State state)
+{
+    if (!userStop && state == QMediaPlayer::StoppedState /* && static_cast<int>(QDateTime::currentSecsSinceEpoch() - startPlayingTime) < settings.alarmSilenceAfter()*/) {
+        m_player->play();
     }
+}
 
-    pageStack.initialPage: alarmPage
+void AlarmPlayer::play()
+{
+    if (m_player->state() == QMediaPlayer::PlayingState)
+        return;
 
-    function switchToPage(page, depth) {
-        while (pageStack.depth > depth)
-            pageStack.pop()
-        pageStack.push(page)
-    }
+    startPlayingTime = QDateTime::currentSecsSinceEpoch();
+    userStop = false;
+    m_player->play();
+}
 
-    Component.onCompleted: {
-        changeNav(!isWidescreen)
-        console.log("device width: ", applicationWindow().screen.width)
-        console.log("device height: ", applicationWindow().screen.height)
-    }
+void AlarmPlayer::stop()
+{
+    userStop = true;
+    m_player->stop();
+}
 
-    function getPage(name) {
-        switch (name) {
-        case "Time":
-            return timePage
-        case "Timer":
-            return timerListPage
-        case "Stopwatch":
-            return stopwatchPage
-        case "Alarm":
-            return alarmPage
-        case "Settings":
-            return settingsPage
-        }
-    }
+void AlarmPlayer::setVolume(int volume)
+{
+    // settings.setAlarmVolume(volume);
+    m_player->setVolume(volume);
+    Q_EMIT volumeChanged();
+}
 
-    property bool isWidescreen: appwindow.width >= appwindow.height
-    onIsWidescreenChanged: changeNav(!isWidescreen)
-
-    function changeNav(toNarrow) {//        sidebarLoader.active = false;
-    }
-
-    // clock fonts
-    FontLoader {
-        id: clockFont
-        source: "qrc:/assets/Gilroy-Thin.otf"
-    }
-
-    JTimerPage {
-        id: timerListPage
-        objectName: "timer"
-        visible: false
-    }
-
-    JStopwatchPage {
-        id: stopwatchPage
-        objectName: "stopwatch"
-        visible: false
-    }
-    JAlarmPage {
-        id: alarmPage
-        objectName: "alarm"
-    }
-
-    BottomToolbar {
-        id: bottombar
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-    }
-
-    Kirigami.AboutPage {
-        id: aboutPage
-        visible: false
-        aboutData: {
-            "displayName": "Clock",
-            "productName": "kirigami/clock",
-            "componentName": "kclock",
-            "shortDescription": "A mobile friendly clock app built with Kirigami.",
-            "homepage": "",
-            "bugAddress": "",
-            "version": "0.2",
-            "otherText": "",
-            "copyrightStatement": "© 2020 Plasma Development Team",
-            "desktopFileName": "org.kde.kclock",
-            "authors": [{
-                            "name": "Devin Lin",
-                            "emailAddress": "espidev@gmail.com",
-                            "webAddress": "https://espi.dev"
-                        }, {
-                            "name": "Han Young",
-                            "emailAddress": "hanyoung@protonmail.com",
-                            "webAddress": "https://han-y.gitlab.io"
-                        }],
-            "licenses": [{
-                             "name": "GPL v2",
-                             "text": "long, boring, license text",
-                             "spdx": "GPL-2.0"
-                         }]
-        }
-    }
+void AlarmPlayer::setSource(QUrl path)
+{
+    // if user set a invalid audio path or doesn't even specified a path, resort to default
+    if (!path.isLocalFile())
+        m_player->setMedia(QUrl::fromLocalFile(QStandardPaths::locate(QStandardPaths::GenericDataLocation, QStringLiteral("sounds/freedesktop/stereo/alarm-clock-elapsed.oga"))));
+    m_player->setMedia(path);
 }
