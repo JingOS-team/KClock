@@ -17,91 +17,108 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.12
-import QtQuick.Controls 2.12
+ 
+import QtQuick 2.0
+import QtGraphicalEffects 1.12
 
-Menu {
-    id: menu
+Item {
 
-    property real mScale: appwindow.officalScale * 1.3
-    property int mwidth: 308 
-    property int mheight: 45 
-    property var separatorColor: "#80FFFFFF"
-    property int separatorWidth: mwidth * 9 / 10
-    property int selectIndex
-    property int blurX
-    property int blurY
+    // property real mScale: appwindow.officalScale * 1.3
+    property alias text: content_txt.text
 
-    signal deleteClicked
+    width:  80
+    height: width
 
-    Action {
-        text: i18n("Delete")
-        checkable: true
-        checked: false
-        onCheckedChanged: {
-            deleteClicked()
-        }
-    }
+    Rectangle {
 
-    delegate: MenuItem {
-        id: menuItem
-        width: mwidth
-        height: mheight
+        id:_rect
+        anchors.fill: parent
+        color: "transparent"
+        radius: 10 
 
-        indicator: Item {
-            width: 0
-            height: 0
-        }
-
-        contentItem: Item {
-            id: munuContentItem
-            width: mwidth
-            height: mheight
-            Text {
-                anchors {
-                    left: parent.left
-                }
-                leftPadding: 20
-                text: menuItem.text
-                font.pixelSize: 17
-                anchors.verticalCenter: parent.verticalCenter
-                color: menuItem.highlighted ? "#ffffff" : "#ffffff"
-                horizontalAlignment: Text.AlignLeft
-                verticalAlignment: Text.AlignVCenter
-                elide: Text.ElideRight
-            }
-
-            Image {
-                id: rightImage
-                sourceSize.width: 16
-                sourceSize.height: 16
-                anchors {
-                    right: parent.right
-                    rightMargin: 20
-                }
-                anchors.verticalCenter: parent.verticalCenter
-                source: "qrc:/image/menu_delete.png"
+        layer.enabled: true
+        layer.effect: OpacityMask {
+            maskSource: Rectangle {
+                width: _rect.width
+                height: _rect.height
+                radius: _rect.radius
             }
         }
 
-        background: Rectangle {
-            id: menu_bg
-            implicitWidth: mwidth
-            height: mheight
+        Rectangle {
+            width: parent.width
+            height: 50  
             color: "transparent"
-        }
-    }
 
-    background: Rectangle {
-        width: mwidth
-        color: "#80000000"
-        radius: 10
-        VagueBackground {
-            anchors.fill: parent
-            sourceView: root
-            mouseX: blurX
-            mouseY: blurY
-            coverRadius: 10
+            anchors {
+                top: parent.top
+                left: parent.left
+            }
+
+            LinearGradient {
+                ///--[Mark]
+                anchors.fill: parent
+                start: Qt.point(0, 0)
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: appwindow.isDarkTheme ? "#ff000000" :"#ffffffff"
+                    }
+                    GradientStop {
+                        position: 0.3
+                        color: appwindow.isDarkTheme ? "#cf000000" :"#cfffffff"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: "#00000000"
+                    }
+                }
+            }
         }
+
+        Rectangle {
+            width: parent.width
+            height: 50  
+            color: "transparent"
+            clip: true
+
+            anchors {
+                bottom: parent.bottom
+                left: parent.left
+            }
+
+            LinearGradient {
+                ///--[Mark]
+                anchors.fill: parent
+                start: Qt.point(0, 0)
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: "#00000000"
+                    }
+                    GradientStop {
+                        position: 0.7
+                        color: appwindow.isDarkTheme ? "#ff000000" :"#ffffffff"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: appwindow.isDarkTheme ? "#ff000000" :"#ffffffff"
+                    }
+                }
+            }
+        }
+
+        Text {
+            id:content_txt
+            text: i18n("Hours")
+            color: appwindow.isDarkTheme ? "#6affffff": "#ff000000"
+            font.pixelSize: 11  
+            anchors {
+                bottom: parent.bottom
+                bottomMargin: 7
+                horizontalCenter: parent.horizontalCenter
+            }
+        }
+
     }
 }
