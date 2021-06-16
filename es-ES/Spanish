@@ -1,43 +1,68 @@
-/*
-    SPDX-FileCopyrightText: 2020 HanY <hanyoung@protonmail.com>
-    SPDX-License-Identifier: LGPL-2.1-or-later
-*/
-#pragma once
-#include <Plasma/Applet>
-#include <QLocale>
-class QProcess;
-class QTimer;
-class KClock_1x2 : public Plasma::Applet
-{
-    Q_OBJECT
-    Q_PROPERTY(QString time READ time NOTIFY timeChanged)
-    Q_PROPERTY(QString alarmTime READ alarmTime NOTIFY propertyChanged)
-    Q_PROPERTY(bool hasAlarm READ hasAlarm NOTIFY propertyChanged)
+[Desktop Entry]
+Name=KClock_1x2
+Name[ca]=KClock_1x2
+Name[ca@valencia]=KClock_1x2
+Name[el]=KClock_1x2
+Name[en_GB]=KClock_1x2
+Name[es]=KClock_1x2
+Name[et]=KClock_1x2
+Name[eu]=KClock_1x2
+Name[fr]=KClock_1x2
+Name[it]=KClock_1x2
+Name[ko]=KClock_1x2
+Name[nl]=KClock_1x2
+Name[nn]=Klokke (1 × 2)
+Name[pt]=KClock_1x2
+Name[pt_BR]=KClock_1x2
+Name[ro]=KClock_1x2
+Name[sk]=KClock_1x2
+Name[sl]=KClock 1x2
+Name[sv]=KClock_1x2
+Name[uk]=KClock_1x2
+Name[x-test]=xxKClock_1x2xx
+Comment=KClock widget (1x2)
+Comment[ca]=Estri del KClock (1x2)
+Comment[ca@valencia]=Estri del KClock (1x2)
+Comment[el]=Γραφικό συστατικό KClock (1x2)
+Comment[en_GB]=KClock widget (1x2)
+Comment[es]=Widget de KClock (1x2)
+Comment[et]=KClocki vidin (1x2)
+Comment[eu]=KClock trepeta (1x2)
+Comment[fr]=Composant graphique « KClock » (1x2)
+Comment[it]=Oggetto KClock (1x2)
+Comment[ko]=KClock 위젯(1x2)
+Comment[nl]=KClock-widget (1x2)
+Comment[nn]=Klokke-element (1 × 2)
+Comment[pt]=Elemento gráfico do KClock (1x2)
+Comment[pt_BR]=Widget do KClock (1x2)
+Comment[ro]=Control grafic KClock (1x2)
+Comment[sk]=KClock widget (1x2)
+Comment[sl]=Gradnik KClock (1x2)
+Comment[sv]=KClock grafisk komponent (1 x 2)
+Comment[uk]=Віджет KClock (1x2)
+Comment[x-test]=xxKClock widget (1x2)xx
 
-public:
-    KClock_1x2(QObject *parent, const QVariantList &args);
-    ~KClock_1x2();
-    QString time();
-    QString alarmTime()
-    {
-        return m_string;
-    };
-    bool hasAlarm()
-    {
-        return m_hasAlarm;
-    }
-    Q_INVOKABLE void openKClock();
-signals:
-    void propertyChanged();
-    void timeChanged();
-private slots:
-    void updateAlarm(qulonglong time);
-    void initialTimeUpdate(); // making sure time is update when minute changes
 
-private:
-    QLocale m_local = QLocale::system();
-    bool m_hasAlarm = false;
-    QString m_string;
-    QTimer *m_timer;
-    QProcess *m_process;
-};
+Icon=kclock
+Type=Service
+X-KDE-ServiceTypes=Plasma/Applet
+X-KDE-Library=plasma_applet_kclock_1x2
+
+X-Plasma-Provides=org.kde.plasma.time
+X-Plasma-DBusActivationService=org.kde.kclock.*
+
+X-Plasma-NotificationArea=true
+X-Plasma-NotificationAreaCategory=ApplicationStatus
+
+X-KDE-PluginInfo-Author=HanY
+X-KDE-PluginInfo-Email=hanyoung@protonmail.com
+X-KDE-PluginInfo-Name=org.kde.plasma.kclock_1x2
+X-KDE-PluginInfo-Version=1.0
+X-KDE-PluginInfo-Website=https://plasma.kde.org/
+X-KDE-PluginInfo-Category=Utilities
+X-KDE-PluginInfo-License=LGPL-2.1+
+X-KDE-PluginInfo-EnabledByDefault=true
+
+X-Plasma-API=declarativeappletscript
+X-Plasma-MainScript=ui/main.qml
+
