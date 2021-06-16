@@ -1,7 +1,6 @@
 /*
- * Copyright 2020 Han Young <hanyoung@protonmail.com>
- *           2020 Devin Lin <espidev@gmail.com>
- *           2021 Rui Wang <wangrui@jingos.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
+ *                Han Young <hanyoung@protonmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -19,128 +18,71 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.11
-import QtQuick.Controls 2.4
-import QtQuick.Layouts 1.2
-import org.kde.kirigami 2.15 as Kirigami
 
-Kirigami.ApplicationWindow {
-    id: appwindow
+#include <QDateTime>
 
-    // property int officalWidth: 1920
-    // property int officalHeight: 1200
-    // property int deviceWidth: screen.width
-    // property int deviceHeight: screen.height
-    // property int fontSize: theme.defaultFont.pixelSize
-    // property real officalScale: deviceWidth / officalWidth
+#include <KLocalizedString>
 
-    property int deviceWidth: 888
-    property int deviceHeight: 648
-    property alias toolbarHeight: bottombar.height
-    property bool isDarkTheme: false
+#include "alarmmodel.h"
+#include "alarms.h"
+#include "utilmodel.h"
 
-    width: deviceWidth
-    height: deviceHeight
+Alarm::Alarm() {};
+Alarm::Alarm(QString uuid)
+{
+    m_interface = new org::kde::kclock::Alarm(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms/") + uuid, QDBusConnection::sessionBus(), this);
 
-    // fastBlurMode: true
-    // fastBlurColor: "#B2000000"
+    if (m_interface->isValid()) {
+        connect(m_interface, &OrgKdeKclockAlarmInterface::propertyChanged, this, &Alarm::updateProperty);
+        connect(m_interface, &OrgKdeKclockAlarmInterface::alarmChanged, [this] { m_nextRingTime = m_interface->nextRingTime(); });
 
-    onVisibleChanged: {
-        appwindow.globalToolBarStyle = ApplicationHeaderStyle.None
+        m_uuid = QUuid(m_interface->getUUID());
+        m_name = m_interface->name();
+        m_enabled = m_interface->enabled();
+        m_hours = m_interface->hours();
+        m_minutes = m_interface->minutes();
+        m_daysOfWeek = m_interface->daysOfWeek();
+        m_snooze = m_interface->snoozedMinutes() * 60;
+        m_snoozeMinutes = m_interface->snoozeMinutes();
+        m_ringtonePath = m_interface->ringtonePath();
+        m_nextRingTime = m_interface->nextRingTime();
+    } else {
+        m_isValid = false;
     }
+}
 
-    pageStack.initialPage: alarmPage
+QString Alarm::timeToRingFormated()
+{
+    this->calculateNextRingTime();
 
-    function switchToPage(page, depth) {
-        while (pageStack.depth > depth)
-            pageStack.pop()
-        pageStack.push(page)
+    return UtilModel::instance()->timeToRingFormatted(this->nextRingTime());
+}
+
+void Alarm::updateProperty(QString property)
+{
+    if (property == QStringLiteral("name"))
+        this->m_name = m_interface->property("name").toString();
+    else if (property == QStringLiteral("enabled"))
+        this->m_enabled = m_interface->property("enabled").toBool();
+    else if (property == QStringLiteral("hours"))
+        this->m_hours = m_interface->property("hours").toInt();
+    else if (property == QStringLiteral("minutes"))
+        this->m_minutes = m_interface->property("minutes").toInt();
+    else if (property == QStringLiteral("daysOfWeek"))
+        this->m_daysOfWeek = m_interface->property("daysOfWeek").toInt();
+    else if (property == QStringLiteral("snoozedMinutes"))
+        this->m_snooze = m_interface->property("snoozedMinutes").toInt() * 60;
+    else if (property == QStringLiteral("ringtonePath"))
+        this->m_ringtonePath = m_interface->property("ringtonePath").toBool();
+    Q_EMIT propertyChanged();
+}
+
+void Alarm::calculateNextRingTime()
+{
+    if (!this->m_enabled) { // if not enabled, means this would never ring
+        m_nextRingTime = -1;
+        return;
     }
-
-    Component.onCompleted: {
-        changeNav(!isWidescreen)
-        console.log("device width: ", applicationWindow().screen.width)
-        console.log("device height: ", applicationWindow().screen.height)
-    }
-
-    function getPage(name) {
-        switch (name) {
-        case "Time":
-            return timePage
-        case "Timer":
-            return timerListPage
-        case "Stopwatch":
-            return stopwatchPage
-        case "Alarm":
-            return alarmPage
-        case "Settings":
-            return settingsPage
-        }
-    }
-
-    property bool isWidescreen: appwindow.width >= appwindow.height
-    onIsWidescreenChanged: changeNav(!isWidescreen)
-
-    function changeNav(toNarrow) {//        sidebarLoader.active = false;
-    }
-
-    // clock fonts
-    FontLoader {
-        id: clockFont
-        source: "qrc:/assets/Gilroy-Thin.otf"
-    }
-
-    JTimerPage {
-        id: timerListPage
-        objectName: "timer"
-        visible: false
-    }
-
-    JStopwatchPage {
-        id: stopwatchPage
-        objectName: "stopwatch"
-        visible: false
-    }
-    JAlarmPage {
-        id: alarmPage
-        objectName: "alarm"
-    }
-
-    BottomToolbar {
-        id: bottombar
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-    }
-
-    Kirigami.AboutPage {
-        id: aboutPage
-        visible: false
-        aboutData: {
-            "displayName": "Clock",
-            "productName": "kirigami/clock",
-            "componentName": "kclock",
-            "shortDescription": "A mobile friendly clock app built with Kirigami.",
-            "homepage": "",
-            "bugAddress": "",
-            "version": "0.2",
-            "otherText": "",
-            "copyrightStatement": "© 2020 Plasma Development Team",
-            "desktopFileName": "org.kde.kclock",
-            "authors": [{
-                            "name": "Devin Lin",
-                            "emailAddress": "espidev@gmail.com",
-                            "webAddress": "https://espi.dev"
-                        }, {
-                            "name": "Han Young",
-                            "emailAddress": "hanyoung@protonmail.com",
-                            "webAddress": "https://han-y.gitlab.io"
-                        }],
-            "licenses": [{
-                             "name": "GPL v2",
-                             "text": "long, boring, license text",
-                             "spdx": "GPL-2.0"
-                         }]
-        }
-    }
+    
+    m_nextRingTime = UtilModel::instance()->calculateNextRingTime(this->m_hours, this->m_minutes, this->m_daysOfWeek, this->m_snooze);
 }
