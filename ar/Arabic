@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="44px" height="44px" viewBox="0 0 44 44" version="1.1">
-  <title>Interface, Essential/Clock, Time, Arrow备份</title>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="46px" height="46px" viewBox="0 0 46 46" version="1.1">
+  <title>Group</title>
   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-    <g id="Path" transform="translate(-0.000000, -0.000000)">
-      <polygon points="0 0 44.0000002 0 44.0000002 44.0000002 0 44.0000002"/>
-      <path d="M32.3709835,13.4624417 C38.0986652,19.1901234 38.0986652,28.4765435 32.3709835,34.2042251 C26.6433018,39.9319068 17.3568817,39.9319068 11.6292,34.2042251 C5.90151836,28.4765435 5.90151836,19.1901234 11.6292,13.4624417 C17.3568817,7.73476003 26.6433018,7.73476003 32.3709835,13.4624417" stroke="#39C17B" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
-      <line x1="22.0000001" y1="16.5000001" x2="22.0000001" y2="23.8333334" stroke="#39C17B" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
-      <line x1="18.3333334" y1="3.66666668" x2="25.6666668" y2="3.66666668" stroke="#39C17B" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
-      <polyline stroke="#39C17B" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" points="38.5000002 11 34.8333335 7.33333336 36.6666668 9.1666667 32.3711668 13.4621667"/>
+    <g id="Group" transform="translate(0.670833, 0.990833)">
+      <line x1="32.4443545" y1="33.6992805" x2="36.6819444" y2="37.9368704" id="Path" stroke="#39C17B" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="11.573612" y1="33.699629" x2="7.33638889" y2="37.9368704" id="Path" stroke="#39C17B" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle id="Oval" stroke="#39C17B" stroke-width="2.75" cx="22.0091667" cy="23.3847396" r="14.6727778"/>
+      <polyline id="Path" stroke="#39C17B" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" points="21.5203247 16.429953 21.5203247 24.4864268 27.8532607 28.3474949"/>
+      <path d="M11.9216181,5.96081597 C14.3050633,5.96547957 16.491568,7.28443565 17.6073333,9.39057778 C15.3489994,10.0883425 13.2960725,11.3289149 11.6281764,13.0037493 C10.2737285,14.3674696 9.19622506,15.9806107 8.45518819,17.7540611 C6.61283741,16.589197 5.49774545,14.5598682 5.50226406,12.3801563 C5.50617322,8.83646155 8.37793725,5.96469753 11.9216181,5.96081597 Z" id="Path" stroke="#39C17B" stroke-width="2.75"/>
+      <path d="M32.0967014,5.96081597 C35.640396,5.96469753 38.5121602,8.83646155 38.5160694,12.3801563 C38.5205878,14.5598682 37.405496,16.589197 35.5631451,17.7540611 C34.8221082,15.9806107 33.7446047,14.3674696 32.3901569,13.0037493 C30.7222608,11.3289149 28.669334,10.0883425 26.411,9.39057778 C27.5267653,7.28443565 29.71327,5.96547957 32.0967014,5.96081597 Z" id="Path" stroke="#39C17B" stroke-width="2.75"/>
+      <polygon id="Path" points="0 0 44.0183333 0 44.0183333 44.0183333 0 44.0183333"/>
     </g>
   </g>
 </svg>
