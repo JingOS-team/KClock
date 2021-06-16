@@ -1,74 +1,157 @@
 /*
-    SPDX-FileCopyrightText: 2020 HanY <hanyoung@protonmail.com>
-    SPDX-License-Identifier: LGPL-2.1-or-later
-*/
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
+ *                Han Young <hanyoung@protonmail.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License or (at your option) version 3 or any later version
+ * accepted by the membership of KDE e.V. (or its successor approved
+ * by the membership of KDE e.V.), which shall act as a proxy
+ * defined in Section 14 of version 3 of the license.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
-#include "kclock_1x2.h"
-#include <QDBusConnection>
-#include <QDBusInterface>
-#include <QDBusReply>
-#include <QProcess>
-#include <QTimer>
-#include <klocalizedstring.h>
+#ifndef KIRIGAMICLOCK_ALARMS_H
+#define KIRIGAMICLOCK_ALARMS_H
 
-KClock_1x2::KClock_1x2(QObject *parent, const QVariantList &args)
-    : Plasma::Applet(parent, args)
+#include <QFileDialog>
+#include <QObject>
+#include <QStandardPaths>
+#include <QString>
+#include <QUrl>
+#include <QUuid>
+
+#include "alarminterface.h"
+class Alarm : public QObject
 {
-    m_timer = new QTimer(this);
-    connect(m_timer, &QTimer::timeout, this, &KClock_1x2::initialTimeUpdate);
-    m_timer->setSingleShot(true);
-    // initial interval is milliseconds to next minute
-    m_timer->start((60 - (QTime::currentTime().msecsSinceStartOfDay() / 1000) % 60) * 1000); // seconds to next minute
-
-    if (!QDBusConnection::sessionBus().connect(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms"), QStringLiteral("org.kde.kclock.AlarmModel"), QStringLiteral("nextAlarm"), this, SLOT(updateAlarm(qulonglong))))
-        m_string = QStringLiteral("connect failed");
-
-    QDBusInterface *interface = new QDBusInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Alarms"), QStringLiteral("org.kde.kclock.AlarmModel"), QDBusConnection::sessionBus(), this);
-    QDBusReply<quint64> reply = interface->call(QStringLiteral("getNextAlarm"));
-    if (reply.isValid()) {
-        auto alarmTime = reply.value();
-        if (alarmTime > 0) {
-            auto dateTime = QDateTime::fromSecsSinceEpoch(alarmTime).toLocalTime();
-            m_string = m_local.standaloneDayName(dateTime.date().dayOfWeek(), QLocale::ShortFormat) + QStringLiteral(", ") + m_local.toString(dateTime.time(), QStringLiteral("hh:mm"));
-            m_hasAlarm = true;
-        } else
-            m_hasAlarm = false;
+    Q_OBJECT
+    Q_PROPERTY(QString name READ name WRITE setName NOTIFY propertyChanged)
+    Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY propertyChanged)
+    Q_PROPERTY(int hours READ hours WRITE setHours NOTIFY propertyChanged)
+    Q_PROPERTY(int minutes READ minutes WRITE setMinutes NOTIFY propertyChanged)
+    Q_PROPERTY(int daysOfWeek READ daysOfWeek WRITE setDaysOfWeek NOTIFY propertyChanged)
+    Q_PROPERTY(int snoozedMinutes READ snoozedMinutes NOTIFY propertyChanged)
+    Q_PROPERTY(int snoozeMinutes READ snoozeMinutes WRITE setSnoozeMinutes)
+    Q_PROPERTY(QString ringtonePath READ ringtonePath WRITE setRingtonePath NOTIFY propertyChanged)
+public:
+    explicit Alarm();
+    explicit Alarm(QString uuid);
+    const QString &name() const
+    {
+        return m_name;
     }
-    emit propertyChanged();
-}
-
-void KClock_1x2::updateAlarm(qulonglong time)
-{
-    auto dateTime = QDateTime::fromSecsSinceEpoch(time).toLocalTime();
-    if (time > 0) {
-        m_string = m_local.standaloneDayName(dateTime.date().dayOfWeek(), QLocale::ShortFormat) + QStringLiteral(", ") + m_local.toString(dateTime.time(), QStringLiteral("hh:mm"));
-        m_hasAlarm = true;
-    } else {
-        m_hasAlarm = false;
+    void setName(QString name)
+    {
+        m_interface->setProperty("name", name);
     }
-    emit propertyChanged();
-}
-void KClock_1x2::openKClock()
-{
-    m_process = new QProcess(this);
-    m_process->start(QStringLiteral("kclock"), QStringList());
-}
-void KClock_1x2::initialTimeUpdate()
-{
-    emit timeChanged();
-    disconnect(m_timer, &QTimer::timeout, this, &KClock_1x2::initialTimeUpdate); // disconnect
-    m_timer->setSingleShot(false);
-    connect(m_timer, &QTimer::timeout, this, &KClock_1x2::timeChanged);
-    m_timer->start(60000); // update every minute
-}
-QString KClock_1x2::time()
-{
-    return m_local.toString(QTime::currentTime(), QStringLiteral("hh:mm"));
-}
-KClock_1x2::~KClock_1x2()
-{
-}
+    const QUuid &uuid() const
+    {
+        return m_uuid;
+    }
+    const bool &enabled() const
+    {
+        return m_enabled;
+    }
+    void setEnabled(bool enabled)
+    {
+        m_interface->setProperty("enabled", enabled);
+        m_enabled = enabled;
+    }
+    const int &hours() const
+    {
+        return m_hours;
+    }
+    void setHours(int hours)
+    {
+        m_hours = hours;
+        m_interface->setProperty("hours", hours);
+    }
+    const int &minutes() const
+    {
+        return m_minutes;
+    }
+    void setMinutes(int minutes)
+    {
+        m_minutes = minutes;
+        m_interface->setProperty("minutes", minutes);
+    }
+    const int &daysOfWeek() const
+    {
+        return m_daysOfWeek;
+    }
+    void setDaysOfWeek(int daysOfWeek)
+    {
+        m_daysOfWeek = daysOfWeek;
+        m_interface->setProperty("daysOfWeek", daysOfWeek);
+    }
+    int snoozedMinutes() const
+    {
+        return m_snooze / 60;
+    }
 
-K_EXPORT_PLASMA_APPLET_WITH_JSON(kclock_1x2, KClock_1x2, "metadata.json")
+    int snoozeMinutes() const 
+    {
+        return m_snoozeMinutes;
+    }
+    
+    void setSnoozeMinutes(int minutes) {
+        m_snoozeMinutes = minutes;
+        m_interface->setProperty("snoozeMinutes", m_snoozeMinutes);
+    }
 
-#include "kclock_1x2.moc"
+    const QString &ringtonePath() const
+    {
+        return m_ringtonePath;
+    };
+    void setRingtonePath(QString path)
+    {
+        m_interface->setProperty("ringtonePath", path);
+    }
+
+    bool isValid()
+    {
+        return m_isValid;
+    };
+
+    Q_INVOKABLE QString timeToRingFormated();
+
+    Q_INVOKABLE void save()
+    {
+        m_interface->alarmChanged();
+    };
+Q_SIGNALS:
+    void propertyChanged();
+private Q_SLOTS:
+    void updateProperty(QString property);
+
+private:
+    const qint64 &nextRingTime() const
+    {
+        return m_nextRingTime;
+    };
+
+    void calculateNextRingTime();
+
+    org::kde::kclock::Alarm *m_interface;
+
+    QString m_ringtonePath;
+    QString m_name;
+    QUuid m_uuid;
+    bool m_enabled;
+    int m_hours, m_minutes, m_daysOfWeek;
+    qint64 m_snooze;
+    int m_snoozeMinutes = 0;
+    qint64 m_nextRingTime;
+
+    bool m_isValid = true;
+};
+
+#endif // KIRIGAMICLOCK_ALARMS_H
