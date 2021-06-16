@@ -1,6 +1,7 @@
 /*
- * Copyright 2020 Han Young <hanyoung@protonmail.com>
- * Copyright 2020 Devin Lin <espidev@gmail.com>
+ * Copyright 2019 Nick Reitemeyer <nick.reitemeyer@web.de>
+ *           2020 Devin Lin <espidev@gmail.com>
+ *                Han Young <hanyoung@protonmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,52 +19,113 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#include <malloc.h>
 
-#ifndef STOPWATCHTIMER_H
-#define STOPWATCHTIMER_H
+#include <QApplication>
+#include <QCommandLineParser>
+#include <QMetaObject>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QQmlDebuggingEnabler>
+#include <QQuickWindow>
+#include <QStringLiteral>
 
-#include <QDateTime>
-#include <QObject>
+#include <KAboutData>
+#include <KConfig>
+#include <KLocalizedContext>
+#include <KLocalizedString>
 
-class QTimer;
-class StopwatchTimer : public QObject
+#include <KDBusService>
+
+#include "alarmmodel.h"
+#include "alarmplayer.h"
+#include "alarms.h"
+#include "kclockformat.h"
+#include "kclocksettings.h"
+#include "stopwatchtimer.h"
+#include "timer.h"
+#include "timermodel.h"
+#include "timezoneselectormodel.h"
+#include "utilmodel.h"
+
+QCommandLineParser *createParser()
 {
-    Q_OBJECT
-    Q_PROPERTY(int elapsedTime READ elapsedTime NOTIFY timeChanged)
-    Q_PROPERTY(QString minutes READ minutesDisplay NOTIFY timeChanged)
-    Q_PROPERTY(QString seconds READ secondsDisplay NOTIFY timeChanged)
-    Q_PROPERTY(QString small READ smallDisplay NOTIFY timeChanged)
-
-public:
-    explicit StopwatchTimer(QObject *parent = nullptr);
-
-    long long minutes();
-    long long seconds();
-    long long small();
-    QString minutesDisplay();
-    QString secondsDisplay();
-    QString smallDisplay();
-
-    long long elapsedTime();
-
-    Q_INVOKABLE void reset();
-    Q_INVOKABLE void toggle();
-
-signals:
-    void timeChanged();
-
-private slots:
-    void updateTime();
-
-private:
-    const int m_interval = 41; // 24fps
-
-    long long timerStartStamp = QDateTime::currentMSecsSinceEpoch();
-    long long pausedStamp = QDateTime::currentMSecsSinceEpoch();
-    long long pausedElapsed = 0;
-
-    bool stopped = true, paused = false;
-    QTimer *m_timer;
+    QCommandLineParser *parser = new QCommandLineParser;
+    parser->addOption(QCommandLineOption(QStringLiteral("page"), i18n("Select opened page"), QStringLiteral("page"), "main"));
+    parser->addHelpOption();
+    return parser;
 };
 
-#endif // STOPWATCHTIMER_H
+int main(int argc, char *argv[])
+{
+    QApplication app(argc, argv);
+
+    /*
+    QSurfaceFormat format = QSurfaceFormat::defaultFormat();
+    format.setDepthBufferSize(0);
+    format.setStencilBufferSize(0);
+    QSurfaceFormat::setDefaultFormat(format);
+*/
+    QQmlDebuggingEnabler enabler;
+
+    // KLocalizedString::setApplicationDomain("kclock");
+    KLocalizedString::setApplicationDomain("j-clock");
+    KAboutData aboutData("kclock", "Clock", "0.2", "Simple clock made in Kirigami", KAboutLicense::GPL, i18n("© 2020 KDE Community"));
+    aboutData.addAuthor(i18n("Devin Lin"), QString(), QStringLiteral("espidev@gmail.com"));
+    aboutData.addAuthor(i18n("Han Young"), QString(), QStringLiteral("hanyoung@protonmail.com"));
+    KAboutData::setApplicationData(aboutData);
+
+    // only allow one instance
+    // KDBusService service(KDBusService::Unique);
+
+    // initialize models
+    auto *timeZoneModel = new TimeZoneSelectorModel();
+
+    auto *timeZoneViewModel = new QSortFilterProxyModel();
+    timeZoneViewModel->setFilterFixedString("true");
+    timeZoneViewModel->setSourceModel(timeZoneModel);
+    timeZoneViewModel->setFilterRole(TimeZoneSelectorModel::ShownRole);
+
+    auto *timeZoneFilterModel = new TimeZoneFilterModel(timeZoneModel);
+    auto *stopwatchTimer = new StopwatchTimer();
+    auto *kclockFormat = new KclockFormat();
+    auto *weekModel = new WeekModel();
+
+    // register QML types
+    qmlRegisterType<Alarm>("kclock", 1, 0, "Alarm");
+    qmlRegisterType<Timer>("kclock", 1, 0, "Timer");
+
+    QQmlApplicationEngine *engine = new QQmlApplicationEngine();
+
+    UtilModel::instance()->setApplicationLoaded(true);
+    QObject::connect(&app, &QApplication::applicationStateChanged, [](Qt::ApplicationStates state) {
+        if (state == Qt::ApplicationActive)
+            UtilModel::instance()->setApplicationLoaded(true);
+        else
+            UtilModel::instance()->setApplicationLoaded(false);
+    });
+
+    engine->rootContext()->setContextObject(new KLocalizedContext(engine));
+    // models
+    engine->rootContext()->setContextProperty("timeZoneShowModel", timeZoneViewModel);
+    engine->rootContext()->setContextProperty("timeZoneFilterModel", timeZoneFilterModel);
+    engine->rootContext()->setContextProperty("alarmModel", AlarmModel::instance());
+    engine->rootContext()->setContextProperty("timerModel", TimerModel::instance());
+    engine->rootContext()->setContextProperty("utilModel", UtilModel::instance());
+    engine->rootContext()->setContextProperty("stopwatchTimer", stopwatchTimer);
+    engine->rootContext()->setContextProperty("alarmPlayer", &AlarmPlayer::instance());
+    engine->rootContext()->setContextProperty("kclockFormat", kclockFormat);
+    engine->rootContext()->setContextProperty("weekModel", weekModel);
+    engine->rootContext()->setContextProperty("settingsModel", &KClockSettings::instance());
+
+    engine->load(QUrl(QStringLiteral("qrc:/qml/main.qml")));
+
+    {
+        QScopedPointer<QCommandLineParser> parser(createParser());
+        parser->process(app);
+        if (parser->isSet(QStringLiteral("page"))) {
+            QMetaObject::invokeMethod(engine->rootObjects().first(), "switchToPage", Q_ARG(QVariant, parser->value("page")));
+        }
+    }
+    return app.exec();
+}
