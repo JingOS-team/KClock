@@ -1,68 +1,78 @@
-[Desktop Entry]
-Name=KClock_1x2
-Name[ca]=KClock_1x2
-Name[ca@valencia]=KClock_1x2
-Name[el]=KClock_1x2
-Name[en_GB]=KClock_1x2
-Name[es]=KClock_1x2
-Name[et]=KClock_1x2
-Name[eu]=KClock_1x2
-Name[fr]=KClock_1x2
-Name[it]=KClock_1x2
-Name[ko]=KClock_1x2
-Name[nl]=KClock_1x2
-Name[nn]=Klokke (1 × 2)
-Name[pt]=KClock_1x2
-Name[pt_BR]=KClock_1x2
-Name[ro]=KClock_1x2
-Name[sk]=KClock_1x2
-Name[sl]=KClock 1x2
-Name[sv]=KClock_1x2
-Name[uk]=KClock_1x2
-Name[x-test]=xxKClock_1x2xx
-Comment=KClock widget (1x2)
-Comment[ca]=Estri del KClock (1x2)
-Comment[ca@valencia]=Estri del KClock (1x2)
-Comment[el]=Γραφικό συστατικό KClock (1x2)
-Comment[en_GB]=KClock widget (1x2)
-Comment[es]=Widget de KClock (1x2)
-Comment[et]=KClocki vidin (1x2)
-Comment[eu]=KClock trepeta (1x2)
-Comment[fr]=Composant graphique « KClock » (1x2)
-Comment[it]=Oggetto KClock (1x2)
-Comment[ko]=KClock 위젯(1x2)
-Comment[nl]=KClock-widget (1x2)
-Comment[nn]=Klokke-element (1 × 2)
-Comment[pt]=Elemento gráfico do KClock (1x2)
-Comment[pt_BR]=Widget do KClock (1x2)
-Comment[ro]=Control grafic KClock (1x2)
-Comment[sk]=KClock widget (1x2)
-Comment[sl]=Gradnik KClock (1x2)
-Comment[sv]=KClock grafisk komponent (1 x 2)
-Comment[uk]=Віджет KClock (1x2)
-Comment[x-test]=xxKClock widget (1x2)xx
+/*
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License or (at your option) version 3 or any later version
+ * accepted by the membership of KDE e.V. (or its successor approved
+ * by the membership of KDE e.V.), which shall act as a proxy
+ * defined in Section 14 of version 3 of the license.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+import QtQuick 2.0
+import QtGraphicalEffects 1.0
 
+Item {
 
-Icon=kclock
-Type=Service
-X-KDE-ServiceTypes=Plasma/Applet
-X-KDE-Library=plasma_applet_kclock_1x2
+    property int mouseX
+    property int mouseY
+    property var sourceView
+    property string coverColor: "#aa000000"
+    property real coverRadius: 40 * appwindow.officalScale
 
-X-Plasma-Provides=org.kde.plasma.time
-X-Plasma-DBusActivationService=org.kde.kclock.*
+    ShaderEffectSource {
+        id: eff
+        sourceItem: sourceView
+        anchors.centerIn: fastBlur
+        width: fastBlur.width
+        visible: false
+        height: fastBlur.height
+        sourceRect: Qt.rect(mouseX, mouseY, width, height)
 
-X-Plasma-NotificationArea=true
-X-Plasma-NotificationAreaCategory=ApplicationStatus
-
-X-KDE-PluginInfo-Author=HanY
-X-KDE-PluginInfo-Email=hanyoung@protonmail.com
-X-KDE-PluginInfo-Name=org.kde.plasma.kclock_1x2
-X-KDE-PluginInfo-Version=1.0
-X-KDE-PluginInfo-Website=https://plasma.kde.org/
-X-KDE-PluginInfo-Category=Utilities
-X-KDE-PluginInfo-License=LGPL-2.1+
-X-KDE-PluginInfo-EnabledByDefault=true
-
-X-Plasma-API=declarativeappletscript
-X-Plasma-MainScript=ui/main.qml
-
+        function getItemX(width, height) {
+            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
+                                        width, height)
+            return mapItem.x
+        }
+        function getItemY(width, height) {
+            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
+                                        width, height)
+            return mapItem.y
+        }
+    }
+    FastBlur {
+        id: fastBlur
+        anchors.fill: parent
+        source: eff
+        radius: 70
+        cached: true
+        visible: false
+    }
+    Rectangle {
+        id: maskRect
+        anchors.fill: fastBlur
+        visible: false
+        clip: true
+        radius: coverRadius
+    }
+    OpacityMask {
+        id: mask
+        anchors.fill: maskRect
+        visible: true
+        source: fastBlur
+        maskSource: maskRect
+    }
+    Rectangle {
+        anchors.fill: parent
+        color: coverColor
+        radius: coverRadius
+    }
+}
