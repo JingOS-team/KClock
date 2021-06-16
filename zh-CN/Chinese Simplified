@@ -1,5 +1,6 @@
 /*
- * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
+ *                Han Young <hanyoung@protonmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,56 +18,54 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "alarmplayer.h"
-#include <QDateTime>
-#include <QStandardPaths>
-AlarmPlayer &AlarmPlayer::instance()
-{
-    static AlarmPlayer singleton;
-    return singleton;
-}
-AlarmPlayer::AlarmPlayer(QObject *parent)
-    : QObject(parent)
-    , m_player(new QMediaPlayer(this, QMediaPlayer::LowLatency))
-{
-    // m_player->setVolume(settings.alarmVolume());
-    connect(m_player, &QMediaPlayer::stateChanged, this, &AlarmPlayer::loopAudio);
-}
 
-void AlarmPlayer::loopAudio(QMediaPlayer::State state)
+#pragma once
+
+#include <QAbstractListModel>
+#include <QObject>
+
+#include "alarmmodelinterface.h"
+class Alarm;
+class AlarmModel : public QAbstractListModel
 {
-    if (!userStop && state == QMediaPlayer::StoppedState /* && static_cast<int>(QDateTime::currentSecsSinceEpoch() - startPlayingTime) < settings.alarmSilenceAfter()*/) {
-        m_player->play();
+    Q_OBJECT
+public:
+    static AlarmModel *instance()
+    {
+        static AlarmModel *singleton = new AlarmModel();
+        return singleton;
     }
-}
 
-void AlarmPlayer::play()
-{
-    if (m_player->state() == QMediaPlayer::PlayingState)
-        return;
+    enum {
+        NameRole = Qt::DisplayRole,
+        EnabledRole = Qt::UserRole + 1,
+        HoursRole,
+        MinutesRole,
+        DaysOfWeekRole,
+        AlarmRole,
+        SnoozeRole,
+    };
 
-    startPlayingTime = QDateTime::currentSecsSinceEpoch();
-    userStop = false;
-    m_player->play();
-}
+    int rowCount(const QModelIndex &parent) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
+    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
+    QHash<int, QByteArray> roleNames() const override;
 
-void AlarmPlayer::stop()
-{
-    userStop = true;
-    m_player->stop();
-}
+    Q_INVOKABLE void updateUi();
 
-void AlarmPlayer::setVolume(int volume)
-{
-    // settings.setAlarmVolume(volume);
-    m_player->setVolume(volume);
-    Q_EMIT volumeChanged();
-}
+    Q_INVOKABLE void remove(int index);
 
-void AlarmPlayer::setSource(QUrl path)
-{
-    // if user set a invalid audio path or doesn't even specified a path, resort to default
-    if (!path.isLocalFile())
-        m_player->setMedia(QUrl::fromLocalFile(QStandardPaths::locate(QStandardPaths::GenericDataLocation, QStringLiteral("sounds/freedesktop/stereo/alarm-clock-elapsed.oga"))));
-    m_player->setMedia(path);
-}
+    Q_INVOKABLE void addAlarm(int hours, int minutes, int daysOfWeek, QString name, QString ringtonePath = 0, int snoozeMinutes = 0); // in 24 hours units, ringTone could be chosen from a list
+
+    Q_INVOKABLE QString timeToRingFormated(int hours, int minutes, int daysOfWeek); // for new alarm use
+private Q_SLOTS:
+    void addAlarm(QString uuid);
+    void removeAlarm(QString uuid);
+
+private:
+    org::kde::kclock::AlarmModel *m_interface;
+
+    explicit AlarmModel(QObject *parent = nullptr);
+    QList<Alarm *> alarmsList;
+};
