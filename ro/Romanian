@@ -1,5 +1,5 @@
 /*
- * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,84 +17,119 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include <QTimer>
+#include <QDebug>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QtGlobal>
+
+#include <KLocalizedString>
 
 #include "timer.h"
-/* ~ Timer ~ */
-Timer::Timer()
-{
-}
-Timer::Timer(QString uuid, bool justCreated)
-    : m_interface(new OrgKdeKclockTimerInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers/") + uuid, QDBusConnection::sessionBus(), this))
-    , m_justCreated(justCreated)
+#include "timermodel.h"
+
+/* ~ TimerModel ~ */
+TimerModel::TimerModel(QObject *parent)
+    : m_interface(new OrgKdeKclockTimerModelInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers"), QDBusConnection::sessionBus(), this))
 {
     if (m_interface->isValid()) {
-        m_uuid = QUuid(m_interface->getUUID());
-        m_label = m_interface->label();
-        m_length = m_interface->length();
-        m_running = m_interface->running();
-        m_elapsed = m_interface->elapsed();
-        connect(m_interface, &OrgKdeKclockTimerInterface::lengthChanged, this, &Timer::updateLength);
-        connect(m_interface, &OrgKdeKclockTimerInterface::labelChanged, this, &Timer::updateLabel);
-        connect(m_interface, &OrgKdeKclockTimerInterface::runningChanged, this, &Timer::updateRunning);
-
-        updateRunning(); // start animation
+        connect(m_interface, SIGNAL(timerAdded(QString)), this, SLOT(addTimer(QString)));
+        connect(m_interface, SIGNAL(timerRemoved(QString)), this, SLOT(removeTimer(QString)));
     }
+    QDBusInterface *interface = new QDBusInterface(QStringLiteral("org.kde.kclockd"), QStringLiteral("/Timers"), QStringLiteral("org.freedesktop.DBus.Introspectable"), QDBusConnection::sessionBus(), this);
+    QDBusReply<QString> reply = interface->call(QStringLiteral("Introspect"));
+    if (reply.isValid()) {
+        auto xmlMsg = reply.value();
+        QXmlStreamReader xml(xmlMsg);
+        while (!xml.atEnd()) {
+            xml.readNext();
+            if (xml.name() == QStringLiteral("node") && xml.attributes().hasAttribute(QStringLiteral("name"))) {
+                if (xml.attributes().value(QStringLiteral("name")).toString().indexOf(QStringLiteral("org")) == -1) {
+                    // already existed on kclock launch, not justCreated
+                    this->addTimer(xml.attributes().value(QStringLiteral("name")).toString(), false);
+                }
+            }
+        }
+    }
+    interface->deleteLater();
 }
 
-void Timer::toggleRunning()
+int TimerModel::rowCount(const QModelIndex &parent) const
 {
-    m_interface->toggleRunning();
+    Q_UNUSED(parent);
+    return m_timersList.size();
 }
 
-//void Timer::updateTrigger()
-//{
-//    m_interface->elapsed();
-//}
-
-void Timer::reset()
+int TimerModel::count()
 {
-    m_interface->reset();
-
-    m_elapsed = m_interface->elapsed();
-    Q_EMIT elapsedChanged();
-};
-
-void Timer::updateLength()
-{
-    m_length = m_interface->length();
-    Q_EMIT propertyChanged();
+    return m_timersList.size();
 }
 
-void Timer::updateLabel()
+QVariant TimerModel::data(const QModelIndex &index, int role) const
 {
-    m_label = m_interface->label();
-    Q_EMIT propertyChanged();
-}
-void Timer::updateRunning()
-{
-    m_running = m_interface->running();
-    Q_EMIT propertyChanged();
-
-    this->animation(m_running);
-
-    m_elapsed = m_interface->elapsed();
-    Q_EMIT elapsedChanged();
+    return QVariant();
 }
 
-void Timer::animation(bool start)
+void TimerModel::addTimer(int length, QString label, bool running)
 {
-    if (!m_timer) {
-        m_timer = new QTimer(this);
-        connect(m_timer, &QTimer::timeout, [this] {
-            m_elapsed = m_interface->elapsed();
-            Q_EMIT this->elapsedChanged();
-        });
+    // modified by steven
+//    if (m_timersList.size() >= TIMER_MAX) {
+//        //EXIST,  REMOVE FIRST
+//        remove(0);
+//    }
+    
+    m_interface->addTimer(length, label, running);
+}
+
+bool TimerModel::hasTimer() {
+    return !m_timersList.isEmpty();
+}
+
+void TimerModel::remove(int index)
+{
+    if (index < 0 || index >= m_timersList.size())
+        return;
+
+    m_interface->removeTimer(m_timersList.at(index)->uuid().toString());
+    m_timersList.at(index)->deleteLater();
+
+    Q_EMIT beginRemoveRows(QModelIndex(), index, index);
+    m_timersList.removeAt(index);
+    Q_EMIT endRemoveRows();
+}
+
+Timer *TimerModel::get(int index)
+{
+    if ((index < 0) || (index >= m_timersList.count()))
+        return {};
+
+    return m_timersList.at(index);
+}
+
+void TimerModel::addTimer(QString uuid)
+{
+    this->addTimer(uuid, true);
+}
+
+void TimerModel::addTimer(QString uuid, bool justCreated)
+{
+    auto *timer = new Timer(uuid.remove(QRegularExpression(QStringLiteral("[{}-]"))), justCreated);
+
+    Q_EMIT beginInsertRows(QModelIndex(), 0, 0);
+    m_timersList.insert(0, timer);
+    Q_EMIT endInsertRows();
+}
+
+void TimerModel::removeTimer(QString uuid)
+{
+    auto index = 0;
+    for (auto timer : m_timersList) {
+        if (timer->uuid().toString() == uuid) {
+            break;
+        }
+        ++index;
     }
 
-    if (start) {
-        m_timer->start(250);
-    } else {
-        m_timer->stop();
-    }
+    // don't need to check index out of bound, remove(index) takes care of that
+    remove(index);
 }
