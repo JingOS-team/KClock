@@ -1,157 +1,90 @@
-/*
- * Copyright 2020 Devin Lin <espidev@gmail.com>
- *                Han Young <hanyoung@protonmail.com>
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
-#ifndef KIRIGAMICLOCK_ALARMS_H
-#define KIRIGAMICLOCK_ALARMS_H
-
-#include <QFileDialog>
-#include <QObject>
-#include <QStandardPaths>
-#include <QString>
-#include <QUrl>
-#include <QUuid>
-
-#include "alarminterface.h"
-class Alarm : public QObject
-{
-    Q_OBJECT
-    Q_PROPERTY(QString name READ name WRITE setName NOTIFY propertyChanged)
-    Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY propertyChanged)
-    Q_PROPERTY(int hours READ hours WRITE setHours NOTIFY propertyChanged)
-    Q_PROPERTY(int minutes READ minutes WRITE setMinutes NOTIFY propertyChanged)
-    Q_PROPERTY(int daysOfWeek READ daysOfWeek WRITE setDaysOfWeek NOTIFY propertyChanged)
-    Q_PROPERTY(int snoozedMinutes READ snoozedMinutes NOTIFY propertyChanged)
-    Q_PROPERTY(int snoozeMinutes READ snoozeMinutes WRITE setSnoozeMinutes)
-    Q_PROPERTY(QString ringtonePath READ ringtonePath WRITE setRingtonePath NOTIFY propertyChanged)
-public:
-    explicit Alarm();
-    explicit Alarm(QString uuid);
-    const QString &name() const
-    {
-        return m_name;
-    }
-    void setName(QString name)
-    {
-        m_interface->setProperty("name", name);
-    }
-    const QUuid &uuid() const
-    {
-        return m_uuid;
-    }
-    const bool &enabled() const
-    {
-        return m_enabled;
-    }
-    void setEnabled(bool enabled)
-    {
-        m_interface->setProperty("enabled", enabled);
-        m_enabled = enabled;
-    }
-    const int &hours() const
-    {
-        return m_hours;
-    }
-    void setHours(int hours)
-    {
-        m_hours = hours;
-        m_interface->setProperty("hours", hours);
-    }
-    const int &minutes() const
-    {
-        return m_minutes;
-    }
-    void setMinutes(int minutes)
-    {
-        m_minutes = minutes;
-        m_interface->setProperty("minutes", minutes);
-    }
-    const int &daysOfWeek() const
-    {
-        return m_daysOfWeek;
-    }
-    void setDaysOfWeek(int daysOfWeek)
-    {
-        m_daysOfWeek = daysOfWeek;
-        m_interface->setProperty("daysOfWeek", daysOfWeek);
-    }
-    int snoozedMinutes() const
-    {
-        return m_snooze / 60;
-    }
-
-    int snoozeMinutes() const 
-    {
-        return m_snoozeMinutes;
-    }
-    
-    void setSnoozeMinutes(int minutes) {
-        m_snoozeMinutes = minutes;
-        m_interface->setProperty("snoozeMinutes", m_snoozeMinutes);
-    }
-
-    const QString &ringtonePath() const
-    {
-        return m_ringtonePath;
-    };
-    void setRingtonePath(QString path)
-    {
-        m_interface->setProperty("ringtonePath", path);
-    }
-
-    bool isValid()
-    {
-        return m_isValid;
-    };
-
-    Q_INVOKABLE QString timeToRingFormated();
-
-    Q_INVOKABLE void save()
-    {
-        m_interface->alarmChanged();
-    };
-Q_SIGNALS:
-    void propertyChanged();
-private Q_SLOTS:
-    void updateProperty(QString property);
-
-private:
-    const qint64 &nextRingTime() const
-    {
-        return m_nextRingTime;
-    };
-
-    void calculateNextRingTime();
-
-    org::kde::kclock::Alarm *m_interface;
-
-    QString m_ringtonePath;
-    QString m_name;
-    QUuid m_uuid;
-    bool m_enabled;
-    int m_hours, m_minutes, m_daysOfWeek;
-    qint64 m_snooze;
-    int m_snoozeMinutes = 0;
-    qint64 m_nextRingTime;
-
-    bool m_isValid = true;
-};
-
-#endif // KIRIGAMICLOCK_ALARMS_H
+<RCC>
+    <qresource prefix="/">
+        <file>qml/main.qml</file>
+        <file>qml/AnalogClock.qml</file>
+        <file>qml/BottomToolbar.qml</file>
+        <file>assets/RedHatText-Regular.ttf</file>
+        <file>image/timer_pad.png</file>
+        <file>image/watch_pad.png</file>
+        <file>qml/TimerDigitalComponent.qml</file>
+        <file>image/pause.png</file>
+        <file>image/delete.png</file>
+        <file>image/play.png</file>
+        <file>image/reset.png</file>
+        <file>image/lap.png</file>
+        <file>image/create.png</file>
+        <file>qml/JTimerPicker.qml</file>
+        <file>qml/JClockElement.qml</file>
+        <file>image/error.png</file>
+        <file>qml/AlarmItemView.qml</file>
+        <file>qml/DigitalClock.qml</file>
+        <file>qml/JStopwatchPage.qml</file>
+        <file>qml/JButton.qml</file>
+        <file>qml/JLogo.qml</file>
+        <file>image/background.png</file>
+        <file>qml/JBackground.qml</file>
+        <file>qml/JTimerPage.qml</file>
+        <file>qml/JAlarmPage.qml</file>
+        <file>qml/WheelView.qml</file>
+        <file>qml/TimeSelectWheelView.qml</file>
+        <file>qml/JAlarmEditDialog.qml</file>
+        <file>CommonSize.js</file>
+        <file>qml/ClockElement.qml</file>
+        <file>image/row_time.png</file>
+        <file>image/row_snooze.png</file>
+        <file>image/row_repeat.png</file>
+        <file>image/row_label.png</file>
+        <file>image/icon_right.png</file>
+        <file>qml/JTimerProgressComponent.qml</file>
+        <file>qml/JAlarmDelDialog.qml</file>
+        <file>qml/DeleteMenu.qml</file>
+        <file>image/clock_logo.png</file>
+        <file>qml/JTumbler.qml</file>
+        <file>qml/StringUtils.js</file>
+        <file>image/footer_alarm_grey.png</file>
+        <file>image/footer_alarm_grey.svg</file>
+        <file>image/footer_alarm_grey_l.png</file>
+        <file>image/footer_alarm_grey_l.svg</file>
+        <file>image/footer_alarm_w.png</file>
+        <file>image/footer_sw_grey.png</file>
+        <file>image/footer_sw_grey.svg</file>
+        <file>image/footer_sw_grey_l.png</file>
+        <file>image/footer_sw_grey_l.svg</file>
+        <file>image/footer_sw_w.png</file>
+        <file>image/footer_timer_grey.png</file>
+        <file>image/footer_timer_grey.svg</file>
+        <file>image/footer_timer_grey_l.png</file>
+        <file>image/footer_timer_grey_l.svg</file>
+        <file>image/footer_timer_w.png</file>
+        <file>image/sw_lap.png</file>
+        <file>image/sw_lap_l.png</file>
+        <file>image/sw_pause.png</file>
+        <file>image/sw_reset.png</file>
+        <file>image/sw_reset_l.png</file>
+        <file>image/sw_start.png</file>
+        <file>image/timer_done.png</file>
+        <file>image/timer_done_l.png</file>
+        <file>image/timer_resume.png</file>
+        <file>image/alarm_add.png</file>
+        <file>image/alarm_add_l.png</file>
+        <file>image/back.png</file>
+        <file>image/back_l.png</file>
+        <file>image/dlg_ok.png</file>
+        <file>image/dlg_close.png</file>
+        <file>image/dlg_ok_l.png</file>
+        <file>image/dlg_close_l.png</file>
+        <file>image/timer_new.png</file>
+        <file>image/time_wheel_up.png</file>
+        <file>image/time_wheel_down.png</file>
+        <file>image/big_up.png</file>
+        <file>image/big_up_l.png</file>
+        <file>image/big_dow.png</file>
+        <file>image/big_dow_l.png</file>
+        <file>assets/Gilroy-Thin.otf</file>
+        <file>assets/Gidole-Regular.woff2.ttf</file>
+        <file>qml/VagueBackground.qml</file>
+        <file>qml/JDoubleGradientView.qml</file>
+        <file>image/repeat_ok.png</file>
+        <file>image/menu_delete.png</file>
+    </qresource>
+</RCC>
