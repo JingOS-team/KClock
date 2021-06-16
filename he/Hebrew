@@ -1,5 +1,5 @@
 /*
- * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ * Copyright 2021 Rui Wang <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,56 +17,62 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "alarmplayer.h"
-#include <QDateTime>
-#include <QStandardPaths>
-AlarmPlayer &AlarmPlayer::instance()
-{
-    static AlarmPlayer singleton;
-    return singleton;
-}
-AlarmPlayer::AlarmPlayer(QObject *parent)
-    : QObject(parent)
-    , m_player(new QMediaPlayer(this, QMediaPlayer::LowLatency))
-{
-    // m_player->setVolume(settings.alarmVolume());
-    connect(m_player, &QMediaPlayer::stateChanged, this, &AlarmPlayer::loopAudio);
-}
+import QtQuick 2.0
+import QtGraphicalEffects 1.0
 
-void AlarmPlayer::loopAudio(QMediaPlayer::State state)
-{
-    if (!userStop && state == QMediaPlayer::StoppedState /* && static_cast<int>(QDateTime::currentSecsSinceEpoch() - startPlayingTime) < settings.alarmSilenceAfter()*/) {
-        m_player->play();
+Item {
+
+    property int mouseX
+    property int mouseY
+    property var sourceView
+    property string coverColor: "#aa000000"
+    property real coverRadius: 40 * appwindow.officalScale
+
+    ShaderEffectSource {
+        id: eff
+        sourceItem: sourceView
+        anchors.centerIn: fastBlur
+        width: fastBlur.width
+        visible: false
+        height: fastBlur.height
+        sourceRect: Qt.rect(mouseX, mouseY, width, height)
+
+        function getItemX(width, height) {
+            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
+                                        width, height)
+            return mapItem.x
+        }
+        function getItemY(width, height) {
+            var mapItem = eff.mapToItem(sourceView, mouseX, mouseY,
+                                        width, height)
+            return mapItem.y
+        }
     }
-}
-
-void AlarmPlayer::play()
-{
-    if (m_player->state() == QMediaPlayer::PlayingState)
-        return;
-
-    startPlayingTime = QDateTime::currentSecsSinceEpoch();
-    userStop = false;
-    m_player->play();
-}
-
-void AlarmPlayer::stop()
-{
-    userStop = true;
-    m_player->stop();
-}
-
-void AlarmPlayer::setVolume(int volume)
-{
-    // settings.setAlarmVolume(volume);
-    m_player->setVolume(volume);
-    Q_EMIT volumeChanged();
-}
-
-void AlarmPlayer::setSource(QUrl path)
-{
-    // if user set a invalid audio path or doesn't even specified a path, resort to default
-    if (!path.isLocalFile())
-        m_player->setMedia(QUrl::fromLocalFile(QStandardPaths::locate(QStandardPaths::GenericDataLocation, QStringLiteral("sounds/freedesktop/stereo/alarm-clock-elapsed.oga"))));
-    m_player->setMedia(path);
+    FastBlur {
+        id: fastBlur
+        anchors.fill: parent
+        source: eff
+        radius: 70
+        cached: true
+        visible: false
+    }
+    Rectangle {
+        id: maskRect
+        anchors.fill: fastBlur
+        visible: false
+        clip: true
+        radius: coverRadius
+    }
+    OpacityMask {
+        id: mask
+        anchors.fill: maskRect
+        visible: true
+        source: fastBlur
+        maskSource: maskRect
+    }
+    Rectangle {
+        anchors.fill: parent
+        color: coverColor
+        radius: coverRadius
+    }
 }
