@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ * Copyright 2020   Han Young <hanyoung@protonmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,91 +17,56 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-import QtQuick 2.0
-import "../CommonSize.js" as CS
-PathView {
-    id: root
+#include "alarmplayer.h"
+#include <QDateTime>
+#include <QStandardPaths>
+AlarmPlayer &AlarmPlayer::instance()
+{
+    static AlarmPlayer singleton;
+    return singleton;
+}
+AlarmPlayer::AlarmPlayer(QObject *parent)
+    : QObject(parent)
+    , m_player(new QMediaPlayer(this, QMediaPlayer::LowLatency))
+{
+    // m_player->setVolume(settings.alarmVolume());
+    connect(m_player, &QMediaPlayer::stateChanged, this, &AlarmPlayer::loopAudio);
+}
 
-    property bool bgShow
-    property variant value
-    property int displayFontSize: width/4
-    property real displayStep: 0.6 // displayStep > 0
-    signal viewMove(var index)
-
-    width: 100; height: 300
-    clip: true
-    pathItemCount: 7
-    preferredHighlightBegin: 0.5
-    preferredHighlightEnd: 0.5
-    dragMargin: root.width/2
-    Component.onCompleted: findCurrentIndex()
-
-    onMovementEnded: {
-        viewMove(model[currentIndex].value)
-    }
-    onValueChanged: {
-        findCurrentIndex()
-    }
-
-
-    Keys.onUpPressed: {
-        root.incrementCurrentIndex()
-        value = (model[currentIndex].value)
-    }
-
-    Keys.onDownPressed: {
-        root.decrementCurrentIndex()
-        value = (model[currentIndex].value)
-    }
-    Rectangle{
-        id:backgroud
-        visible: bgShow
-        width: parent.width
-        height: 80
-        color: "blue"
-        anchors.centerIn: parent
-        radius: 14
-
-        MouseArea {
-            anchors.fill: parent
-           onClicked: {
-               console.log("WheelvIEW .....ONCLICK")
-               mouse.accepted = true
-           }
-        }
-    }
-
-    delegate: Item {
-        id:delegate
-        width: root.width
-        height: root.height/pathItemCount
-        Text {
-            anchors.centerIn: parent
-            font.pixelSize: displayFontSize*Number(delegate.PathView.textFontPercent);
-            text: modelData.display
-            color: appwindow.isDarkTheme ? "white" :"black"
-            opacity:  currentIndex == index ? 1 : 0.3
-        }
-    }
-
-    path: Path {
-        startX: root.width/2; startY: 0
-
-        PathAttribute { name: "textFontPercent"; value: displayStep }
-
-        PathLine { x: root.width/2; y: root.height/2 }
-
-        PathAttribute { name: "textFontPercent"; value: 1}
-
-        PathLine { x: root.width/2; y: root.height }
-
-        PathAttribute { name: "textFontPercent"; value: displayStep }
-    }
-
-    function findCurrentIndex() {
-        for (var i = 0; i < count; i++)
-            if (model[i].value === value)
-                currentIndex = i;
+void AlarmPlayer::loopAudio(QMediaPlayer::State state)
+{
+    if (!userStop && state == QMediaPlayer::StoppedState /* && static_cast<int>(QDateTime::currentSecsSinceEpoch() - startPlayingTime) < settings.alarmSilenceAfter()*/) {
+        m_player->play();
     }
 }
 
+void AlarmPlayer::play()
+{
+    if (m_player->state() == QMediaPlayer::PlayingState)
+        return;
+
+    startPlayingTime = QDateTime::currentSecsSinceEpoch();
+    userStop = false;
+    m_player->play();
+}
+
+void AlarmPlayer::stop()
+{
+    userStop = true;
+    m_player->stop();
+}
+
+void AlarmPlayer::setVolume(int volume)
+{
+    // settings.setAlarmVolume(volume);
+    m_player->setVolume(volume);
+    Q_EMIT volumeChanged();
+}
+
+void AlarmPlayer::setSource(QUrl path)
+{
+    // if user set a invalid audio path or doesn't even specified a path, resort to default
+    if (!path.isLocalFile())
+        m_player->setMedia(QUrl::fromLocalFile(QStandardPaths::locate(QStandardPaths::GenericDataLocation, QStringLiteral("sounds/freedesktop/stereo/alarm-clock-elapsed.oga"))));
+    m_player->setMedia(path);
+}
