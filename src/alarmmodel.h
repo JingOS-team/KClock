@@ -1,6 +1,7 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
+ *                2021 DeXiang Mend <dexiang.meng@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -49,6 +50,7 @@ public Q_SLOTS:
     Q_SCRIPTABLE quint64 getNextAlarm();
     void scheduleAlarm();
     void wakeupCallback(int cookie);
+    void nextAlarmRun(QString uuid);
 private Q_SLOTS:
     void updateNotifierItem(quint64 time); // update notify icon in systemtray
     void notifySystemUI(bool visible);
@@ -65,4 +67,7 @@ private:
     QList<Alarm *> alarmsToBeRung; // the alarms that will be rung on next wakeup
 
     QList<Alarm *> m_alarmsList;
+
+    bool alarmIsRun;
+    QList<Alarm *> alarmsWaitToBeRung;
 };

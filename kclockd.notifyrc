@@ -6,6 +6,7 @@ Name[ca@valencia]=Rellotge
 Name[cs]=Hodiny
 Name[el]=Ρολόι
 Name[en_GB]=Clock
+Name[zh_CN]=时钟
 Name[es]=Reloj
 Name[et]=Kell
 Name[eu]=Erlojua
@@ -72,7 +73,8 @@ Comment[sv]=Tidtagningen är klar.
 Comment[uk]=Відлік за вашими таймером завершено!
 Comment[x-test]=xxYour timer has finished!xx
 Action=Sound|Popup
-Sound=freedesktop/stereo/alarm-clock-elapsed.oga
+# Sound=freedesktop/stereo/alarm-clock-elapsed.oga
+Sound=jing/alarm-clock.oga
 
 
 [Event/alarm]

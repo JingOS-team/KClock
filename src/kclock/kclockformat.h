@@ -1,5 +1,6 @@
 /*
  * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ *           2021   Bob <pengbo·wu@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -24,6 +25,8 @@
 #include <QObject>
 #include <array>
 #include <tuple>
+#include <japplicationqt.h>
+
 class QTimer;
 class WeekModel;
 class KclockFormat : public QObject
@@ -33,22 +36,29 @@ class KclockFormat : public QObject
     Q_PROPERTY(int seconds READ seconds NOTIFY secondChanged)
     Q_PROPERTY(int minutes READ minutes NOTIFY timeChanged)
     Q_PROPERTY(int hours READ hours NOTIFY hourChanged)
+
 public:
     explicit KclockFormat(QObject *parent = nullptr);
-    Q_INVOKABLE QString formatTimeString(int hours, int minutes);
+    void setJapp(JApplicationQt *japp);
+    Q_INVOKABLE QString formatTimeString(int hours, int minutes, bool timePeriod = false);
     Q_INVOKABLE bool isChecked(int dayIndex, int daysOfWeek);
+    Q_INVOKABLE void setEnableBackground(bool enable);
+
     QString currentTime()
     {
         return m_currentTime;
     };
+
     int seconds()
     {
         return m_minutesCounter;
     }
+
     int minutes()
     {
         return m_hoursCounter;
     }
+
     int hours()
     {
         return m_hours;
@@ -56,6 +66,7 @@ public:
 
 private Q_SLOTS:
     void updateTime();
+
 Q_SIGNALS:
     void timeChanged();
     void startDayChanged();
@@ -68,6 +79,7 @@ private:
     QTimer *m_timer;
     WeekModel *m_weekModel;
     QString m_currentTime;
+    JApplicationQt *m_japp;
 
     int m_hours, m_hoursCounter = 0, m_minutesCounter = 0;
 };

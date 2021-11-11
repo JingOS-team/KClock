@@ -2,6 +2,7 @@
  * Copyright 2020 Han Young <hanyoung@protonmail.com>
  *           2020 Devin Lin <espidev@gmail.com>
  *           2021 Rui Wang <wangrui@jingos.com>
+ *           2021 DeXiang Mend <dexiang.meng@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,183 +23,237 @@
 
 import QtQuick 2.12
 import QtQuick.Controls 2.4
-import QtQuick.Layouts 1.2
+import QtQuick.Layouts 1.12
 import QtGraphicalEffects 1.12
-import org.kde.kirigami 2.11 as Kirigami
+import org.kde.kirigami 2.15 as Kirigami
+import jingos.display 1.0
 import kclock 1.0
+import QtQml 2.12
 
 Kirigami.Page {
     id: timerPage
 
-    property Timer timer: timerModel.get(0)
+    property var timer: timerModel.get(0)
     property int timerIndex
     property bool justCreated: timer == null
     property bool showFullscreen: false
     property int elapsed: timer == null ? 0 : timer.elapsed
     property int duration: timer == null ? 0 : timer.length
     property bool running: timer == null ? 0 : timer.running
-    property real mScale: appwindow.officalScale
 
     leftPadding: 0
     rightPadding: 0
     topPadding: 0
     bottomPadding: 0
+
     globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
 
-    // background: Item {}
-    background:JBackground{}
+    function showNotification(notification)
+    {
+        toolTip.show(notification,2000)
+    }
 
+    Timer {
+        id: pageTimer
+
+        repeat: false
+        running: false
+        interval: 100
+
+        onTriggered: {
+            timer = timerModel.get(0)
+            var length = hoursTumber.currentIndex * 60 * 60
+                    + minutesTumber.currentIndex * 60 + secondsTumber.currentIndex
+            if (length <= 0) {
+                timerPage.showNotification(i18n("The countdown length set is illegal"))
+                return
+            }
+            timer.length = length
+            justCreated = false
+        }
+    }
     // topbar action
-    Rectangle {
+    Item {
         anchors.fill: parent
-        color: "#00000000"
-
         JLogo {}
 
-        Rectangle {
+        Kirigami.JToolTip {
+            id: toolTip
+
+            font.pixelSize: JDisplay.sp(17)
+        }
+
+        Item {
             width: parent.width
             height: parent.height - toolbarHeight
-            color: "transparent"
 
-            Rectangle {
+            Item {
                 id: controlLayout
-                width: parent.width
-                height: 80  
-                anchors.verticalCenter: parent.verticalCenter
-                color: "transparent"
 
-                Rectangle {
+                width: parent.width
+                height: JDisplay.dp(80)
+                anchors.verticalCenter: parent.verticalCenter
+
+                Item {
                     id: stopwatchArea
+
                     width: parent.width / 3
-                    height: parent.height - 20  
+                    height: parent.height - JDisplay.dp(20)
                     anchors.centerIn: parent
+
                     visible: justCreated
-                    color: "transparent"
-                    // color:"red"
 
                     Rectangle {
-                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
-                        width: 80  
+                        width: JDisplay.dp(80)
                         height: width
                         anchors {
                             left: parent.left
                             verticalCenter: parent.verticalCenter
                         }
-                        radius:  10  
+
+                        radius:  JDisplay.dp(10)
+                        color: Kirigami.JTheme.buttonBackground
                     }
                     Rectangle {
-                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
-                        width: 80  
+                        width:JDisplay.dp(80)
                         height: width
-                        anchors {
-                            centerIn: parent
-                        }
-                        radius:  10  
+                        anchors.centerIn: parent
+
+                        radius:  JDisplay.dp(10)
+                        color: Kirigami.JTheme.buttonBackground
                     }
                     Rectangle {
-                        color: appwindow.isDarkTheme ? "#9a000000" :"white"
-                        width: 80  
+                        width: JDisplay.dp(80)
                         height: width
                         anchors {
                             right: parent.right
                             verticalCenter: parent.verticalCenter
                         }
-                        radius:  10  
+
+                        radius:  JDisplay.dp(10)
+                        color: Kirigami.JTheme.buttonBackground
                     }
                 }
 
-                JButton {
-                    visible: justCreated
-                    btn_width: 80  
-                    btn_height: btn_width
-                    btn_icon: appwindow.isDarkTheme ? "qrc:/image/sw_reset.png" : "qrc:/image/sw_reset_l.png"
-                    btn_content: "Reset"
+                Kirigami.JButton{
+                    width:JDisplay.dp(80)
+                    height:width
                     anchors {
                         verticalCenter: parent.verticalCenter
                         right: stopwatchArea.left
-                        rightMargin: 68  
+                        rightMargin: JDisplay.dp(68)
                     }
 
-                    onJbtnClick: {
+                    visible: justCreated
+                    display: Button.TextUnderIcon
+                    text: i18n("Reset")
+
+                    font.pixelSize: JDisplay.sp(17)
+                    icon.width:JDisplay.dp(22)
+                    icon.height:JDisplay.dp(22)
+                    icon.color:Kirigami.JTheme.buttonForeground
+                    icon.source:"qrc:/image/sw_reset_l.png"
+
+                    onClicked:{
                         hoursTumber.currentIndex = 0
                         minutesTumber.currentIndex = 5
                         secondsTumber.currentIndex = 0
                     }
                 }
 
-                JButton {
-                    visible: !justCreated
-                    btn_width: 80  
-                    btn_height: btn_width
-                    btn_icon:  appwindow.isDarkTheme ? "qrc:/image/timer_done.png" :  "qrc:/image/timer_done_l.png"
-                    btn_content: "Done"
+                Kirigami.JButton{
+                    property bool notStart : !running &&  elapsed == 0
+
+                    width:JDisplay.dp(80)
+                    height:width
                     anchors {
                         verticalCenter: parent.verticalCenter
                         right: stopwatchArea.left
-                        rightMargin: 68  
+                        rightMargin: JDisplay.dp(68)
                     }
 
-                    onJbtnClick: {
+                    display: Button.TextUnderIcon
+                    visible: !justCreated
+                    text: notStart ? i18n("Reset"): i18n("Done")
+
+                    font.pixelSize: JDisplay.sp(17)
+                    icon.width: JDisplay.dp(22)
+                    icon.height: JDisplay.dp(22)
+                    icon.color: Kirigami.JTheme.buttonForeground
+                    icon.source: notStart ? "qrc:/image/sw_reset_l.png": "qrc:/image/timer_done_l.png"
+
+                    onClicked: {
                         timer.reset()
                         timerModel.remove(0)
                         justCreated = true
                     }
                 }
 
-                JButton {
-                    visible: justCreated
-                    btn_width: 80  
-                    btn_height: btn_width
-                    btn_icon: "qrc:/image/timer_new.png"
-                    btn_content: "New"
-                    statusPress: "#39c17b"
+                Kirigami.JButton{
+                    width:JDisplay.dp(80)
+                    height:width
                     anchors {
                         verticalCenter: parent.verticalCenter
                         left: stopwatchArea.right
-                        leftMargin: 68  
+                        leftMargin: JDisplay.dp(68)
                     }
+                    visible: justCreated
+                    fontColor:"#39c17b"
+                    text:i18n("New")
+                    display: Button.TextUnderIcon
 
-                    onJbtnClick: {
+                    font.pixelSize: JDisplay.sp(17)
+                    icon.width:JDisplay.dp(22)
+                    icon.height:JDisplay.dp(22)
+                    icon.source:"qrc:/image/timer_new.png"
+
+                    onClicked:{
                         timerModel.addNew()
-                        timer = timerModel.get(0)
-                        console.log("first timer is : ", timerModel.get(0))
-                        var length = hoursTumber.currentIndex * 60 * 60
-                                + minutesTumber.currentIndex * 60 + secondsTumber.currentIndex
-                        if (length <= 0) {
-                            showPassiveNotification(i18n("倒计时时长不合法"))
-                            return
-                        }
-                        timer.length = length
-                        justCreated = false
+                        pageTimer.restart()
                     }
                 }
 
-                JButton {
-                    visible: !justCreated
-                    btn_width: 80  
-                    btn_height: btn_width
-                    btn_icon: timer.running ? "qrc:/image/sw_pause.png" : "qrc:/image/sw_start.png"
-                    btn_content: timer.running ? "Pause" : "Start"
-                    statusPress: timer.running ? "#e95b4e" : "#39c17b"
+                Kirigami.JButton {
+                    width:JDisplay.dp(80)
+                    height:width
                     anchors {
                         verticalCenter: parent.verticalCenter
                         left: stopwatchArea.right
-                        leftMargin: 68  
+                        leftMargin: JDisplay.dp(68)
                     }
 
-                    onJbtnClick: {
+                    display: Button.TextUnderIcon
+                    visible: !justCreated
+                    fontColor: timer.running ? "#e95b4e" : "#39c17b"
+                    font.pixelSize: JDisplay.sp(17)
+                    text: {
+                        if (timer.running) {
+                            return i18n("Pause")
+                        } else {
+                            if (timer.length == (timer.length-timer.elapsed)) {
+                                return  i18n("Start")
+                            } else {
+                                return  i18n("Resume")
+                            }
+                        }
+                    }
+
+                    icon.width: JDisplay.dp(22)
+                    icon.height: JDisplay.dp(22)
+                    icon.source: timer.running ? "qrc:/image/sw_pause.png" : "qrc:/image/sw_start.png"
+
+                    onClicked: {
                         timer.toggleRunning()
                     }
                 }
             }
 
-            Rectangle {
+            Item {
                 id: timerLayoutHolder
+
                 width: parent.width / 3
-                height: parent.height - 20  
+                height: parent.height - JDisplay.dp(20)
                 anchors.centerIn: parent
-                color: "transparent"
-                // color: "yellow"
             }
 
             JTimerProgressComponent {
@@ -206,106 +261,107 @@ Kirigami.Page {
                 timerDuration: duration
                 timerElapsed: elapsed
                 timerRunning: running
+
+                onVisibleChanged:{
+                    kclockFormat.setEnableBackground(visible)
+                }
             }
 
             Kirigami.FormLayout {
                 id: form
-                
-                property int fontSize: 34  
+
+                property int fontSize: JDisplay.sp(34)
+
                 anchors.centerIn: parent
-                implicitWidth: timerLayoutHolder.width + 2 
-                // implicitHeight: (370 + 88 + 2 + 120)  
-                implicitHeight: 300
+                implicitWidth: timerLayoutHolder.width + JDisplay.dp(2)
+                implicitHeight: JDisplay.dp(300)
+
                 visible: justCreated
-
-                Rectangle {
+                Item {
                     anchors.fill: parent
-                    color: "transparent"
 
-                    Row {
+                    RowLayout {
                         id: row
-                        width: form.width
-                        height: form.height
+                        anchors.fill: parent
 
                         JTumbler {
                             id: hoursTumber
-                            widget_h: parent.height
-                            widget_w: 80 
+
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: JDisplay.dp(80)
+                            Layout.alignment: Qt.AlignLeft
+
                             modelValue: 24
                             textSize: form.fontSize
-                            textColor:  appwindow.isDarkTheme ? "white" :"black"
-                            anchors.left: parent.left
+                            textColor: Kirigami.JTheme.majorForeground
                             visibleItemCountValue: 3
-                            btn_w: 50 
-                            btn_h: btn_w
                         }
 
                         JTumbler {
                             id: minutesTumber
-                            widget_h: parent.height
-                            widget_w: 80  
+
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: JDisplay.dp(80)
+                            Layout.alignment: Qt.AlignHCenter
+
                             modelValue: 60
                             textSize: form.fontSize
-                            textColor:  appwindow.isDarkTheme ? "white" :"black"
+                            textColor: Kirigami.JTheme.majorForeground
                             visibleItemCountValue: 3
-                            btn_w: 50  
-                            btn_h: btn_w
-                            anchors.horizontalCenter: parent.horizontalCenter
                             currentIndex: 5
                         }
 
                         JTumbler {
                             id: secondsTumber
-                            widget_h: parent.height
-                            widget_w: 80
+
+                            Layout.fillHeight: true
+                            Layout.preferredWidth: JDisplay.dp(80)
+                            Layout.alignment: Qt.AlignRight
+
                             modelValue: 60
                             textSize: form.fontSize
-                            textColor:  appwindow.isDarkTheme ? "white" :"black"
-                            anchors.right: parent.right
+                            textColor: Kirigami.JTheme.majorForeground
                             visibleItemCountValue: 3
-                            btn_w: 50  
-                            btn_h: btn_w
                         }
                     }
                 }
             }
 
-            Rectangle {
-                id: special_view
+            Item {
+                id: specialView
+
                 width: parent.width / 3
                 height: controlLayout.height
                 anchors.centerIn: parent
-                visible: justCreated
-                color: "transparent"
 
+                visible: justCreated
                 JDoubleGradientView {
-                    text: i18n("Hours")
                     height: parent.height
                     width: height
                     anchors {
                         left: parent.left
                         verticalCenter: parent.verticalCenter
                     }
+                    text: i18n("Hours")
                 }
 
                 JDoubleGradientView {
-                    text: i18n("Minutes")
                     height: parent.height
                     width: height
                     anchors {
                         centerIn: parent
                     }
+                    text: i18n("Minutes")
                 }
 
                 JDoubleGradientView {
-                    text: i18n("Seconds")
                     height: parent.height
                     width: height
-
                     anchors {
                         right: parent.right
                         verticalCenter: parent.verticalCenter
                     }
+                    text: i18n("Seconds")
                 }
             }
         }

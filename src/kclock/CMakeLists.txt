@@ -37,5 +37,6 @@ target_link_libraries(kclock
         KF5::CoreAddons
         KF5::Notifications
         KF5::DBusAddons
+        jappcoreqt
         )
 install(TARGETS kclock ${KF5_INSTALL_TARGETS_DEFAULT_ARGS})

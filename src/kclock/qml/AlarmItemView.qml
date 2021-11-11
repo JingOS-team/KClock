@@ -1,21 +1,8 @@
 /*
- * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ * SPDX-FileCopyrightText: 2020 George Florea Bănuș <georgefb899@gmail.com>
+ *                         2021 Bob <pengbo·wu@jingos.com>
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 import QtQuick 2.12
 import QtQuick.Controls 2.12
@@ -24,20 +11,17 @@ import QtQuick.Layouts 1.12
 import QtGraphicalEffects 1.12
 
 import org.kde.kirigami 2.15 as Kirigami
-
+import jingos.display 1.0
 Component {
     id: alarmDelegate
 
-    
-    Rectangle {
+    Item {
         id: root
+
+        property bool is24HourFormat: timezoneProxy.isSystem24HourFormat
+
         width: alarmGridView.cellWidth
         height: alarmGridView.cellHeight
-        color: "transparent"
-
-        property int topSize: 30
-        property int otherSize: 11
-        // property real myScale: 1.3 * appwindow.officalScale
 
         GridView.onRemove: SequentialAnimation {
             PropertyAction {
@@ -49,7 +33,7 @@ Component {
                 target: root
                 property: "scale"
                 to: 0
-                duration: 200
+                duration: 75
                 easing.type: Easing.InOutQuad
             }
             PropertyAction {
@@ -59,104 +43,87 @@ Component {
             }
         }
 
+        GridView.onAdd: SequentialAnimation {
+            PropertyAction {
+                target: root
+                property: "GridView.delayRemove"
+                value: false
+            }
+            NumberAnimation {
+                target: root
+                property: "scale"
+                to: 1
+                duration: 75
+                easing.type: Easing.InOutQuad
+            }
+            PropertyAction {
+                target: root
+                property: "GridView.delayRemove"
+                value: true
+            }
+        }
+
         Rectangle {
             id: content_Rectangle
 
             anchors {
                 fill: parent
-                leftMargin: 0
-                rightMargin: 20
-                topMargin: 20
-                bottomMargin: 0  
+                rightMargin: JDisplay.dp(20)
+                topMargin: JDisplay.dp(20)
             }
 
-            // color: "#3f000000"
-            color: appwindow.isDarkTheme ? "#3f000000":"white"
-            radius: 10
+            color: Kirigami.JTheme.cardBackground
+            radius: JDisplay.dp(20)
 
             MouseArea {
                 anchors.fill: parent
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
 
                 onClicked: {
-
-                    console.log("----------------1111-----------------");
-
                     if (mouse.button == Qt.LeftButton) {
-                        popupEventEditor.px = (rightLayout.width - popupEventEditor.width) / 2
-                        popupEventEditor.py = (rightLayout.height - 277) / 2 + 22+ 26
-                        popupEventEditor.popTitle = "Edit Alarm"
-
-                        var kk = rightLayout.mapToItem(
-                                    rightLayout,
-                                    popupEventEditor.px + alarmLayout.width,
-                                    popupEventEditor.py)
-
-                        popupEventEditor.blurX = kk.x
-                        popupEventEditor.blurY = kk.y
-
+                        popupEventEditor.x = (rightLayout.width - popupEventEditor.width) / 2
+                        popupEventEditor.y = (rightLayout.height - 277) / 2 + 22 + 26
+                        popupEventEditor.popTitle = i18n("Edit Alarm")
                         popupEventEditor.alarmObject = model.alarm
                         popupEventEditor.open()
-
                     } else if (mouse.button == Qt.RightButton) {
-                        // delMenu.selectIndex = index
-                        // var xy = mapToItem(root, mouseX, mouseY)
-                        // delMenu.blurX = xy.x
-                        // delMenu.blurY = xy.y
-                        // delMenu.popup(root, xy.x, xy.y)
-                        console.log("=====RightButton=====")
                         var xy = mapToItem(root, mouseX, mouseY)
-                        // delMenu.blurX = xy.x
-                        // delMenu.blurY = xy.y
-                        // delMenu.popup(root, xy.x, xy.y)
                         delMenu.popup(root, xy.x, xy.y)
                     }
                 }
 
                 onPressAndHold: {
-                    // delMenu.selectIndex = index
-                    console.log("=====onPressAndHold=====")
-                    var xy = mapToItem(root, mouseX, mouseY)
-                    // delMenu.blurX = xy.x
-                    // delMenu.blurY = xy.y
-                    // delMenu.popup(root, xy.x, xy.y)
-                    delMenu.popup(root, xy.x, xy.y)
+                    var xy = mapToItem(content_Rectangle, mouseX, mouseY)
+                    delMenu.popup(content_Rectangle, (content_Rectangle.width - delMenu.width) / 2, xy.y)
                 }
             }
 
-            Kirigami.JPopupMenu {
+            Kirigami.JPopupMenu {
                 id: delMenu
 
-                Action { 
-                    text: "Delete"
-                    icon.source:  "qrc:/image/menu_delete.png"
-                    onTriggered: {
-                        // var x = (888 - delDialog.width) / 2
-                        // var y = (648 - delDialog.height) / 2
-                        // console.log("x : " + x + "&&&   y:" + y)
-                        // delDialog.parent = alarm_layout
-                        // delDialog.startX = x
-                        // delDialog.startY = y
-                        // delDialog.x = x
-                        // delDialog.y = y
-                        // delDialog.visible = true
+                width: JDisplay.dp(160)
+                Action {
+                    text: i18n("Delete")
+                    icon.source:  "qrc:/image/menu_delete.png"
+                    onTriggered: {
                         delDialog.open()
                     }
-                }
+                }
             }
 
             Kirigami.JDialog {
                 id: delDialog
+
                 title: i18n("Delete")
                 text: i18n("Are you sure you want to delete this alarm?")
-                leftButtonText: i18n("Close")
+                leftButtonText: i18n("Cancel")
                 rightButtonText: i18n("Delete")
                 parent: Overlay.overlay
                 dim: false
                 focus: true
 
                 onRightButtonClicked: {
-                    if (!root.GridView.delayRemove) {
+                    if (!GridView.delayRemove) {
                         alarmModel.remove(index)
                         alarmModel.updateUi()
                         delMenu.close()
@@ -172,84 +139,79 @@ Component {
 
             RowLayout {
                 id: topRow
+
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.leftMargin: marginLeftAndRight
-                anchors.rightMargin: marginLeftAndRight
-                anchors.topMargin: marginLeftAndRight
+                anchors.leftMargin: JDisplay.dp(20)
+                anchors.rightMargin: JDisplay.dp(20)
+                anchors.topMargin: JDisplay.dp(20)
 
                 Text {
                     id: alarmTime
+
                     Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                     font.weight: Font.Light
-                    font.pixelSize: topSize
-                    color: {
+                    font.pixelSize: JDisplay.sp(30)
+                    color: model.enabled ? Kirigami.JTheme.majorForeground : Kirigami.JTheme.disableForeground
+                    text: is24HourFormat ? kclockFormat.formatTimeString(model.hours , model.minutes) : kclockFormat.formatTimeString(model.hours , model.minutes, true)
+                }
 
-                        if(appwindow.isDarkTheme){
-                            model.enabled ? "white" : "#919191"
-                        } else {
-                            model.enabled ? "#E63C3F48" : "#663C3F48"
-                        }
-                        
-                    }
-                    text: kclockFormat.formatTimeString(model.hours,
-                                                        model.minutes)
+                Label {
+                    Layout.alignment: Qt.AlignTop | Qt.AlignLeft
+                    Layout.leftMargin: 0
+                    visible: !is24HourFormat
+                    text: model.hours < 12 ? i18n("AM") : i18n("PM")
+                    font.pixelSize: JDisplay.sp(11)
+                    color: model.enabled ? Kirigami.JTheme.majorForeground : Kirigami.JTheme.disableForeground
                 }
 
                 Kirigami.JSwitch {
+                    id: alarmSwitch
+
                     anchors.right: parent.right
                     Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                     Layout.columnSpan: 1
+
                     checked: model.enabled
                     checkable: true
                     onCheckedChanged: {
                         alarmCheckedChange(checked)
-                         model.enabled = checked
-                        if(appwindow.isDarkTheme){
-                            alarmTime.color = checked ? "white" : "#919191"
-                            dayOfWeek.color = checked ? "white" : "#919191"
-                        }else {
-                            dayOfWeek.color = checked ? "#E63C3F48" : "#663C3F48"
-                            alarmTime.color = checked ? "#E63C3F48" : "#663C3F48"
-                        }
+                        model.enabled = checked
                     }
                 }
             }
 
             Text {
-                anchors.top: topRow.bottom
-                font.weight: Font.Normal
-                font.pixelSize: otherSize
-                color: {
-                    if(appwindow.isDarkTheme){
-                        model.enabled ? "white" : "#919191"
-                    } else {
-                        model.enabled ? "#E63C3F48" : "#663C3F48"
-                    }
-                }
-                text: getRepeatFormat(
-                          model.daysOfWeek) // related to UI improvements, leave it for now
-                anchors.left: parent.left
                 id: dayOfWeek
-                anchors.leftMargin: marginLeftAndRight
-                anchors.rightMargin: marginLeftAndRight
-                anchors.topMargin: 8  
+
+                anchors.top: topRow.bottom
+                anchors.left: parent.left
+                anchors.leftMargin: JDisplay.dp(20)
+                anchors.rightMargin: JDisplay.dp(20)
+                anchors.topMargin: JDisplay.dp(8)
+
+                font.weight: Font.Normal
+                font.pixelSize: JDisplay.sp(11)
+                color:alarmSwitch.checked ? Kirigami.JTheme.majorForeground : Kirigami.JTheme.disableForeground
+                text: getRepeatFormat(model.daysOfWeek) // related to UI improvements, leave it for now
             }
 
             Text {
-                anchors.top: dayOfWeek.bottom
                 id: alarmName
-                color: "#919191"
-                font.pixelSize: otherSize
-                text: model.name
+
+                anchors.top: dayOfWeek.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                anchors.leftMargin: marginLeftAndRight
-                anchors.rightMargin: marginLeftAndRight
-                anchors.topMargin: 10  
-                anchors.bottomMargin: 30  
+                anchors.leftMargin: JDisplay.dp(20)
+                anchors.rightMargin: JDisplay.dp(20)
+                anchors.topMargin: JDisplay.dp(10)
+                anchors.bottomMargin: JDisplay.dp(30)
+
+                color: Kirigami.JTheme.minorForeground
+                font.pixelSize: JDisplay.sp(11)
+                text: model.name
                 lineHeight: 1
                 wrapMode: Text.WrapAnywhere
                 maximumLineCount: 2

@@ -2,6 +2,7 @@
  * Copyright 2019 Nick Reitemeyer <nick.reitemeyer@web.de>
  *           2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
+ *           2021 Bob <pengbo·wu@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -47,6 +48,7 @@
 #include "timermodel.h"
 #include "timezoneselectormodel.h"
 #include "utilmodel.h"
+#include <japplicationqt.h>
 
 QCommandLineParser *createParser()
 {
@@ -59,16 +61,12 @@ QCommandLineParser *createParser()
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    app.setStartDragDistance(4);
+    JApplicationQt japp;
+    japp.enableBackgroud(false);
 
-    /*
-    QSurfaceFormat format = QSurfaceFormat::defaultFormat();
-    format.setDepthBufferSize(0);
-    format.setStencilBufferSize(0);
-    QSurfaceFormat::setDefaultFormat(format);
-*/
     QQmlDebuggingEnabler enabler;
 
-    // KLocalizedString::setApplicationDomain("kclock");
     KLocalizedString::setApplicationDomain("j-clock");
     KAboutData aboutData("kclock", "Clock", "0.2", "Simple clock made in Kirigami", KAboutLicense::GPL, i18n("© 2020 KDE Community"));
     aboutData.addAuthor(i18n("Devin Lin"), QString(), QStringLiteral("espidev@gmail.com"));
@@ -89,6 +87,7 @@ int main(int argc, char *argv[])
     auto *timeZoneFilterModel = new TimeZoneFilterModel(timeZoneModel);
     auto *stopwatchTimer = new StopwatchTimer();
     auto *kclockFormat = new KclockFormat();
+    kclockFormat->setJapp(&japp);
     auto *weekModel = new WeekModel();
 
     // register QML types
@@ -120,12 +119,11 @@ int main(int argc, char *argv[])
 
     engine->load(QUrl(QStringLiteral("qrc:/qml/main.qml")));
 
-    {
-        QScopedPointer<QCommandLineParser> parser(createParser());
-        parser->process(app);
-        if (parser->isSet(QStringLiteral("page"))) {
-            QMetaObject::invokeMethod(engine->rootObjects().first(), "switchToPage", Q_ARG(QVariant, parser->value("page")));
-        }
+    QScopedPointer<QCommandLineParser> parser(createParser());
+    parser->process(app);
+    if (parser->isSet(QStringLiteral("page"))) {
+        QMetaObject::invokeMethod(engine->rootObjects().first(), "switchToPage", Q_ARG(QVariant, parser->value("page")));
     }
+
     return app.exec();
 }

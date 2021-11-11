@@ -1,13 +1,5 @@
-
-# Clock <img src="logo.png" width="40"/>
-Clock is based on KClock [gitlab](https://invent.kde.org/plasma-mobile/kclock/) , a beautifully designed clock that conforms to the JingOS style and has a compatible `pad / desktop`  experience.
-
-KClock is a convergent clock application built with the [Kirigami framework](https://kde.org/products/kirigami/). Although it is mainly targeted for mobile platforms, it can also be used on the desktop.
-
-Originally starting as a fork of [kclock](https://invent.kde.org/plasma-mobile/kclock), KClock has gone through heavy development, and no longer shares the same codebase with  KClock.
-
-- White theme 
-- Bug fixed
+# KClock <img src="logo.png" width="40"/>
+A convergent kclock application for Plasma.
 
 ## Features
 * Alarms
@@ -57,7 +49,7 @@ There are numerous reasons that causes kclockd will start up in `--no-powerdevil
 * All of the other possiblities I forgot to mention
 
 ## KClockd D-Bus interface
-After installing, five D-Bus interface XML files are copied to the KDE D-Bus interface directory. 
+After installing, five D-Bus interface XML files are copied to the KDE D-Bus interface directory.
 
 These are:
 * org.kde.kclockd.KClockSettings.xml
@@ -66,7 +58,7 @@ These are:
 * org.kde.kclockd.TimerModel.xml
 * org.kde.kclockd.Timer.xml
 
-These files can be used to generate the D-Bus adaptor. Alarm and Timer will be registered under path "/Alarms/" or "/Timers/" + its uuid's Id128 string representation (ex. *8c7d59b3befa49a48853959fe7e025d7*). However, the "remove" slots in AlarmModel or TimerModel only accept its normal representation, (ex. *{8c7d59b3-befa-49a4-8853-959fe7e025d7}*). One can get the normal string by calling the getUUID() method in each alarm/timer. Timer is in seconds precision, but you may want to call elapsed() method every 500ms or so to avoid going out of sync with kclockd. 
+These files can be used to generate the D-Bus adaptor. Alarm and Timer will be registered under path "/Alarms/" or "/Timers/" + its uuid's Id128 string representation (ex. *8c7d59b3befa49a48853959fe7e025d7*). However, the "remove" slots in AlarmModel or TimerModel only accept its normal representation, (ex. *{8c7d59b3-befa-49a4-8853-959fe7e025d7}*). One can get the normal string by calling the getUUID() method in each alarm/timer. Timer is in seconds precision, but you may want to call elapsed() method every 500ms or so to avoid going out of sync with kclockd.
 
 ## kclock
 A front end for kclockd written in Kirigami for Plasma Mobile and Desktop (located in src/kclock).

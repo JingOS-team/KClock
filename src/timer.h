@@ -1,5 +1,6 @@
 /*
  * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ *           2021 Bob <pengbo·wu@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -67,6 +68,7 @@ public:
         Q_EMIT lengthChanged();
         TimerModel::instance()->save();
     }
+
     const QString &label() const
     {
         return m_label;
@@ -86,8 +88,10 @@ Q_SIGNALS:
     Q_SCRIPTABLE void lengthChanged();
     Q_SCRIPTABLE void labelChanged();
     Q_SCRIPTABLE void runningChanged();
+
 private Q_SLOTS:
     void timeUp(int cookie);
+    // void dismiss();
 
 private:
     void setRunning(bool running);

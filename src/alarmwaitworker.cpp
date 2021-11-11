@@ -1,5 +1,6 @@
 /*
  * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ *           2021   Bob <pengbo·wu@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -55,12 +56,8 @@ void AlarmWaitWorker::wait(int waitId)
     }
     // ensure that there is one wakeup and not multiple
     if (waitId != this->m_waitId) {
-        qDebug() << "cancel old wakeup" << waitId;
         return;
     }
-
-    qDebug() << "waiting end" << waitId;
-
     Q_EMIT finished();
 }
 
@@ -75,8 +72,6 @@ void AlarmWaitWorker::setNewTime(qint64 timestamp)
     timerSpec.it_interval.tv_sec = 0;
     timerSpec.it_interval.tv_nsec = 0;
     timerfd_settime(m_timerFd, TFD_TIMER_ABSTIME, &timerSpec, nullptr); // absolute time
-
-    qDebug() << "start waiting, id:" << m_waitId << " Wait Time: " << timestamp;
 
     Q_EMIT startWait(m_waitId);
 }

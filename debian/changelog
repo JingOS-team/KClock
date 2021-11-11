@@ -1,0 +1,11 @@
+kclock (0.0.1) focal; urgency=medium
+
+  * Format version
+
+ -- JingOS CI <jingos@jingos.com>  Nov, 10 Wed 2021 21:29:53 +0800
+
+kclock (0.0+git20200528-1) UNRELEASED; urgency=medium
+
+  * Initial packaging
+
+ -- Jonah Brüchert <jbb@kaidan.im>  Thu, 28 May 2020 16:05:03 +0200

@@ -1,40 +1,29 @@
 /*
- * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ * Copyright (C) 2021 Beijing Jingling Information System Technology Co., Ltd. All rights reserved.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
+ * Authors:
+ * Bob <pengbo·wu@jingos.com>
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 import QtQuick 2.0
 import QtGraphicalEffects 1.0
 
 Item {
-
     property int mouseX
     property int mouseY
     property var sourceView
     property string coverColor: "#aa000000"
-    property real coverRadius: 40 * appwindow.officalScale
+    property real coverRadius: 40
 
     ShaderEffectSource {
         id: eff
-        sourceItem: sourceView
+
         anchors.centerIn: fastBlur
         width: fastBlur.width
-        visible: false
         height: fastBlur.height
+
+        visible: false
+        sourceItem: sourceView
         sourceRect: Qt.rect(mouseX, mouseY, width, height)
 
         function getItemX(width, height) {
@@ -48,9 +37,11 @@ Item {
             return mapItem.y
         }
     }
+
     FastBlur {
         id: fastBlur
         anchors.fill: parent
+
         source: eff
         radius: 70
         cached: true
@@ -58,6 +49,7 @@ Item {
     }
     Rectangle {
         id: maskRect
+
         anchors.fill: fastBlur
         visible: false
         clip: true
@@ -65,6 +57,7 @@ Item {
     }
     OpacityMask {
         id: mask
+
         anchors.fill: maskRect
         visible: true
         source: fastBlur

@@ -1,5 +1,6 @@
 /*
  * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ *           2021   Bob <pengbo·wu@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -89,6 +90,10 @@ void Timer::timeUp(int cookie)
     }
 }
 
+// void Timer::dismiss(){
+
+// }
+
 void Timer::setRunning(bool running)
 {
     if (m_running == running)
@@ -119,17 +124,19 @@ void Timer::setRunning(bool running)
 
 void Timer::sendNotification()
 {
-    qDebug("Timer finished, sending notification...");
 
     KNotification *notif = new KNotification("timerFinished");
     notif->setIconName(QStringLiteral("jingclock"));
     // notif->setSource(QStringLiteral("jingclock"));
+    notif->setActions(QStringList {i18n("Dismiss")});
+    connect(notif, &KNotification::action1Activated, this, [notif] { notif->close(); });
     notif->setTitle(i18n("Timer complete"));
-    notif->setText(i18n("Your timer %1 has finished!", this->label()));
+    // notif->setText(i18n("Your timer %1 has finished!", this->label()));
     notif->setDefaultAction(i18n("View"));
     notif->setUrgency(KNotification::HighUrgency);
     notif->setFlags(KNotification::NotificationFlag::LoopSound | KNotification::NotificationFlag::Persistent);
     connect(notif, &KNotification::closed, [notif] { notif->close(); });
 
     notif->sendEvent();
+
 }

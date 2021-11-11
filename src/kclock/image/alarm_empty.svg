@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120px" height="120px" viewBox="0 0 120 120" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>-mockplus-</title>
+    <defs>
+        <filter color-interpolation-filters="auto" id="filter-1">
+            <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0.968627 0 0 0 0 0.968627 0 0 0 0 0.968627 0 0 0 0.300000 0"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="缺省" transform="translate(-1234.000000, -557.000000)" filter="url(#filter-1)">
+            <g transform="translate(1035.000000, 557.000000)">
+                <g id="-mockplus-" transform="translate(199.000000, 0.000000)">
+                    <g id="Group" transform="translate(-0.025000, -0.025000)">
+                        <line x1="88.4846032" y1="90.6566079" x2="100.041667" y2="102.213671" id="Path" stroke="#323232" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></line>
+                        <line x1="31.5643964" y1="90.6575583" x2="20.0083333" y2="102.213671" id="Path" stroke="#323232" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></line>
+                        <circle id="Oval" stroke="#323232" stroke-width="4" cx="60.025" cy="62.5260417" r="40.0166667"></circle>
+                        <path d="M23.0596042,47.1696458 C18.0350111,43.9927438 14.9938512,38.4582105 15.0061747,32.5135417 C15.0101543,24.4606363 20.5043457,17.4479723 28.3223549,15.517161 C36.140364,13.5863496 44.2675629,17.234943 48.02,24.3601458" id="Path" stroke="#323232" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <path d="M72.03,24.3601458 C75.7824369,17.234943 83.9096358,13.5863496 91.7276449,15.517161 C99.5456541,17.4479723 105.039846,24.4606363 105.043826,32.5135417 C105.056149,38.4582105 102.014989,43.9927438 96.9903958,47.1696458" id="Path" stroke="#323232" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <line x1="60.0264006" y1="61.3858668" x2="60.0264006" y2="50.0304373" id="Path" stroke="#323232" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></line>
+                        <path d="M60.0264006,73.9223381 C59.7194622,73.9223381 59.4706241,74.1711313 59.4705691,74.4780696 L59.4705691,74.4850725 C59.476277,74.7930318 59.7298881,75.038422 60.0378679,75.0339826 C60.3458476,75.0295428 60.5922803,74.7769446 60.5891094,74.4689488 C60.5859381,74.160953 60.3343568,73.9134825 60.0263506,73.9153853" id="Path" stroke="#323232" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <polygon id="Path" points="0 0 120.05 0 120.05 120.05 0 120.05"></polygon>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

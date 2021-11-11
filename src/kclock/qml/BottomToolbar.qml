@@ -1,6 +1,7 @@
 /*
  * Copyright 2020 Han Young <hanyoung@protonmail.com>
  *           2020 Devin Lin <espidev@gmail.com>
+ *           2021 Bob <pengbo·wu@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,23 +23,17 @@
 import QtQuick 2.12
 import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.2
-import org.kde.kirigami 2.12 as Kirigami
-
+import org.kde.kirigami 2.15 as Kirigami
+import jingos.display 1.0
 ToolBar {
     id: toolbarRoot
 
-    width: 888
-    height: 55  
-    property double iconSize: 22  
-    property double shrinkIconSize: 20  
-    property double fontSize: 14
-    property double shrinkFontSize:  12
+    height: JDisplay.dp(55)
+    property double iconSize: JDisplay.dp(22)
+    property double shrinkIconSize: JDisplay.dp(20)
+    property double fontSize: JDisplay.sp(14)
+    property double shrinkFontSize:  JDisplay.sp(12)
 
-    // propert string alarmIcon : /* appwindow.isDarkTheme ? "qrc:/image/footer_alarm_w.png" : */ "qrc:/image/footer_alarm_grey_l.png"
-    // propert string swIcon: /* appwindow.isDarkTheme ? "qrc:/image/footer_sw_w.png": */ "qrc:/image/footer_sw_grey_l.png"
-    // propert string timerIcon: /* appwindow.isDarkTheme ? "qrc:/image/footer_timer_w.png" : */ "qrc:/image/footer_timer_grey_l.png"
-
-    
     function getPage(name) {
         switch (name) {
             case "Time": return timePage;
@@ -50,11 +45,9 @@ ToolBar {
     }
 
     background: Rectangle {
-        color: appwindow.isDarkTheme ? "#a6000000": "#ffffffff"
-        anchors.fill: parent
-
+        color: Kirigami.JTheme.cardBackground
     }
-    
+
     RowLayout {
         anchors.fill: parent
         spacing: 0
@@ -78,76 +71,40 @@ ToolBar {
                     icon: "qrc:/image/footer_timer_grey.svg"
                 }
             }
-            
-            Rectangle {
+
+            Item {
                 Layout.minimumWidth: parent.width / 3
                 Layout.maximumWidth: parent.width / 3
                 Layout.preferredHeight: parent.height
                 Layout.alignment: Qt.AlignCenter
-                color: "transparent"
 
-                Behavior on color {
-                    ColorAnimation { 
-                        duration: 100 
-                        easing.type: Easing.InOutQuad
-                    }
-                }
-                
                 MouseArea {
                     id: mouseArea
                     anchors.fill: parent
                     onClicked: {
                         appwindow.switchToPage(getPage(model.name), 0)
                     }
-                    // onPressed: {
-                    //     widthAnim.to = toolbarRoot.shrinkIconSize;
-                    //     heightAnim.to = toolbarRoot.shrinkIconSize;
-                    //     fontAnim.to = toolbarRoot.shrinkFontSize;
-                    //     widthAnim.restart();
-                    //     heightAnim.restart();
-                    //     fontAnim.restart();
-                    // }
-                    // onReleased: {
-                    //     if (!widthAnim.running) {
-                    //         widthAnim.to = toolbarRoot.iconSize;
-                    //         widthAnim.restart();
-                    //     }
-                    //     if (!heightAnim.running) {
-                    //         heightAnim.to = toolbarRoot.iconSize;
-                    //         heightAnim.restart();
-                    //     }
-                    //     if (!fontAnim.running) {
-                    //         fontAnim.to = toolbarRoot.fontSize;
-                    //         fontAnim.restart();
-                    //     }
-                    // }
                 }
-                
+
                 RowLayout {
                     id: itemColumn
-                    anchors.centerIn: parent
-                    spacing: 5  
 
-                    
+                    anchors.centerIn: parent
+                    spacing: JDisplay.dp(5)
+
                     Kirigami.Icon {
-                        color: {
-                            if(appwindow.isDarkTheme){
-                                getPage(model.name).visible ? "#ffffff" : "#5e5e5e"
-                            } else {
-                                getPage(model.name).visible ? "#3C4BE8" : "#3C3F48"
-                            }
-                        } 
-                        
-                        source: getPage(model.name).visible ? model.icon_highlight:  model.icon
                         Layout.alignment: Qt.AlignCenter
                         Layout.preferredHeight: toolbarRoot.iconSize
                         Layout.preferredWidth: toolbarRoot.iconSize
-                        
+                        color:getPage(model.name).opacity ===1 ?  Kirigami.JTheme.buttonStrongBackground : Kirigami.JTheme.majorForeground
+                        source: model.icon
+
                         ColorAnimation on color {
                             easing.type: Easing.Linear
                         }
                         NumberAnimation on Layout.preferredWidth {
                             id: widthAnim
+
                             easing.type: Easing.Linear
                             duration: 130
                             onFinished: {
@@ -159,6 +116,7 @@ ToolBar {
                         }
                         NumberAnimation on Layout.preferredHeight {
                             id: heightAnim
+
                             easing.type: Easing.Linear
                             duration: 130
                             onFinished: {
@@ -169,27 +127,21 @@ ToolBar {
                             }
                         }
                     }
-                    
+
                     Label {
-                        // color: getPage(model.name).visible ? "#ffffff" : "#5e5e5e"
-                        color: {
-                            if(appwindow.isDarkTheme){
-                                getPage(model.name).visible ? "#ffffff" : "#5e5e5e"
-                            } else {
-                                getPage(model.name).visible ? "#FF39C17B" : "#3C3F48"
-                            }
-                        } 
-                        text: i18n(model.name)
                         Layout.alignment: Qt.AlignCenter
                         horizontalAlignment: Text.AlignVCenter
+                        color: getPage(model.name).opacity ===1 ?  Kirigami.JTheme.buttonStrongBackground : Kirigami.JTheme.majorForeground
                         elide: Text.ElideLeft
                         font.pixelSize: toolbarRoot.fontSize
-                        
+                        text: i18n(model.name)
+
                         ColorAnimation on color {
                             easing.type: Easing.Linear
                         }
                         NumberAnimation on font.pixelSize {
                             id: fontAnim
+
                             easing.type: Easing.Linear
                             duration: 130
                             onFinished: {
@@ -204,4 +156,4 @@ ToolBar {
             }
         }
     }
-} 
+}

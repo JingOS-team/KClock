@@ -1,5 +1,6 @@
 /*
- * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
+ *           2021 Rui Wang <wangrui@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,25 +18,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 import QtQuick 2.12
 import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.2
 import QtQuick.Shapes 1.12
-import org.kde.kirigami 2.11 as Kirigami
+import org.kde.kirigami 2.15 as Kirigami215
+import jingos.display 1.0
 import QtGraphicalEffects 1.0
 
-Rectangle {
+Item {
     id: root
 
     property int timerDuration
     property int timerElapsed
     property bool timerRunning
-    property int fontSize: 34
+    property int fontSize: JDisplay.sp(34)
 
-    width: 320  
-    height: 80   
-    color: "transparent"
+    width: JDisplay.dp(320)
+    height: JDisplay.sp(80)
     anchors.centerIn: parent
 
     function getTimeLeft() {
@@ -76,12 +76,11 @@ Rectangle {
                 visible: false
             }
         }
-
-        //    #ff43BDF4
         background: Rectangle {
             id: progressBarBackground
-            color: appwindow.isDarkTheme ? "#d8000000" : "white"
-            radius: 10  
+
+            color: Kirigami215.JTheme.cardBackground
+            radius: JDisplay.sp(10)
 
             layer.enabled: true
             layer.effect: OpacityMask {
@@ -107,44 +106,42 @@ Rectangle {
         }
     }
 
-    Rectangle {
-        width: 240  
-        height: 42  
+    Item {
+        width: JDisplay.dp(240)
+        height: JDisplay.dp(42)
         anchors.centerIn: parent
-        color: "transparent"
-
         RowLayout {
             anchors.centerIn: parent
 
             Label {
                 text: getHours()
-                font.pixelSize: fontSize 
+                font.pixelSize: fontSize
                 font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
+                color: Kirigami215.JTheme.majorForeground
             }
             Label {
                 text: ":"
-                font.pixelSize: fontSize 
+                font.pixelSize: fontSize
                 font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
+                color: Kirigami215.JTheme.majorForeground
             }
             Label {
                 text: getMinutes()
-                font.pixelSize: fontSize 
+                font.pixelSize: fontSize
                 font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
+                color: Kirigami215.JTheme.majorForeground
             }
             Label {
                 text: ":"
-                font.pixelSize: fontSize 
+                font.pixelSize: fontSize
                 font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
+                color: Kirigami215.JTheme.majorForeground
             }
             Label {
                 text: getSeconds()
-                font.pixelSize: fontSize 
+                font.pixelSize: fontSize
                 font.family: "Gilroy SemiBold"
-                color: appwindow.isDarkTheme ? "white" :"black"
+                color: Kirigami215.JTheme.majorForeground
             }
         }
     }

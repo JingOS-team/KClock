@@ -1,5 +1,6 @@
 /*
  * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ *           2021   Bob <pengbo·wu@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,6 +23,8 @@
 #include <QLocale>
 #include <QTime>
 #include <QTimer>
+#include <QDebug>
+
 KclockFormat::KclockFormat(QObject *parent)
     : QObject(parent)
     , m_timer(new QTimer(this))
@@ -50,13 +53,28 @@ void KclockFormat::updateTime()
         Q_EMIT hourChanged();
     }
     m_minutesCounter++;
-//    Q_EMIT secondChanged();
-     Q_EMIT timeChanged();
+    Q_EMIT timeChanged();
 }
 
-QString KclockFormat::formatTimeString(int hours, int minutes)
+void KclockFormat::setJapp(JApplicationQt *japp)
 {
-    return QLocale::system().toString(QTime(hours, minutes), QStringLiteral("hh:mm"));
+    m_japp = japp;
+}
+
+void KclockFormat::setEnableBackground(bool enable)
+{
+    if (m_japp) {
+        m_japp -> enableBackgroud(enable);
+    }
+}
+
+QString KclockFormat::formatTimeString(int hours, int minutes, bool timePeriod)
+{
+    if (timePeriod) {
+        return QLocale::system().toString(QTime(hours, minutes), QStringLiteral("hh:mm ap")).split(" ").at(0);
+    } else {
+        return QLocale::system().toString(QTime(hours, minutes), QStringLiteral("hh:mm"));
+    }
 }
 
 bool KclockFormat::isChecked(int dayIndex, int daysOfWeek)
@@ -74,7 +92,6 @@ bool KclockFormat::isChecked(int dayIndex, int daysOfWeek)
 void KclockFormat::startTimer()
 {
     m_currentTime = QLocale::system().toString(QTime::currentTime(), QStringLiteral("hh:mm"));
-//    m_hours = QTime::currentTime().hour() >= 12 ? QTime::currentTime().hour() - 12 : QTime::currentTime().hour();
     m_hours = QTime::currentTime().hour();
     m_minutesCounter = (QTime::currentTime().msecsSinceStartOfDay() / 1000) % 60; // seconds to next minute
     m_hoursCounter = QTime::currentTime().minute();
@@ -105,12 +122,13 @@ QVariant WeekModel::data(const QModelIndex &index, int role) const
     if (!index.isValid() || index.row() >= 7) {
         return QVariant();
     }
-    if (role == NameRole)
+    if (role == NameRole) {
         return std::get<0>(m_listItem[index.row()]);
-    else if (role == FlagRole)
+    } else if (role == FlagRole) {
         return std::get<1>(m_listItem[index.row()]);
-    else
+    } else {
         return QVariant();
+    }
 }
 
 QHash<int, QByteArray> WeekModel::roleNames() const

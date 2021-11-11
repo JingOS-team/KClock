@@ -82,7 +82,6 @@ KClockSettings::KClockSettings()
         m_alarmSnoozeLengthDisplay = i18n("1 hour");
         break;
     }
-    qDebug() << m_alarmSnoozeLengthDisplay;
 }
 
 void KClockSettings::updateVolume()

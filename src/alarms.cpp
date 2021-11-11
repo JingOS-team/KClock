@@ -1,6 +1,7 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
+ *                2021 DeXiang Mend <dexiang.meng@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -29,8 +30,8 @@
 
 #include <KConfigGroup>
 #include <KLocalizedString>
-#include <KNotification>
 #include <KSharedConfig>
+#include <KNotification>
 
 #include "alarmadaptor.h"
 #include "alarmmodel.h"
@@ -50,9 +51,6 @@ Alarm::Alarm(AlarmModel *parent, QString name, int minutes, int hours, int daysO
     , m_daysOfWeek(daysOfWeek)
     , m_snoozeMinutes(snoozeMinutes)
 {
-    qDebug() << "new alarm, snoozeMinutes:" << snoozeMinutes;
-
-
     initialize(parent);
 }
 
@@ -89,12 +87,13 @@ void Alarm::initialize(AlarmModel *parent)
 
     if (parent) {
         connect(this, &Alarm::alarmChanged, parent, &AlarmModel::scheduleAlarm); // connect this last
+        connect(this, &Alarm::alarmDismissOrSnooze, parent, &AlarmModel::nextAlarmRun);
     }
 
     // DBus
     new AlarmAdaptor(this);
     QDBusConnection::sessionBus().registerObject(QStringLiteral("/Alarms/") + this->uuid().toString(QUuid::Id128), this);
-    connect(this, &QObject::destroyed, [this] { QDBusConnection::sessionBus().unregisterObject(QStringLiteral("/Alarms/") + this->uuid().toString(QUuid::Id128), QDBusConnection::UnregisterNode); });
+    connect(this, &QObject::destroyed, [this] { QDBusConnection::sessionBus().unregisterObject(QStringLiteral("/Alarms/") + this->uuid().toString(QUuid::Id128), QDBusConnection::UnregisterNode);});
 }
 
 // alarm to json
@@ -115,41 +114,32 @@ QString Alarm::serialize()
 
 void Alarm::save()
 {
-    qDebug() << "-----> save" ;
     auto config = KSharedConfig::openConfig();
     KConfigGroup group = config->group(ALARM_CFG_GROUP);
-    qDebug() << "src/alarm :::: save +>" << this->alarmNotifOpenTime <<"  --  "<< this->enabled();
     group.writeEntry(uuid().toString(), this->serialize());
     group.sync();
 }
 
 void Alarm::ring()
 {
-    qDebug() << "-----> ring" ;
     // if not enabled, don't ring
-    if (!this->enabled())
+    if (!this->enabled() || alarmNotifOpen){
         return;
-
-    // notifySystemUI(true);
-
-    qDebug() << "Ringing alarm" << m_name << "and sending notification...";
-
-    KNotification *notif = new KNotification(QStringLiteral("alarm"));
-    if (m_snoozeMinutes > 0) {
-        notif->setActions(QStringList {i18n("Dismiss"), i18n("Snooze")});
-    } else {
-        notif->setActions(QStringList {i18n("Dismiss")});
     }
-    
+
+    KNotification* notif = new KNotification(QStringLiteral("alarm"));
+    if (m_snoozeMinutes > 0) {
+        notif->setActions(QStringList {i18n("Stop"), i18n("Snooze")});
+    } else {
+        notif->setActions(QStringList {i18n("Stop")});
+    }
+
     notif->setIconName(QStringLiteral("jingclock"));
-    // notif->setSource(QStringLiteral("jingclock"));
     notif->setTitle(name());
     notif->setText(QLocale::system().toString(QTime::currentTime(), QLocale::ShortFormat)); // TODO
     notif->setDefaultAction(i18n("View"));
     notif->setFlags(KNotification::NotificationFlag::Persistent);
 
-    connect(notif, &KNotification::defaultActivated, this, &Alarm::handleDismiss);
-    connect(notif, &KNotification::action1Activated, this, &Alarm::handleDismiss);
     connect(notif, &KNotification::action2Activated, this, &Alarm::handleSnooze);
     connect(notif, &KNotification::closed, this, &Alarm::handleDismiss);
     connect(notif, &KNotification::closed, [notif] { notif->close(); });
@@ -160,16 +150,17 @@ void Alarm::ring()
     alarmNotifOpenTime = QTime::currentTime();
 
     // play sound (it will loop)
-    qDebug() << "Alarm sound: " << m_audioPath;
     AlarmPlayer::instance().setSource(this->m_audioPath);
     AlarmPlayer::instance().play();
 }
 
 void Alarm::handleDismiss()
 {
-    alarmNotifOpen = false;
+    if (!alarmNotifOpen) {
+        return;
+    }
 
-    qDebug() << "Alarm" << m_name << "dismissed";
+    alarmNotifOpen = false;
     AlarmPlayer::instance().stop();
 
     // ignore if the snooze button was pressed and dismiss is still called
@@ -178,16 +169,15 @@ void Alarm::handleDismiss()
         if (daysOfWeek() == 0) {
             setEnabled(false);
         }
-    } else {
-        qDebug() << "Ignore dismiss (triggered by snooze)" << m_snooze;
     }
 
     m_justSnoozed = false;
+    currentHours = -1;
+    currentMinutes = -1;
 
     save();
-    // 发送一个Dbus 给系统
-    // notifySystemUI(false);
     Q_EMIT alarmChanged();
+    Q_EMIT alarmDismissOrSnooze(m_uuid.toString());
 }
 
 void Alarm::handleSnooze()
@@ -195,28 +185,14 @@ void Alarm::handleSnooze()
     m_justSnoozed = true;
 
     alarmNotifOpen = false;
-    // qDebug() << "Alarm snoozed (" << KClockSettings::self()->alarmSnoozeLength() << ")";
-     qDebug() << "Alarm snoozed (" << m_snoozeMinutes << ")";
     AlarmPlayer::instance().stop();
 
-    // setSnooze(snooze() + 60 * KClockSettings::self()->alarmSnoozeLength()); // snooze 5 minutes
-    setSnooze(snooze() + 60 * m_snoozeMinutes); //add snooze time, 10 minutes
-    m_enabled = true;                                                       // can't use setSnooze because it resets snooze time
+    setSnooze(snooze() + 60 * m_snoozeMinutes);//add snooze time, 10 minutes
+    m_enabled = true;// can't use setSnooze because it resets snooze time
     save();
-    // 发送一个Dbus 给系统
-    // notifySystemUI(false);
     Q_EMIT alarmChanged();
+    Q_EMIT alarmDismissOrSnooze(m_uuid.toString());
 }
-
-// void Alarm::notifySystemUI(bool visible) {
-//     // Q_EMIT systemIconChanged(visible);
-//     QDBusMessage msg = QDBusMessage::createSignal(
-//         "/jingos/alarm/statusbaricon",  
-//         "jingos.alarm.statusbaricon", 
-//         "getVisible");
-//     msg << visible;
-//     QDBusConnection::sessionBus().send(msg);
-// }
 
 void Alarm::calculateNextRingTime()
 {
@@ -246,7 +222,6 @@ void Alarm::calculateNextRingTime()
             date = date.addDays(1); // go forward a day
             first = false;
         }
-
         m_nextRingTime = QDateTime(date.date(), alarmTime).toSecsSinceEpoch();
     }
 }

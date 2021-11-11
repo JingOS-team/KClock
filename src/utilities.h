@@ -1,5 +1,6 @@
 /*
  * Copyright 2020   Han Young <hanyoung@protonmail.com>
+ *           2021   Bob <pengbo·wu@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -45,6 +46,7 @@ Q_SIGNALS:
     void wakeup(int cookie);
 public Q_SLOTS:
     void wakeupCallback(int cookie);
+    void updateCaption();
 
 private:
     void schedule(); // For AlarmWaitWorker use

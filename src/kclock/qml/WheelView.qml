@@ -1,107 +1,140 @@
 /*
- * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ * Copyright (C) 2021 Beijing Jingling Information System Technology Co., Ltd. All rights reserved.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License or (at your option) version 3 or any later version
- * accepted by the membership of KDE e.V. (or its successor approved
- * by the membership of KDE e.V.), which shall act as a proxy
- * defined in Section 14 of version 3 of the license.
+ * Authors:
+ * Bob <pengbo·wu@jingos.com>
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 import QtQuick 2.0
-import "../CommonSize.js" as CS
+import org.kde.kirigami 2.15 as Kirigami
+import QtQml 2.12
+
 PathView {
     id: root
 
+    property bool starIndexZero: timezoneProxy.isSystem24HourFormat
     property bool bgShow
-    property variant value
-    property int displayFontSize: width/4
-    property real displayStep: 0.6 // displayStep > 0
-    signal viewMove(var index)
+    property int value
+    property int displayFontSize: 20
+    property real displayStep: 0.6
 
-    width: 100; height: 300
-    clip: true
-    pathItemCount: 7
+    width: 100
+    height: 300
     preferredHighlightBegin: 0.5
     preferredHighlightEnd: 0.5
-    dragMargin: root.width/2
+
+    signal viewMove(var index)
+
+    function findCurrentIndex() {
+        if (starIndexZero) {
+            currentIndex = value
+        } else {
+            for (var i = 0; i < count; i++) {
+                if (model[i].value === value) {
+                    currentIndex = i
+                    break
+                }
+            }
+        }
+    }
+
+    focus: true
+    clip: true
+    pathItemCount: 7
+    dragMargin: root.width / 2
+
     Component.onCompleted: findCurrentIndex()
 
     onMovementEnded: {
         viewMove(model[currentIndex].value)
     }
+
     onValueChanged: {
         findCurrentIndex()
     }
 
+    onModelChanged: {
+        timer.restart()
+    }
+
+    Timer {
+        id: timer
+
+        interval: 1000
+        repeat: false
+
+        onTriggered: {
+            findCurrentIndex()
+        }
+    }
 
     Keys.onUpPressed: {
-        root.incrementCurrentIndex()
+        root.decrementCurrentIndex()
         value = (model[currentIndex].value)
     }
 
     Keys.onDownPressed: {
-        root.decrementCurrentIndex()
+        root.incrementCurrentIndex()
         value = (model[currentIndex].value)
-    }
-    Rectangle{
-        id:backgroud
-        visible: bgShow
-        width: parent.width
-        height: 80
-        color: "blue"
-        anchors.centerIn: parent
-        radius: 14
-
-        MouseArea {
-            anchors.fill: parent
-           onClicked: {
-               console.log("WheelvIEW .....ONCLICK")
-               mouse.accepted = true
-           }
-        }
     }
 
     delegate: Item {
-        id:delegate
+        id: delegate
+
         width: root.width
-        height: root.height/pathItemCount
+        height: root.height / pathItemCount
+
         Text {
             anchors.centerIn: parent
-            font.pixelSize: displayFontSize*Number(delegate.PathView.textFontPercent);
+
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            font.pixelSize: displayFontSize
             text: modelData.display
-            color: appwindow.isDarkTheme ? "white" :"black"
-            opacity:  currentIndex == index ? 1 : 0.3
+            opacity: currentIndex == index ? 1 : 0.3
+            color: Kirigami.JTheme.majorForeground
         }
     }
 
     path: Path {
-        startX: root.width/2; startY: 0
+        startX: root.width / 2
+        startY: 0
 
-        PathAttribute { name: "textFontPercent"; value: displayStep }
+        PathAttribute {
+            name: "textFontPercent"
+            value: displayStep
+        }
 
-        PathLine { x: root.width/2; y: root.height/2 }
+        PathLine {
+            x: root.width / 2
+            y: root.height / 2
+        }
 
-        PathAttribute { name: "textFontPercent"; value: 1}
+        PathAttribute {
+            name: "textFontPercent"
+            value: 1
+        }
 
-        PathLine { x: root.width/2; y: root.height }
+        PathLine {
+            x: root.width / 2
+            y: root.height
+        }
 
-        PathAttribute { name: "textFontPercent"; value: displayStep }
+        PathAttribute {
+            name: "textFontPercent"
+            value: displayStep
+        }
     }
 
-    function findCurrentIndex() {
-        for (var i = 0; i < count; i++)
-            if (model[i].value === value)
-                currentIndex = i;
+    Rectangle {
+        id: backgroud
+
+        anchors.centerIn: parent
+        width: parent.width
+        height:  root.height / pathItemCount + 6 * appScale
+
+        visible: bgShow
+        color: "#1F767680"
+        radius: 7 * appScale
     }
 }
-

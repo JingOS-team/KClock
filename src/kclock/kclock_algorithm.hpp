@@ -1,3 +1,10 @@
+/*
+ * Copyright (C) 2021 Beijing Jingling Information System Technology Co., Ltd. All rights reserved.
+ *
+ * Authors:
+ * Bob <pengbo·wu@jingos.com>
+ *
+ */
 #pragma once
 
 namespace KClock

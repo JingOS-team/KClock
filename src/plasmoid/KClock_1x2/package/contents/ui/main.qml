@@ -1,5 +1,7 @@
 /*
     SPDX-FileCopyrightText: 2020 HanY <hanyoung@protonmail.com>
+                            2021 Bob <pengbo·wu@jingos.com>
+
     SPDX-License-Identifier: LGPL-2.1-or-later
 */
 
@@ -13,17 +15,21 @@ import org.kde.kirigami 2.11 as Kirigami
 Item {
     Plasmoid.backgroundHints: "ShadowBackground";
     Plasmoid.fullRepresentation: Item {
-        property int fontSize: mainItem.height / 4
         id: mainItem
+
+        property int fontSize: mainItem.height / 4
+
         Layout.preferredHeight: plasmoid.nativeInterface.hasAlarm ? Kirigami.Theme.defaultFont.pixelSize * 8 : Kirigami.Theme.defaultFont.pixelSize * 16
         Layout.preferredWidth: Kirigami.Units.gridUnit * 20
         Layout.alignment: Qt.AlignHCenter
+
         MouseArea {
             anchors.fill: parent
             onClicked: plasmoid.nativeInterface.openKClock()
         }
         ColumnLayout {
             id: mainDisplay
+
             spacing:0
             PlasmaComponents.Label {
                 text: plasmoid.nativeInterface.time

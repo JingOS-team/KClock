@@ -1,6 +1,7 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
+ *                2021 DeXiang Mend <dexiang.meng@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -28,6 +29,7 @@
 #include <klocalizedstring.h>
 
 #include <QDBusMessage>
+#include <QThread>
 
 #include "alarmmodel.h"
 #include "alarmmodeladaptor.h"
@@ -37,6 +39,7 @@
 #define SCRIPTANDPROPERTY QDBusConnection::ExportScriptableContents | QDBusConnection::ExportAllProperties
 AlarmModel::AlarmModel(QObject *parent)
     : QObject(parent)
+    , alarmIsRun(false)
     , m_notifierItem(new KStatusNotifierItem(this))
 {
     // DBus
@@ -103,7 +106,6 @@ void AlarmModel::scheduleAlarm()
 
     // if there is an alarm that needs to rung
     if (minTime != std::numeric_limits<qint64>::max()) {
-        qDebug() << "scheduled wakeup" << QDateTime::fromSecsSinceEpoch(minTime).toString();
         m_nextAlarmTime = minTime;
 
         // if we scheduled a wakeup before, cancel it first
@@ -115,7 +117,6 @@ void AlarmModel::scheduleAlarm()
     } else {
         // this doesn't explicitly cancel the alarm currently waiting in m_worker if disabled by user
         // because alarm->ring() will return immediately if disabled
-        qDebug() << "no alarm to ring";
 
         m_nextAlarmTime = 0;
         Utilities::instance().clearWakeup(m_cookie);
@@ -124,19 +125,71 @@ void AlarmModel::scheduleAlarm()
     Q_EMIT nextAlarm(m_nextAlarmTime);
 }
 
+void AlarmModel::nextAlarmRun(QString uuid){
+
+    alarmIsRun = false;
+
+    for (int i = 0; i < this->alarmsWaitToBeRung.count(); i++) {
+        if (this->alarmsWaitToBeRung.at(i)->uuid().toString() == uuid) {
+            this->alarmsWaitToBeRung.removeAt(i);
+            break;
+        }
+    }
+
+    if (this->alarmsWaitToBeRung.count() > 0) {
+        auto alarm = this->alarmsWaitToBeRung.at(0);
+        if (alarm) {
+            alarm->ring();
+            alarmIsRun = true;
+        }
+    }
+    this->scheduleAlarm();
+}
+
 void AlarmModel::wakeupCallback(int cookie)
 {
-    qDebug() << "==========> wakeupCallback ";
-    if (this->m_cookie == cookie) {
-        for (auto alarm : this->alarmsToBeRung) {
-            alarm->ring();
-        }
-        this->scheduleAlarm();
+    if (this->m_cookie != cookie) {
+        return;
     }
+    if (true == alarmIsRun) {
+        for (auto alarm : this->alarmsToBeRung) {
+            if(this->alarmsWaitToBeRung.count() == 0) {
+                alarmsWaitToBeRung.append(alarm);
+            } else {
+                bool haveAlarm = false;
+                for (auto alarmToRun : this->alarmsWaitToBeRung) {
+                    if (alarmToRun->uuid().toString() == alarm->uuid().toString()) {
+                        haveAlarm = true;
+                    }
+                }
+                if (!haveAlarm) {
+                    alarmsWaitToBeRung.append(alarm);
+                }
+            }
+        }
+    } else {
+        for (auto alarm : this->alarmsToBeRung) {
+            if (true == alarmIsRun) {
+                alarmsWaitToBeRung.append(alarm);
+            } else {
+                alarm->ring();
+                alarmIsRun = true;
+            }
+        }
+    }
+    QThread::msleep(500);
+    this->scheduleAlarm();
 }
 void AlarmModel::removeAlarm(QString uuid)
 {
     // find index of alarm
+    for (int i = 0; i < alarmsWaitToBeRung.count(); i++) {
+        if (alarmsWaitToBeRung.at(i)->uuid().toString() == uuid) {
+            alarmsWaitToBeRung.removeAt(i);
+            break;
+        }
+    }
+
     int index = -1;
     for (int i = 0; i < m_alarmsList.size(); i++) {
         if (m_alarmsList[i]->uuid().toString() == uuid) {
@@ -180,7 +233,6 @@ void AlarmModel::removeAlarm(int index)
 void AlarmModel::addAlarm(int hours, int minutes, int daysOfWeek, QString name, QString ringtonePath, int snoozeMinutes)
 {
     Alarm *alarm = new Alarm(this, name, minutes, hours, daysOfWeek, snoozeMinutes);
-
     // insert new alarm in order by time of day
     int i = 0;
     for (auto alarms : m_alarmsList) {
@@ -200,36 +252,32 @@ void AlarmModel::addAlarm(int hours, int minutes, int daysOfWeek, QString name, 
     }
 
     m_alarmsList.insert(i, alarm);
-    qDebug() << "schedule Alarm";
     alarm->save();
     scheduleAlarm();
-    qDebug() << "alarm added";
     Q_EMIT alarmAdded(alarm->uuid().toString());
 }
 
 void AlarmModel::updateNotifierItem(quint64 time)
 {
     if (time == 0) {
-        qDebug()<< "没有闹铃了";
         notifySystemUI(false);
         m_notifierItem->setStatus(KStatusNotifierItem::Passive);
         m_notifierItem->setToolTip(QStringLiteral("clock"), QStringLiteral("Clock"), QStringLiteral());
     } else {
-        qDebug()<< "现在有闹铃了";
         notifySystemUI(true);
         auto dateTime = QDateTime::fromSecsSinceEpoch(time).toLocalTime();
         m_notifierItem->setStatus(KStatusNotifierItem::Active);
         m_notifierItem->setToolTip(QStringLiteral("clock"),
                                    QStringLiteral("KClock"),
-                                   xi18nc("@info", "Alarm: <shortcut>%1</shortcut>", QLocale::system().standaloneDayName(dateTime.date().dayOfWeek()) + QLocale::system().toString(dateTime.time(), QLocale::ShortFormat)));
+                                   xi18nc("@info", "Alarm: <shortcut>%1</shortcut>",
+                                   QLocale::system().standaloneDayName(dateTime.date().dayOfWeek()) + QLocale::system().toString(dateTime.time(), QLocale::ShortFormat)));
     }
 }
 
 void AlarmModel::notifySystemUI(bool visible) {
-    // Q_EMIT systemIconChanged(visible);
     QDBusMessage msg = QDBusMessage::createSignal(
-        "/jingos/alarm/statusbaricon",  
-        "jingos.alarm.statusbaricon", 
+        "/jingos/alarm/statusbaricon",
+        "jingos.alarm.statusbaricon",
         "getVisible");
     msg << visible;
     QDBusConnection::sessionBus().send(msg);

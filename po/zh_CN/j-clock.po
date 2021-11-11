@@ -29,10 +29,13 @@ msgstr "闹钟 %1"
 msgid "Dismiss"
 msgstr "关闭"
 
-#: src/alarms.cpp:134 src/kclock/qml/JAlarmEditDialog.qml:482
+#: src/alarms.cpp:134 src/kclock/qml/JAlarmEditDialog.qml:482 src/kclock/qml/JLogo.qml:25
 #, kde-format
 msgid "Snooze"
 msgstr "稍后提醒"
+
+msgid "Clock"
+msgstr "时钟"
 
 #: src/alarms.cpp:142 src/timer.cpp:128
 #, kde-format
@@ -63,11 +66,6 @@ msgstr "10分钟"
 #, kde-format
 msgid "15 minutes"
 msgstr "15分钟"
-
-#: src/kclock/kclocksettings.cpp:55
-#, kde-format
-msgid "Never"
-msgstr "从不"
 
 #: src/kclock/kclocksettings.cpp:64
 #, kde-format
@@ -130,10 +128,8 @@ msgstr "你确定要删除这个闹铃"
 msgid "Close"
 msgstr "关闭"
 
-#: src/kclock/qml/JakeTimerListPage.qml:49
-#, kde-format
-msgid "New Timer"
-msgstr "新建"
+msgid "Cancel"
+msgstr "取消"
 
 #: src/kclock/qml/JAlarmEditDialog.qml:261
 #, kde-format
@@ -154,8 +150,8 @@ msgstr "标签"
 
 #: src/kclock/qml/JAlarmEditDialog.qml:816 src/kclock/qml/JAlarmPage.qml:207
 #, kde-format
-msgid "No Repeat"
-msgstr "不重复"
+msgid "Never"
+msgstr "永不"
 
 #: src/kclock/qml/JAlarmEditDialog.qml:821 src/kclock/qml/JAlarmPage.qml:212
 #, kde-format
@@ -177,10 +173,10 @@ msgstr "添加闹钟"
 msgid "Hours"
 msgstr "小时"
 
-#: src/kclock/qml/JLogo.qml:25
-#, kde-format
-msgid "Clock"
-msgstr "时钟"
+#src/kclock/qml/JLogo.qml:25
+#kde-format
+#msgid "Clock"
+#msgstr "时钟"
 
 #: src/kclock/qml/JStopwatchPage.qml:216
 #, kde-format
@@ -200,7 +196,7 @@ msgstr "分段"
 #: src/kclock/qml/JStopwatchPage.qml:353
 #, kde-format
 msgid "LAP %1"
-msgstr "记次 %1"
+msgstr "计次 %1"
 
 #: src/kclock/qml/JTimerPage.qml:291
 #, kde-format
@@ -323,11 +319,56 @@ msgstr "重置"
 msgid "New"
 msgstr "新建"
 
+msgid "Resume"
+msgstr "继续"
+
+msgid "Start"
+msgstr "开始"
+
+msgid "Stop"
+msgstr "停止"
+
 msgid "Done"
 msgstr "完成"
+
+msgid "Pause"
+msgstr "暂停"
+
+msgid "Lap"
+msgstr "计次"
 
 msgid "AM"
 msgstr "上午"
 
 msgid "PM"
 msgstr "下午"
+
+msgid "There is no alarm clock at present"
+msgstr "没有闹钟"
+
+msgid "The countdown length set is illegal"
+msgstr "倒计时时长不合法"
+
+msgid "Edit Alarm"
+msgstr "编辑闹钟"
+
+msgid "Mon., "
+msgstr "周一, "
+
+msgid "Tue., "
+msgstr "周二, "
+
+msgid "Wed., "
+msgstr "周三, "
+
+msgid "Thu., "
+msgstr "周四, "
+
+msgid "Fri., "
+msgstr "周五, "
+
+msgid "Sat., "
+msgstr "周六, "
+
+msgid "Sun., "
+msgstr "周日, "

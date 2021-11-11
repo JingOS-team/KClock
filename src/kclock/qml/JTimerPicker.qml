@@ -1,11 +1,14 @@
 /*
  *   SPDX-FileCopyrightText: 2019 Dimitris Kardarakos <dimkard@posteo.net>
+ *                           2021 Bob <pengbo·wu@jingos.com>
  *
  *   SPDX-License-Identifier: LGPL-2.0-or-later
  */
 import QtQuick 2.12
 import QtQuick.Controls 2.5 as Controls2
 import org.kde.kirigami 2.0 as Kirigami
+import org.kde.kirigami 2.15 as Kirigami215
+import jingos.display 1.0
 import QtQuick.Layouts 1.11
 
 Item {
@@ -19,6 +22,7 @@ Item {
         anchors.fill: parent
         Item {
             id: clock
+
             Layout.fillWidth: true
             Layout.fillHeight: true
 
@@ -34,7 +38,7 @@ Item {
                     selectedValue: root.hours
                     onClicked: root.hours = index
                 }
-                
+
                 path: Path {
                     PathAngleArc {
                         centerX: clock.width / 2
@@ -85,11 +89,11 @@ Item {
                 text: ((root.hours < 10) ? "0" : "") + root.hours + ":"
                       + ((root.minutes < 10) ? "0" : "") + root.minutes
                 color: "white"
-                font.pixelSize: 24
+                font.pixelSize: JDisplay.sp(24)
             }
 
             Rectangle {
-                width: 60
+                width: JDisplay.dp(60)
                 height: parent.height
             }
 
@@ -98,12 +102,12 @@ Item {
 
                 checked: root.pm
                 checkable: true
-                implicitWidth: 100
-                implicitHeight: 42
+                implicitWidth: JDisplay.dp(100)
+                implicitHeight: JDisplay.dp(42)
 
                 contentItem: Controls2.Label {
                     text: parent.checked ? "PM" : "AM"
-                    font.pixelSize: 24
+                    font.pixelSize: JDisplay.sp(24)
                     color: "white"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
@@ -111,7 +115,7 @@ Item {
 
                 onClicked: root.pm = checked
                 background: Rectangle {
-                    border.width: 2
+                    border.width: JDisplay.sp(2)
                     border.color: "black"
                     color: "#4a4a4a"
                 }

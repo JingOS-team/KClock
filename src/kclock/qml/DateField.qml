@@ -1,3 +1,10 @@
+/*
+ * Copyright (C) 2021 Beijing Jingling Information System Technology Co., Ltd. All rights reserved.
+ *
+ * Authors:
+ * Bob <pengbo·wu@jingos.com>
+ *
+ */
 import QtQuick 2.11
 import QtQuick.Controls 2.4
 

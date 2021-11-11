@@ -1,5 +1,6 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
+ *           2021 Bob <pengbo·wu@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -109,10 +110,15 @@ QString UtilModel::timeToRingFormatted(const long long &timestamp)
         }
         arg += i18np("%1 minute", "%1 minutes", minute);
     }
-    
+
     if (day <= 0 && hour <= 0 && minute <= 0) {
         return i18n("Alarm will be rung within a minute");
     } else {
         return i18n("Alarm will be rung after %1", arg);
     }
+}
+
+QDateTime UtilModel::localSystemDateTime() const
+{
+    return QDateTime::currentDateTime();
 }

@@ -1,5 +1,7 @@
 /*
     SPDX-FileCopyrightText: 2020 HanY <hanyoung@protonmail.com>
+                            2021 Bob <pengbo·wu@jingos.com>
+
     SPDX-License-Identifier: LGPL-2.1-or-later
 */
 
@@ -13,12 +15,15 @@ import org.kde.kirigami 2.11 as Kirigami
 Item {
     Plasmoid.backgroundHints: "ShadowBackground";
     Plasmoid.fullRepresentation: Item {
-        property int fontSize: mainItem.height / 4
         id: mainItem
+
+        property int fontSize: mainItem.height / 4
+
         Layout.preferredHeight: Kirigami.Units.gridUnit * 12
         Layout.preferredWidth: fontSize * 24
         ColumnLayout {
             id: mainLayout
+
             Layout.fillWidth: true
             spacing: 0
             PlasmaComponents.Label {
@@ -39,6 +44,7 @@ Item {
                 }
                 RowLayout {
                     id: alarmLabel
+
                     Layout.fillWidth: true
                     visible: plasmoid.nativeInterface.hasAlarm
                     Kirigami.Icon {
@@ -48,6 +54,7 @@ Item {
                     }
                     PlasmaComponents.Label {
                         id: alarmTime
+
                         Layout.alignment: Qt.AlignCenter
                         text: plasmoid.nativeInterface.alarmTime
                         color: "white"
@@ -67,6 +74,7 @@ Item {
                     Layout.fillWidth: true
                     PlasmaComponents.Label {
                         id: cityName
+
                         text: plasmoid.nativeInterface.cityName
                         font.pixelSize: fontSize / 2
                         font.bold: true
@@ -89,6 +97,7 @@ Item {
                     Layout.fillWidth: true
                     PlasmaComponents.Label {
                         id: tempNow
+
                         text: plasmoid.nativeInterface.tempNow
                         font.pixelSize: fontSize / 2
                         font.bold: true
@@ -113,9 +122,4 @@ Item {
             }
         }
     }
-//    Plasmoid.compactRepresentation: Kirigami.Icon {
-//        source: "notifications"
-//        height: Kirigami.Units.gridUnit
-//        width: Kirigami.Units.gridUnit
-//    }
 }

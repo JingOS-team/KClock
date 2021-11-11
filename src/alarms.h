@@ -1,6 +1,7 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
+ *                2021 DeXiang Mend <dexiang.meng@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -31,6 +32,7 @@
 #include <QUuid>
 
 #include "alarmplayer.h"
+
 class QMediaPlayer;
 class QThread;
 class AlarmWaitWorker;
@@ -132,11 +134,11 @@ public:
         return m_snooze;
     }
 
-    int snoozeMinutes() const 
+    int snoozeMinutes() const
     {
         return m_snoozeMinutes;
     }
-    void setSnoozeMinutes(int snoozeMinutes) 
+    void setSnoozeMinutes(int snoozeMinutes)
     {
         m_snoozeMinutes = snoozeMinutes;
     }
@@ -164,6 +166,7 @@ public:
     {
         return m_uuid.toString();
     }
+
 Q_SIGNALS:
     void nameChanged();
     Q_SCRIPTABLE void systemIconChanged(bool visible);
@@ -173,18 +176,19 @@ Q_SIGNALS:
     void daysOfWeekChanged();
     void snoozedMinutesChanged();
     void ringtonePathChanged();
+    void alarmDismissOrSnooze(QString uuid); //notification 关闭时发出此信号
     Q_SCRIPTABLE void propertyChanged(QString property);
     Q_SCRIPTABLE void alarmChanged();
+
 public Q_SLOTS:
     void save(); // serialize and save to config
+
 private:
     void initialize(AlarmModel *parent); // called after object construction
     void calculateNextRingTime();
-
     bool alarmNotifOpen = false; // if the alarm notification is open
     QTime alarmNotifOpenTime;    // time the alarm notification opened
-
-    QUrl m_audioPath = QUrl::fromLocalFile(QStandardPaths::locate(QStandardPaths::GenericDataLocation, "sounds/freedesktop/stereo/alarm-clock-elapsed.oga"));
+    QUrl m_audioPath = QUrl::fromLocalFile(QStandardPaths::locate(QStandardPaths::GenericDataLocation, "sounds/jing/alarm-clock.oga"));
     QString m_name = "New Alarm";
     QUuid m_uuid;
     bool m_enabled = true;
@@ -193,4 +197,6 @@ private:
     int m_hours = 0, m_minutes = 0, m_daysOfWeek = 0;
     qint64 m_snooze = 0;        // current snooze length
     qint64 m_nextRingTime = -1; // store calculated next ring time
+    int currentHours = -1;
+    int currentMinutes = -1;
 };

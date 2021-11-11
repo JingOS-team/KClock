@@ -2,6 +2,7 @@
  * Copyright 2019 Nick Reitemeyer <nick.reitemeyer@web.de>
  *           2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
+ *           2021 Bob <pengbo·wu@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -34,6 +35,7 @@
 #include "kclockdsettings.h"
 #include "kclocksettingsadaptor.h"
 #include "timermodel.h"
+
 QCommandLineParser *createParser()
 {
     QCommandLineParser *parser = new QCommandLineParser;
@@ -45,8 +47,6 @@ QCommandLineParser *createParser()
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-
-    // KLocalizedString::setApplicationDomain("kclockd");
     KLocalizedString::setApplicationDomain("j-clock");
     KAboutData aboutData(QStringLiteral("kclockd"), QStringLiteral("KClock daemon"), QStringLiteral("0.1"), QStringLiteral("KClock daemon"), KAboutLicense::GPL, i18n("© 2020 KDE Community"));
     aboutData.addAuthor(i18n("Devin Lin"), QStringLiteral(), QStringLiteral("espidev@gmail.com"));

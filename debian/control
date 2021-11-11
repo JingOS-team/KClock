@@ -1,0 +1,29 @@
+Source: kclock
+Section: utils
+Priority: optional
+Maintainer: Jonah Brüchert <jbb@kaidan.im>
+Build-Depends: cmake,
+               debhelper (>= 12),
+               extra-cmake-modules,
+               kirigami2-dev,
+               libkf5config-dev,
+               libkf5coreaddons-dev,
+               libkf5i18n-dev,
+               libkf5notifications-dev,
+               libkf5dbusaddons-dev,
+               libqt5svg5-dev,
+               qtbase5-dev,
+               qtdeclarative5-dev,
+               qtmultimedia5-dev,
+               qtquickcontrols2-5-dev,
+               japp-sdk-qt-dev,
+               libkf5plasma-dev,
+Standards-Version: 4.4.1
+Vcs-Git: https://gitlab.com/debian-pm/apps/kclock
+Vcs-Browser: https://gitlab.com/debian-pm/apps/kclock
+
+Package: kclock
+Architecture: any
+Depends: qml-module-qtquick-shapes,
+         ${misc:Depends}, ${shlibs:Depends}
+Description: Clock app for Plasma Mobile

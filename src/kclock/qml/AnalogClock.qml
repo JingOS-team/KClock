@@ -25,37 +25,40 @@ import QtQuick.Shapes 1.12
 
 Shape {
     property int clockRadius: 80
-    
+
     id: analogClock
     implicitWidth: clockRadius*2+5
     implicitHeight: clockRadius*2+5
     anchors.horizontalCenter: parent.horizontalCenter
     layer.enabled: true
     layer.samples: 40
-    
+
     // centre dot
     ShapePath {
         id: circleCentre
+
         fillColor: "lightgrey"
         strokeColor: "grey"
-        
+
         PathAngleArc {
             id: circleCentreArc
+
             centerX: analogClock.width / 2; centerY: analogClock.height / 2;
             radiusX: 5; radiusY: 5
             startAngle: 0
             sweepAngle: 360
         }
     }
-    
+
     // second hand
     Rectangle {
-        color: "red"
         width: 1; height: clockRadius * 0.9
         x: circleCentreArc.centerX - width / 2
         y: circleCentreArc.centerY - height;
         z: -1
         antialiasing: true
+        color: "red"
+
         transform: Rotation {
             origin.x: 0; origin.y: clockRadius* 0.9;
             angle: (360 / 60) * kclockFormat.seconds
@@ -64,17 +67,20 @@ Shape {
             }
         }
     }
-    
+
     // minute hand
     Rectangle {
-        color: "black"
-        width: 2; height: clockRadius * 0.7
+        width: 2
+        height: clockRadius * 0.7
         x: circleCentreArc.centerX + Math.sin((minuteRotation.angle-90) * Math.PI / 180) * width / 2
         y: circleCentreArc.centerY - height - Math.sin(minuteRotation.angle * Math.PI / 180) * width / 2
+
         z: -1
+        color: "black"
         antialiasing: true
         transform: Rotation {
             id: minuteRotation
+
             origin.x: 0; origin.y: clockRadius * 0.7;
             angle: (360 / 60) * kclockFormat.minutes + (360 / 3600) * kclockFormat.seconds
             Behavior on angle {
@@ -82,23 +88,24 @@ Shape {
             }
         }
     }
-    
+
     // hour hand
     Rectangle {
-        color: "black"
         width: 3; height: clockRadius * 0.5
         x: circleCentreArc.centerX + Math.sin((hourRotation.angle-90) * Math.PI / 180) * width / 2
         y: circleCentreArc.centerY - height - Math.sin(hourRotation.angle * Math.PI / 180) * width / 2
         z: -1
+
+        color: "black"
         antialiasing: true
         transform: Rotation {
             id: hourRotation
+
             origin.x: 0; origin.y: clockRadius * 0.5;
             angle: (360 / 12) * kclockFormat.hours + (360 / (12*60)) * kclockFormat.minutes
             Behavior on angle {
                 SpringAnimation { spring: 2; damping: 0.2; modulus: 360 }
             }
         }
-
     }
 }

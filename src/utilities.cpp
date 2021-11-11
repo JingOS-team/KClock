@@ -21,6 +21,8 @@
 #include <QDBusReply>
 #include <QDebug>
 #include <QThread>
+#include <QTimer>
+#include <QDBusConnection>
 
 #include "alarmwaitworker.h"
 #include "utilities.h"
@@ -28,6 +30,7 @@ Utilities::Utilities(QObject *parent)
     : QObject(parent)
     , m_interface(new QDBusInterface(QStringLiteral("org.kde.Solid.PowerManagement"), QStringLiteral("/org/kde/Solid/PowerManagement"), QStringLiteral("org.kde.Solid.PowerManagement"), QDBusConnection::sessionBus(), this))
 {
+
     // if PowerDevil is present, we can rely on PowerDevil to track time, otherwise we do it ourself
     if (m_interface->isValid()) {
         // test Plasma 5.20 PowerDevil schedule wakeup feature
@@ -38,10 +41,11 @@ Utilities::Utilities(QObject *parent)
             m_hasPowerDevil = true;
         }
     }
+    m_hasPowerDevil = false;
+    // QTimer::singleShot(2000, this, SLOT(updateCaption()));
 
     if (this->hasPowerDevil()) {
         bool success = QDBusConnection::sessionBus().registerObject(QStringLiteral("/Utility"), QStringLiteral("org.kde.PowerManagement"), this, QDBusConnection::ExportScriptableSlots);
-        qDebug() << "PowerDevil found, using it for time tracking. Success:" << success;
     } else {
         m_timerThread = new QThread(this);
         m_worker = new AlarmWaitWorker();
@@ -52,16 +56,24 @@ Utilities::Utilities(QObject *parent)
             this->clearWakeup(m_currentCookie);
         });
         m_timerThread->start();
-
-        qDebug() << "PowerDevil not found, using wait worker thread for time tracking.";
     }
 }
 
+
+void Utilities::updateCaption(){
+
+    bool success = QDBusConnection::sessionBus().registerObject(QStringLiteral("/Utility"), QStringLiteral("org.kde.PowerManagement"), this, QDBusConnection::ExportScriptableSlots);
+}
+
+
 int Utilities::scheduleWakeup(qint64 timestamp)
 {
+
     if (this->hasPowerDevil()) {
-        QDBusReply<uint> reply = m_interface->call(QStringLiteral("scheduleWakeup"), QStringLiteral("org.kde.kclockd"), QDBusObjectPath("/Utility"), timestamp);
-        qDebug() << "scheduleWakeup : relay value :  "<< reply.value();
+        QDBusReply<uint> reply = m_interface->call(QStringLiteral("scheduleWakeup"),
+            QStringLiteral("org.kde.kclockd"),
+            QDBusObjectPath("/Utility"), timestamp);
+
         m_cookies.append(reply.value());
         return reply.value();
     } else {
@@ -95,12 +107,10 @@ void Utilities::clearWakeup(int cookie)
 
 void Utilities::wakeupCallback(int cookie)
 {
-    qDebug() << "wakeup callback";
     auto index = m_cookies.indexOf(cookie);
 
     if (index == -1) {
         // something must be wrong here, return and do nothing
-        qDebug() << "callback ignored (wrong cookie)";
         return;
     } else {
         // remove token

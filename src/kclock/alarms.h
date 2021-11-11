@@ -1,6 +1,7 @@
 /*
  * Copyright 2020 Devin Lin <espidev@gmail.com>
  *                Han Young <hanyoung@protonmail.com>
+ *           2021 Bob <pengbo·wu@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -41,6 +42,7 @@ class Alarm : public QObject
     Q_PROPERTY(int snoozedMinutes READ snoozedMinutes NOTIFY propertyChanged)
     Q_PROPERTY(int snoozeMinutes READ snoozeMinutes WRITE setSnoozeMinutes)
     Q_PROPERTY(QString ringtonePath READ ringtonePath WRITE setRingtonePath NOTIFY propertyChanged)
+
 public:
     explicit Alarm();
     explicit Alarm(QString uuid);
@@ -97,11 +99,11 @@ public:
         return m_snooze / 60;
     }
 
-    int snoozeMinutes() const 
+    int snoozeMinutes() const
     {
         return m_snoozeMinutes;
     }
-    
+
     void setSnoozeMinutes(int minutes) {
         m_snoozeMinutes = minutes;
         m_interface->setProperty("snoozeMinutes", m_snoozeMinutes);
@@ -127,8 +129,10 @@ public:
     {
         m_interface->alarmChanged();
     };
+
 Q_SIGNALS:
     void propertyChanged();
+
 private Q_SLOTS:
     void updateProperty(QString property);
 

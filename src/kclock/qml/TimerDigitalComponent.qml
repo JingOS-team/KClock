@@ -1,5 +1,6 @@
 /*
- * Copyright 2021 Rui Wang <wangrui@jingos.com>
+ * Copyright 2020 Devin Lin <espidev@gmail.com>
+ *           2021 Bob <pengbo·wu@jingos.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -21,17 +22,18 @@ import QtQuick 2.12
 import QtQuick.Controls 2.4
 import QtQuick.Layouts 1.2
 import QtQuick.Shapes 1.12
-import org.kde.kirigami 2.11 as Kirigami
+import org.kde.kirigami 2.15 as Kirigami
+import jingos.display 1.0
 
 Rectangle {
-
     id: root
-    anchors.centerIn: parent
 
     property int timerDuration
     property int timerElapsed
     property bool timerRunning
-    property int fontSize: 80
+    property int fontSize: JDisplay.sp(80)
+
+    anchors.centerIn: parent
 
     color: "transparent"
 
@@ -51,10 +53,12 @@ Rectangle {
     // clock display
     RowLayout {
         id: timeLabels
+
         anchors.centerIn: parent
 
         Label {
             id: hoursText
+
             text: getHours()
             color: "white"
             font.pixelSize: root.fontSize
@@ -70,6 +74,7 @@ Rectangle {
         }
         Label {
             id: minutesText
+
             text: getMinutes()
             color: "white"
             font.pixelSize: root.fontSize
@@ -91,30 +96,33 @@ Rectangle {
 
     Rectangle {
         width: timeLabels.width
-        height: 2
-        color: "#aaffffff"
+        height: JDisplay.dp(2)
         anchors.left: timeLabels.left
         anchors.right: timeLabels.right
         anchors.verticalCenter: parent.verticalCenter
-        anchors.verticalCenterOffset: -60
+        anchors.verticalCenterOffset: JDisplay.dp(-60)
+
+        color: "#aaffffff"
     }
 
     Rectangle {
         width: timeLabels.width
-        height: 2
-        color: "#aaffffff"
+        height: JDisplay.dp(2)
         anchors.left: timeLabels.left
         anchors.right: timeLabels.right
         anchors.verticalCenter: parent.verticalCenter
-        anchors.verticalCenterOffset: 60
+        anchors.verticalCenterOffset: JDisplay.dp(60)
+
+        color: "#aaffffff"
     }
 
     Rectangle {
-        width: 500
-        height: 94
+        width: JDisplay.dp(500)
+        height: JDisplay.dp(94)
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: timeLabels.bottom
-        anchors.topMargin: 33
+        anchors.topMargin: JDisplay.dp(33)
+
         visible: false
         color: "black"
 
@@ -123,10 +131,12 @@ Rectangle {
 
             Image {
                 id: reset
-                source: "qrc:/image/reset.png"
-                width: 28
-                height: 28
+
+                width: JDisplay.dp(28)
+                height: width
                 Layout.alignment: Qt.AlignVCenter | Qt.AlignLeft
+
+                source: "qrc:/image/reset.png"
 
                 MouseArea {
                     anchors.fill: parent
@@ -138,11 +148,14 @@ Rectangle {
 
             Image {
                 id: ppBtn
-                source: timerPage.timer.running ? "qrc:/image/pause.png" : "qrc:/image/play.png"
+
+                width: JDisplay.dp(94)
+                height: width
                 anchors.centerIn: parent
                 Layout.alignment: Qt.AlignCenter
-                width: 94
-                height: 94
+
+                source: timerPage.timer.running ? "qrc:/image/pause.png" : "qrc:/image/play.png"
+
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
@@ -153,10 +166,11 @@ Rectangle {
 
             Image {
                 id: delBtn
-                source: "qrc:/image/delete.png"
-                width: 28
-                height: 28
+
+                width: JDisplay.dp(28)
+                height: width
                 Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+                source: "qrc:/image/delete.png"
 
                 MouseArea {
                     anchors.fill: parent
